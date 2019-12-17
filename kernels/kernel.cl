@@ -1,4 +1,0 @@
-kernel
-void process() {
-
-}

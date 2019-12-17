@@ -4,11 +4,12 @@ cmake_policy(SET CMP0015 NEW)
 project(clraytracer)
 
 find_package(OpenCL REQUIRED)
+find_package(glm REQUIRED)
 
 file(GLOB_RECURSE SOURCES src/* kernels/*)
 
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
-    "-Wall -Wextra -Werror -Wpedantic -Wno-ignored-qualifiers -Wno-deprecated-register")
+    "-Wall -Wextra -Werror -Wpedantic")
 
 file(GLOB_RECURSE SOURCES ${SOURCES} include/*)
 
