@@ -3,7 +3,10 @@
 
 #include <CL/cl2.hpp>
 
-using Kernel = cl::KernelFunctor<cl::Image2D>;
+#include "camera/camera.h"
+#include "intersectables/intersectable_manager.h"
+
+using Kernel = cl::KernelFunctor<cl::Image2D, Camera::EyeCoords, cl::Buffer, int>;
 
 class Raytracer {
 public:
@@ -14,6 +17,8 @@ public:
 private:
   uint32_t width, height;
   std::vector<uint8_t> image_buf;
+  Camera camera;
+  IntersectableManager intersectables;
 
   cl::Context context;
   cl::Device device;
