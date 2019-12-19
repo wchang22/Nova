@@ -9,7 +9,7 @@ using namespace glm;
 class Camera {
 public:
   Camera(const vec3& position, const vec3& forward, const vec3& up,
-         int width, int height, float fovy);
+         uint32_t width, uint32_t height, float fovy);
 
   struct EyeCoords {
     cl_float2 coord_scale;
@@ -27,7 +27,7 @@ private:
   vec3 forward;
   vec3 up;
 
-  int width, height;
+  uint32_t width, height;
   float fovy;
 };
 

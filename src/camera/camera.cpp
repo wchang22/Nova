@@ -3,7 +3,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 Camera::Camera(const vec3& position, const vec3& forward,
-               const vec3& up, int width, int height, float fovy)
+               const vec3& up, uint32_t width, uint32_t height, float fovy)
   : position(position),
     forward(forward),
     up(up),
@@ -23,9 +23,9 @@ Camera::EyeCoords Camera::get_eye_coords() const {
   vec3 v = cross(w, u);
 
   return {
-    { coord_scale.x, coord_scale.y },
-    { coord_dims.x, coord_dims.y },
-    { position.x, position.y, position.z },
-    { u.x, u.y, u.z }, { v.x, v.y, v.z }, { w.x, w.y, w.z }
+    { {coord_scale.x, coord_scale.y} },
+    { {coord_dims.x, coord_dims.y} },
+    { {position.x, position.y, position.z} },
+    { {u.x, u.y, u.z} }, { {v.x, v.y, v.z} }, { {w.x, w.y, w.z} }
   };
 }

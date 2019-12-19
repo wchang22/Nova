@@ -7,10 +7,10 @@ void IntersectableManager::add_triangle(const Triangle& tri) {
   vec3 normal = cross(edge1, edge2);
 
   triangles.push_back({
-    { vertex.x, vertex.y, vertex.z },
-    { normal.x, normal.y, normal.z },
-    { edge1.x, edge1.y, edge1.z },
-    { edge2.x, edge2.y, edge2.z }
+    { {vertex.x, vertex.y, vertex.z} },
+    { {normal.x, normal.y, normal.z} },
+    { {edge1.x, edge1.y, edge1.z} },
+    { {edge2.x, edge2.y, edge2.z} }
   });
 }
 

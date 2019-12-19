@@ -5,6 +5,7 @@
 
 #include "camera/camera.h"
 #include "intersectables/intersectable_manager.h"
+#include "model/model.h"
 
 using Kernel = cl::KernelFunctor<cl::Image2D, Camera::EyeCoords, cl::Buffer, int>;
 
@@ -19,6 +20,7 @@ private:
   std::vector<uint8_t> image_buf;
   Camera camera;
   IntersectableManager intersectables;
+  Model model;
 
   cl::Context context;
   cl::Device device;
