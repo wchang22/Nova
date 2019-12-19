@@ -5,7 +5,7 @@ typedef struct {
   float3 point;
   float3 direction;
   float length;
-  int intersectable_index;
+  int intrs;
 } Ray;
 
 Ray create_ray(float3 point, float3 direction) {

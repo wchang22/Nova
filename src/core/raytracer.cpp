@@ -26,7 +26,7 @@ static const char* IMAGE_OUT_NAME = "raytrace.jpg";
 static const char* MODEL_PATH = ASSETS_PATH"aircraft/aircraft.obj";
 static const char* KERNEL_PATH = KERNELS_PATH"raytrace.cl";
 
-constexpr vec3 CAMERA_POSITION(-5, 3, 6);
+constexpr vec3 CAMERA_POSITION(-4, 2.8, 5);
 constexpr vec3 CAMERA_FORWARD(1, -0.5, -1);
 constexpr vec3 CAMERA_UP(0, 1, 0);
 constexpr int CAMERA_FOVY = 45;

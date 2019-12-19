@@ -3,7 +3,7 @@
 
 #include "types.cl"
 
-bool intersects(Ray* ray, int intersectable_index, Triangle tri) {
+bool intersects(Ray* ray, int intrs, Triangle tri) {
   float a = dot(-tri.normal, ray->direction);
 
   float f = 1.0 / a;
@@ -28,7 +28,7 @@ bool intersects(Ray* ray, int intersectable_index, Triangle tri) {
   }
 
   ray->length = t;
-  ray->intersectable_index = intersectable_index;
+  ray->intrs = intrs;
   return true;
 }
 
