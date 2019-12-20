@@ -26,6 +26,9 @@ typedef struct {
   float3 normal;
   float3 edge1;
   float3 edge2;
+  float3 ambient;
+  float3 diffuse;
+  float3 specular;
 } Triangle;
 
 #endif // TYPES_CL

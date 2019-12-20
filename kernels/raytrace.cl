@@ -1,6 +1,8 @@
 #include "intersection.cl"
 #include "shading.cl"
 
+const int SHININESS = 32;
+
 bool compute_intersection(global Triangle* triangles, int num_triangles, Ray* ray) {
   for (int i = 0; i < num_triangles; i++) {
     intersects(ray, i, triangles[i]);
@@ -26,8 +28,10 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
   if (compute_intersection(triangles, num_triangles, &ray)) {
     float3 intrs_point = ray.point + ray.direction * ray.length;
-    color += shade(intrs_point, ray.direction, normalize(triangles[ray.intrs].normal),
-                   (float3)(0.4, 0.4, 0.4), (float3)(0.7, 0.7, 0.7), 32);
+    Triangle tri = triangles[ray.intrs];
+    color += tri.ambient;
+    color += shade(intrs_point, ray.direction, normalize(tri.normal),
+                   tri.diffuse, tri.specular, SHININESS);
   }
 
   write_imagei(image_out, pixel_coords, convert_int4((float4)(color, 1) * 255));

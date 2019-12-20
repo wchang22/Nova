@@ -57,6 +57,8 @@ void Model::process_mesh(aiMesh* mesh)
 
     intersectables.add_triangle({
       vertices[face.mIndices[0]], vertices[face.mIndices[1]], vertices[face.mIndices[2]]
+    }, {
+      vec3(0.1, 0.1, 0.1), vec3(0.4, 0.4, 0.4), vec3(0.7, 0.7, 0.7)
     });
   }
 }
