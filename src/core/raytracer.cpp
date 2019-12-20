@@ -7,6 +7,7 @@
 #include "util/exception/exception.h"
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
+#include "util/kernel/kernelutils.h"
 
 #ifndef KERNELS_PATH
   #define KERNELS_PATH
@@ -16,7 +17,7 @@
 #endif
 
 #ifdef NDEBUG
-  #define NUM_PROFILE_ITERATIONS 10
+  #define NUM_PROFILE_ITERATIONS 1
 #else
   #define NUM_PROFILE_ITERATIONS 1
 #endif
@@ -53,7 +54,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));
   }
 
-  kernel = std::make_unique<Kernel>(program, "raytrace");
+  kernel = cl::Kernel(program, "raytrace");
 }
 
 void Raytracer::raytrace() {
@@ -68,8 +69,8 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Enqueue kernel");
-    (*kernel)(cl::EnqueueArgs(queue, cl::NDRange(width, height)),
-              image, ec, triangle_data, static_cast<int>(num_triangles));
+    kernel_utils::set_args(kernel, image, ec, triangle_data, num_triangles);
+    queue.enqueueNDRangeKernel(kernel, cl::NDRange(0, 0), cl::NDRange(width, height));
     queue.finish();
     PROFILE_SECTION_END();
 

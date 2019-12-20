@@ -7,8 +7,6 @@
 #include "intersectables/intersectable_manager.h"
 #include "model/model.h"
 
-using Kernel = cl::KernelFunctor<cl::Image2D, Camera::EyeCoords, cl::Buffer, int>;
-
 class Raytracer {
 public:
   Raytracer(uint32_t width, uint32_t height);
@@ -27,7 +25,7 @@ private:
   cl::CommandQueue queue;
   cl::Program program;
   cl::Image2D image;
-  std::unique_ptr<Kernel> kernel;
+  cl::Kernel kernel;
 };
 
 #endif // RAYTRACER_H
