@@ -32,4 +32,19 @@ bool intersects(Ray* ray, int intrs, Triangle tri) {
   return true;
 }
 
+// AABB fast intersection for BVH
+bool intersects_aabb(Ray* ray, AABB aabb) {
+  // Find slab bounds on AABB
+  float3 t1 = (aabb.top - ray->point) * ray->inv_direction;
+  float3 t2 = (aabb.bottom - ray->point) * ray->inv_direction;
+  float3 tvmin = min(t1, t2);
+  float3 tvmax = max(t1, t2);
+
+  // Find tightest components of min and max
+  float tmin = max(tvmin.x, max(tvmin.y, tvmin.z));
+  float tmax = min(tvmax.x, min(tvmax.y, tvmax.z));
+
+  return tmin <= tmax;
+}
+
 #endif // INTERSECTION_CL

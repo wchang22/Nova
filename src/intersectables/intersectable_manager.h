@@ -2,6 +2,7 @@
 #define INTERSECTABLE_MANAGER_H
 
 #include <vector>
+#include <unordered_map>
 #include <CL/cl2.hpp>
 
 #include "intersectables/triangle.h"
@@ -10,10 +11,13 @@
 class IntersectableManager {
 public:
   void add_triangle(const Triangle& tri, const Material& mat);
-  std::pair<cl::Buffer, size_t> build_buffer(const cl::Context& context);
+  void build_buffers(const cl::Context& context,
+                     std::pair<cl::Buffer, size_t>& triangle_buf,
+                     cl::Buffer& bvh_buf);
 
 private:
-  std::vector<std::pair<TriangleData, MaterialData>> triangles;
+  std::vector<Triangle> triangles;
+  std::unordered_map<Triangle, Material, TriangleHash> triangle_map;
 };
 
 #endif // INTERSECTABLE_MANAGER_H

@@ -1,5 +1,4 @@
 #include <stb_image.h>
-#include <glm/glm.hpp>
 #include <sstream>
 
 #include "raytracer.h"
@@ -17,7 +16,7 @@
 #endif
 
 #ifdef NDEBUG
-  #define NUM_PROFILE_ITERATIONS 1
+  #define NUM_PROFILE_ITERATIONS 10
 #else
   #define NUM_PROFILE_ITERATIONS 1
 #endif
@@ -60,17 +59,22 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
 void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
+  PROFILE_SECTION_START("Build data");
+  std::pair<cl::Buffer, size_t> triangle_buf;
+  cl::Buffer bvh_buf;
+
+  auto ec = camera.get_eye_coords();
+  intersectables.build_buffers(context, triangle_buf, bvh_buf);
+  PROFILE_SECTION_END();
+
+  PROFILE_SECTION_START("Raytrace profile");
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
     PROFILE_SCOPE("Raytrace profile loop");
 
-    PROFILE_SECTION_START("Build data");
-    auto ec = camera.get_eye_coords();
-    auto [triangle_data, num_triangles] = intersectables.build_buffer(context);
-    PROFILE_SECTION_END();
-
     PROFILE_SECTION_START("Enqueue kernel");
-    kernel_utils::set_args(kernel, image, ec, triangle_data, num_triangles);
-    queue.enqueueNDRangeKernel(kernel, cl::NDRange(0, 0), cl::NDRange(width, height));
+    kernel_utils::set_args(kernel, image, ec, triangle_buf.first, triangle_buf.second, bvh_buf);
+    queue.enqueueNDRangeKernel(kernel,
+                               cl::NDRange(0, 0), cl::NDRange(width, height), cl::NDRange(16, 16));
     queue.finish();
     PROFILE_SECTION_END();
 
@@ -79,6 +83,7 @@ void Raytracer::raytrace() {
                           0, 0, image_buf.data());
     PROFILE_SECTION_END();
   }
+  PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
   image_utils::write_image(IMAGE_OUT_NAME, width, height, image_buf);

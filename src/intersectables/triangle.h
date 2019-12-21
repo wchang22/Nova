@@ -10,6 +10,13 @@ struct Triangle {
   vec3 v1;
   vec3 v2;
   vec3 v3;
+
+  std::pair<vec3, vec3> get_bounds() const;
+  bool operator==(const Triangle& t) const;
+};
+
+struct TriangleHash {
+  size_t operator()(const Triangle& tri) const;
 };
 
 struct TriangleData {

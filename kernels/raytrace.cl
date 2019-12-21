@@ -2,10 +2,35 @@
 #include "shading.cl"
 
 const int SHININESS = 32;
+const int STACK_SIZE = 30;
 
-bool compute_intersection(global Triangle* triangles, int num_triangles, Ray* ray) {
-  for (int i = 0; i < num_triangles; i++) {
-    intersects(ray, i, triangles[i]);
+bool compute_intersection(global Triangle* triangles, int num_triangles, global BVHNode* bvh,
+                          Ray* ray) {
+  int stack[STACK_SIZE];
+  int stack_ptr = 0;
+  // Push first node onto stack
+  stack[++stack_ptr] = 0;
+
+  while (stack_ptr) {
+    // Pop a node from the stack
+    BVHNode node = bvh[stack[stack_ptr--]];
+
+    if (!intersects_aabb(ray, node.aabb)) {
+      continue;
+    }
+
+    // If intersected, compute intersection for all triangles in the node
+    for (uint i = node.triangle_offset; i < node.triangle_offset + node.num_triangles; i++) {
+      intersects(ray, i, triangles[i]);
+    }
+    
+    // Push left and right children onto stack
+    if (node.right != -1) {
+      stack[++stack_ptr] = node.right;
+    }
+    if (node.left != -1) {
+      stack[++stack_ptr] = node.left;
+    }
   }
 
   return ray->intrs != -1;
@@ -13,7 +38,8 @@ bool compute_intersection(global Triangle* triangles, int num_triangles, Ray* ra
 
 kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
-              global Triangle* triangles, int num_triangles) {
+              global Triangle* triangles, int num_triangles,
+              global BVHNode* bvh) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
@@ -26,7 +52,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
   Ray ray = create_ray(ray_pos, ray_dir);
 
-  if (compute_intersection(triangles, num_triangles, &ray)) {
+  if (compute_intersection(triangles, num_triangles, bvh, &ray)) {
     float3 intrs_point = ray.point + ray.direction * ray.length;
     Triangle tri = triangles[ray.intrs];
     color += tri.ambient;
