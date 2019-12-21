@@ -74,4 +74,5 @@ Thumbs.db
 build
 CMakeLists.txt.user
 .vscode
-assets
+!assets/*.obj
+!assets/*/*.obj
