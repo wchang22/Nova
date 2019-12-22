@@ -13,6 +13,7 @@ public:
   void add_triangle(const Triangle& tri, const Material& mat);
   void build_buffers(const cl::Context& context,
                      std::pair<cl::Buffer, size_t>& triangle_buf,
+                     cl::Buffer& materials_buf,
                      cl::Buffer& bvh_buf);
 
 private:

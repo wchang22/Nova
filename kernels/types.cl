@@ -27,10 +27,13 @@ typedef struct {
   float3 normal;
   float3 edge1;
   float3 edge2;
+} Triangle;
+
+typedef struct {
   float3 ambient;
   float3 diffuse;
   float3 specular;
-} Triangle;
+} Material;
 
 // Packed to 32 bytes to fit in a cache line
 // The 4th element of top_offset_left contains either the triangle offset or the left index

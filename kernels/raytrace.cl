@@ -55,7 +55,7 @@ bool compute_intersection(Triangle* triangles, int num_triangles, BVHNode* bvh, 
 kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
               global Triangle* triangles, int num_triangles,
-              global BVHNode* bvh) {
+              global Material* materials, global BVHNode* bvh) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
@@ -71,9 +71,10 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   if (compute_intersection(triangles, num_triangles, bvh, &ray)) {
     float3 intrs_point = ray.point + ray.direction * ray.length;
     Triangle tri = triangles[ray.intrs];
-    color += tri.ambient;
+    Material mat = materials[ray.intrs];
+    color += mat.ambient;
     color += shade(intrs_point, ray.direction, normalize(tri.normal),
-                   tri.diffuse, tri.specular, SHININESS);
+                   mat.diffuse, mat.specular, SHININESS);
   }
 
   write_imagei(image_out, pixel_coords, convert_int4((float4)(color, 1) * 255));
