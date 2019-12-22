@@ -4,11 +4,12 @@
 #include "types.cl"
 
 bool intersects(Ray* ray, int intrs, Triangle tri) {
-  float a = dot(-tri.normal, ray->direction);
+  float3 normal = cross(tri.edge1, tri.edge2);
+  float a = dot(-normal, ray->direction);
 
   float f = 1.0 / a;
   float3 s = ray->point - tri.vertex;
-  float t = f * dot(tri.normal, s);
+  float t = f * dot(normal, s);
 
   if (t < 0.0 || t >= ray->length) {
     return false;

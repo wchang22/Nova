@@ -21,7 +21,6 @@ struct TriangleHash {
 
 struct TriangleData {
   cl_float3 vertex;
-  cl_float3 normal;
   cl_float3 edge1;
   cl_float3 edge2;
 };

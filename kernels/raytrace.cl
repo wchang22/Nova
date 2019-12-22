@@ -69,11 +69,14 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   Ray ray = create_ray(ray_pos, ray_dir);
 
   if (compute_intersection(triangles, num_triangles, bvh, &ray)) {
-    float3 intrs_point = ray.point + ray.direction * ray.length;
     Triangle tri = triangles[ray.intrs];
     Material mat = materials[ray.intrs];
+
+    float3 normal = normalize(cross(tri.edge1, tri.edge2));
+    float3 intrs_point = ray.point + ray.direction * ray.length;
+
     color += mat.ambient;
-    color += shade(intrs_point, ray.direction, normalize(tri.normal),
+    color += shade(intrs_point, ray.direction, normal,
                    mat.diffuse, mat.specular, SHININESS);
   }
 

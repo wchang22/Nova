@@ -24,7 +24,6 @@ typedef struct {
 
 typedef struct {
   float3 vertex;
-  float3 normal;
   float3 edge1;
   float3 edge2;
 } Triangle;

@@ -23,13 +23,11 @@ void IntersectableManager::build_buffers(const cl::Context& context,
     vec3 vertex = tri.v1;
     vec3 edge1 = tri.v2 - tri.v1;
     vec3 edge2 = tri.v3 - tri.v1;
-    vec3 normal = cross(edge1, edge2);
 
     Material mat = triangle_map[tri];
 
     triangle_data.push_back({
       { {vertex.x, vertex.y, vertex.z} },
-      { {normal.x, normal.y, normal.z} },
       { {edge1.x, edge1.y, edge1.z} },
       { {edge2.x, edge2.y, edge2.z} }
     });
