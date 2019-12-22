@@ -4,32 +4,48 @@
 const int SHININESS = 32;
 const int STACK_SIZE = 30;
 
-bool compute_intersection(global Triangle* triangles, int num_triangles, global BVHNode* bvh,
-                          Ray* ray) {
+bool compute_intersection(Triangle* triangles, int num_triangles, BVHNode* bvh, Ray* ray) {
   int stack[STACK_SIZE];
   int stack_ptr = 0;
   // Push first node onto stack
   stack[++stack_ptr] = 0;
 
   while (stack_ptr) {
-    // Pop a node from the stack
-    BVHNode node = bvh[stack[stack_ptr--]];
+    int offset = 0;
+    int num = 0;
 
-    if (!intersects_aabb(ray, node.aabb)) {
-      continue;
+    while (stack_ptr) {
+      // Pop a node from the stack
+      BVHNode node = bvh[stack[stack_ptr--]];
+
+      if (!intersects_aabb(ray, node.top_offset_left.xyz, node.bottom_num_right.xyz)) {
+        continue;
+      }
+
+      // Inner node, no triangles
+      if (node.top_offset_left.w > 0) {
+        // Push left and right children onto stack
+        int left = node.top_offset_left.w;
+        int right = node.bottom_num_right.w;
+
+        if (right) {
+          stack[++stack_ptr] = right;
+        }
+        if (left) {
+          stack[++stack_ptr] = left;
+        }
+      }
+      // Leaf node, no children
+      else {
+        offset = -node.top_offset_left.w;
+        num = node.bottom_num_right.w;
+        break;
+      }
     }
 
     // If intersected, compute intersection for all triangles in the node
-    for (uint i = node.triangle_offset; i < node.triangle_offset + node.num_triangles; i++) {
+    for (int i = offset; i < offset + num; i++) {
       intersects(ray, i, triangles[i]);
-    }
-    
-    // Push left and right children onto stack
-    if (node.right != -1) {
-      stack[++stack_ptr] = node.right;
-    }
-    if (node.left != -1) {
-      stack[++stack_ptr] = node.left;
     }
   }
 

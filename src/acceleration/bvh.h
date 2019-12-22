@@ -23,14 +23,14 @@ struct BVHNode {
   BVHNode() : top(-VEC_MAX), bottom(VEC_MAX) {};
 };
 
-// TODO: Should be packed to 32 bytes
+// Packed to 32 bytes to fit in a cache line
+// The 4th element of top_offset_left contains either the triangle offset or the left index
+// The 4th element of bottom_num_right contains either the number of triangles or the right index
+// depending on whether or not the node is an inner node or a leaf node
+// If the 4th element of top_offset_left < 0, then the node is a leaf node
 struct FlatBVHNode {
-  cl_float3 top;
-  cl_float3 bottom;
-  cl_uint triangle_offset;
-  cl_uint num_triangles;
-  cl_int left;
-  cl_int right;
+  cl_float4 top_offset_left;
+  cl_float4 bottom_num_right;
 };
 
 class BVH {
@@ -43,7 +43,7 @@ private:
   std::unique_ptr<BVHNode> build_bvh();
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
   void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);
-  int build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
+  size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
 
   std::vector<Triangle>& triangles;
 };

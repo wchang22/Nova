@@ -35,7 +35,7 @@ void IntersectableManager::build_buffers(const cl::Context& context,
     });
   }
 
-  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
                  triangle_data.size() * sizeof(decltype(triangle_data)::value_type),
                  triangle_data.data());
   triangle_buf = { buf, triangle_data.size() };

@@ -1,4 +1,5 @@
 #include <glm/gtx/vec_swizzle.hpp>
+#include <cassert>
 
 #include "bvh.h"
 
@@ -16,7 +17,7 @@ cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
   std::unique_ptr<BVHNode> bvh = build_bvh();
   std::vector<FlatBVHNode> flat_bvh = build_flat_bvh(bvh);
 
-  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
                  flat_bvh.size() * sizeof(decltype(flat_bvh)::value_type),
                  flat_bvh.data());
   return buf;
@@ -152,32 +153,40 @@ std::vector<FlatBVHNode> BVH::build_flat_bvh(std::unique_ptr<BVHNode>& root) {
   return nodes;
 }
 
-int BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node) {
+size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
+                               std::unique_ptr<BVHNode>& node) {
   if (!node) {
-    return -1;
+    return 0;
   }
 
   size_t flat_node_index = flat_nodes.size();
 
   // Build flat node and insert into list
   FlatBVHNode flat_node {
-    { {node->top.x, node->top.y, node->top.z} },
-    { {node->bottom.x, node->bottom.y, node->bottom.z} },
-    static_cast<cl_uint>(triangles.size()),
-    static_cast<cl_uint>(node->triangles.size()),
-    -1,
-    -1
+    { {node->top.x, node->top.y, node->top.z, 0} },
+    { {node->bottom.x, node->bottom.y, node->bottom.z, 0} }
   };
   flat_nodes.emplace_back(std::move(flat_node));
 
-  // TODO: Sort?
-  for (const auto& triangle : node->triangles) {
-    triangles.emplace_back(std::move(triangle));
+  // Leaf node
+  if (!node->triangles.empty()) {
+    assert(!node->left && !node->right);
+
+    // Denote that the node is a leaf node by negating
+    flat_nodes[flat_node_index].top_offset_left.s[3] = -static_cast<float>(triangles.size());
+    flat_nodes[flat_node_index].bottom_num_right.s[3] = node->triangles.size();
+    // TODO: Sort?
+    triangles.insert(triangles.end(),
+                     std::make_move_iterator(node->triangles.begin()),
+                     std::make_move_iterator(node->triangles.end()));
+    node->triangles.clear();
+  } else { // Inner node
+    assert(node->left || node->right);
+
+    // Recursively build left and right nodes and attach to parent
+    flat_nodes[flat_node_index].top_offset_left.s[3] = build_flat_bvh_vec(flat_nodes, node->left);
+    flat_nodes[flat_node_index].bottom_num_right.s[3] = build_flat_bvh_vec(flat_nodes, node->right);
   }
 
-  // Recursively build left and right nodes and attach to parent
-  flat_nodes[flat_node_index].left = build_flat_bvh_vec(flat_nodes, node->left);
-  flat_nodes[flat_node_index].right = build_flat_bvh_vec(flat_nodes, node->right);
-
-  return static_cast<int>(flat_node_index);
+  return flat_node_index;
 }
