@@ -12,7 +12,7 @@
 
 using namespace glm;
 
-constexpr vec3 VEC_MAX(std::numeric_limits<float>::max());
+const vec3 VEC_MAX(std::numeric_limits<float>::max());
 
 struct BVHNode {
   vec3 top;

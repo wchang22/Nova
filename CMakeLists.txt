@@ -4,6 +4,7 @@ cmake_policy(SET CMP0015 NEW)
 project(clraytracer)
 
 find_package(OpenCL REQUIRED)
+find_package(OpenMP REQUIRED)
 find_package(glm REQUIRED)
 find_package(assimp REQUIRED)
 
@@ -16,7 +17,8 @@ file(GLOB_RECURSE SOURCES ${SOURCES} include/*)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_options(${PROJECT_NAME} PRIVATE -lOpenCL -lassimp)
-target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
 target_include_directories(${PROJECT_NAME} PRIVATE src include)
 target_link_directories(${PROJECT_NAME} PRIVATE include)
 
@@ -45,6 +47,7 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_ENABLE_EXCEPTIONS)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=200)
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DGLM_FORCE_AVX)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
 

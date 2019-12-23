@@ -25,9 +25,9 @@ constexpr char MODEL_PATH[] = ASSETS_PATH"aircraft/aircraft.obj";
 constexpr char KERNEL_PATH[] = KERNELS_PATH"raytrace.cl";
 
 // Camera constants
-constexpr vec3 CAMERA_POSITION(-4, 2.8, 5);
-constexpr vec3 CAMERA_FORWARD(1, -0.5, -1);
-constexpr vec3 CAMERA_UP(0, 1, 0);
+const vec3 CAMERA_POSITION(-4, 2.8, 5);
+const vec3 CAMERA_FORWARD(1, -0.5, -1);
+const vec3 CAMERA_UP(0, 1, 0);
 constexpr int CAMERA_FOVY = 45;
 
 // BVH constants
