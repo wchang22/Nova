@@ -36,3 +36,33 @@ std::pair<vec3, vec3> Triangle::get_bounds() const {
 bool Triangle::operator==(const Triangle& t) const {
   return t.v1 == v1 && t.v2 == v2 && t.v3 == v3;
 }
+
+std::istream& operator>>(std::istream& in, Triangle& tri) {
+  in >> std::hex;
+  vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
+
+  for (int v = 0; v < 3; v++) {
+    for (int i = 0; i < 3; i++) {
+      uint32_t x;
+      float* f = reinterpret_cast<float*>(&x);
+      in >> x;
+      (*vertices[v])[i] = *f;
+    }
+  }
+  return in;
+}
+
+std::ostream& operator<<(std::ostream& out, const Triangle& tri) {
+  out << std::hex;
+  const vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
+
+  for (int v = 0; v < 3; v++) {
+    for (int i = 0; i < 3; i++) {
+      // Store floating point as an integer, so we don't lose precision
+      float f = (*vertices[v])[i];
+      uint32_t* x = reinterpret_cast<uint32_t*>(&f);
+      out << *x << " ";
+    }
+  }
+  return out;
+}

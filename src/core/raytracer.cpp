@@ -1,5 +1,6 @@
 #include <stb_image.h>
 #include <sstream>
+#include <filesystem>
 
 #include "raytracer.h"
 #include "util/utils.h"
@@ -7,31 +8,7 @@
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
 #include "util/kernel/kernelutils.h"
-
-#ifndef KERNELS_PATH
-  #define KERNELS_PATH
-#endif
-#ifndef ASSETS_PATH
-  #define ASSETS_PATH
-#endif
-
-#ifdef NDEBUG
-  #define NUM_PROFILE_ITERATIONS 100
-#else
-  #define NUM_PROFILE_ITERATIONS 1
-#endif
-
-constexpr cl_device_type DEVICE_TYPE = CL_DEVICE_TYPE_GPU;
-static const char* IMAGE_OUT_NAME = "raytrace.jpg";
-static const char* MODEL_PATH = ASSETS_PATH"aircraft/aircraft.obj";
-static const char* KERNEL_PATH = KERNELS_PATH"raytrace.cl";
-
-constexpr vec3 CAMERA_POSITION(-4, 2.8, 5);
-constexpr vec3 CAMERA_FORWARD(1, -0.5, -1);
-constexpr vec3 CAMERA_UP(0, 1, 0);
-constexpr int CAMERA_FOVY = 45;
-
-using namespace glm;
+#include "configuration.h"
 
 Raytracer::Raytracer(uint32_t width, uint32_t height)
   : width(width), height(height),
@@ -87,6 +64,7 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
-  image_utils::write_image(IMAGE_OUT_NAME, width, height, image_buf);
+  std::string image_out_name = std::filesystem::path(MODEL_PATH).stem().string() + ".jpg";
+  image_utils::write_image(image_out_name.c_str(), width, height, image_buf);
   PROFILE_SECTION_END();
 }

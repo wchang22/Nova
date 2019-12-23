@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <limits>
+#include <fstream>
 
 #include "intersectables/triangle.h"
 
@@ -32,6 +33,9 @@ struct FlatBVHNode {
   cl_float4 top_offset_left;
   cl_float4 bottom_num_right;
 };
+
+std::istream& operator>>(std::istream& in, FlatBVHNode& node);
+std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node);
 
 class BVH {
 public:

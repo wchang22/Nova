@@ -19,6 +19,9 @@ struct TriangleHash {
   size_t operator()(const Triangle& tri) const;
 };
 
+std::istream& operator>>(std::istream& in, Triangle& tri);
+std::ostream& operator<<(std::ostream& out, const Triangle& tri);
+
 struct TriangleData {
   cl_float3 vertex;
   cl_float3 edge1;

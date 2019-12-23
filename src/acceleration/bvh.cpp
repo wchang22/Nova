@@ -1,12 +1,13 @@
 #include <glm/gtx/vec_swizzle.hpp>
 #include <cassert>
+#include <filesystem>
 
 #include "bvh.h"
+#include "util/exception/exception.h"
+#include "util/serialization/serialization.h"
+#include "configuration.h"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
-
-constexpr size_t MIN_TRIANGLES_PER_LEAF = 15;
-constexpr float MAX_BINS = 1024.f;
 
 BVH::BVH(std::vector<Triangle>& triangles)
   : triangles(triangles)
@@ -14,8 +15,47 @@ BVH::BVH(std::vector<Triangle>& triangles)
 }
 
 cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
-  std::unique_ptr<BVHNode> bvh = build_bvh();
-  std::vector<FlatBVHNode> flat_bvh = build_flat_bvh(bvh);
+  std::string bvh_file_name = std::filesystem::path(MODEL_PATH).stem().string() + ".bvh";
+  std::string tri_file_name = std::filesystem::path(MODEL_PATH).stem().string() + ".tri";
+  std::fstream bvh_file(bvh_file_name);
+  std::fstream tri_file(tri_file_name);
+
+  std::vector<FlatBVHNode> flat_bvh;
+
+  // If cached files do not exist
+  if (!bvh_file.is_open() || !tri_file.is_open()) {
+    bvh_file.open(bvh_file_name, std::ios::out);
+    tri_file.open(tri_file_name, std::ios::out);
+    if (!bvh_file.is_open()) {
+      throw FileException("Cannot create " + bvh_file_name);
+    }
+    if (!tri_file.is_open()) {
+      throw FileException("Cannot create " + tri_file_name);
+    }
+
+    // Build bvh and serialize them into files
+    std::unique_ptr<BVHNode> bvh = build_bvh();
+    flat_bvh = build_flat_bvh(bvh);
+
+    bvh_file << flat_bvh;
+    tri_file << triangles;
+  } else {
+    size_t triangles_size = triangles.size();
+
+    // Each line is a bvh node
+    std::string line; 
+    getline(bvh_file, line);
+    bvh_file.seekg(0);
+    size_t bvh_size = std::filesystem::file_size(bvh_file_name) / line.length();
+
+    triangles.clear();
+    triangles.reserve(triangles_size);
+    flat_bvh.reserve(bvh_size);
+
+    // Deserialize bvh and triangles from file
+    bvh_file >> flat_bvh;
+    tri_file >> triangles;
+  }
 
   cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
                  flat_bvh.size() * sizeof(decltype(flat_bvh)::value_type),
@@ -189,4 +229,33 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   }
 
   return flat_node_index;
+}
+
+std::istream& operator>>(std::istream& in, FlatBVHNode& node) {
+  in >> std::hex;
+  cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+
+  for (int e = 0; e < 2; e++) {
+    for (int i = 0; i < 4; i++) {
+      uint32_t x;
+      float* f = reinterpret_cast<float*>(&x);
+      in >> x;
+      elems[e]->s[i] = *f;
+    }
+  }
+  return in;
+}
+
+std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
+  out << std::hex;
+  const cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+
+  for (int e = 0; e < 2; e++) {
+    for (int i = 0; i < 4; i++) {
+      float f = elems[e]->s[i];
+      uint32_t* x = reinterpret_cast<uint32_t*>(&f);
+      out << *x << " ";
+    }
+  }
+  return out;
 }
