@@ -4,7 +4,7 @@
 const int SHININESS = 32;
 const int STACK_SIZE = 30;
 
-bool compute_intersection(Triangle* triangles, int num_triangles, BVHNode* bvh, Ray* ray) {
+bool compute_intersection(Triangle* triangles, BVHNode* bvh, Ray* ray, bool fast) {
   int stack[STACK_SIZE];
   int stack_ptr = 0;
   // Push first node onto stack
@@ -45,7 +45,9 @@ bool compute_intersection(Triangle* triangles, int num_triangles, BVHNode* bvh, 
 
     // If intersected, compute intersection for all triangles in the node
     for (int i = offset; i < offset + num; i++) {
-      intersects(ray, i, triangles[i]);
+      if (intersects(ray, i, triangles[i]) && fast) {
+        return true;
+      }
     }
   }
 
@@ -54,30 +56,42 @@ bool compute_intersection(Triangle* triangles, int num_triangles, BVHNode* bvh, 
 
 kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
-              global Triangle* triangles, int num_triangles,
-              global Material* materials, global BVHNode* bvh) {
+              global Triangle* triangles,
+              global Material* materials,
+              global BVHNode* bvh) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
-  float3 ray_dir = normalize(alpha_beta.x * ec.eye_coord_frame0 -
-                             alpha_beta.y * ec.eye_coord_frame1 -
-                                            ec.eye_coord_frame2);
+  float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame0 -
+                                  alpha_beta.y * ec.eye_coord_frame1 -
+                                                 ec.eye_coord_frame2);
   float3 ray_pos = ec.eye_pos;
 
   float3 color = 0;
 
   Ray ray = create_ray(ray_pos, ray_dir);
 
-  if (compute_intersection(triangles, num_triangles, bvh, &ray)) {
+  // Cast primary ray
+  if (compute_intersection(triangles, bvh, &ray, false)) {
     Triangle tri = triangles[ray.intrs];
     Material mat = materials[ray.intrs];
-
-    float3 normal = normalize(cross(tri.edge1, tri.edge2));
+    
     float3 intrs_point = ray.point + ray.direction * ray.length;
 
     color += mat.ambient;
-    color += shade(intrs_point, ray.direction, normal,
-                   mat.diffuse, mat.specular, SHININESS);
+
+    // Cast a shadow ray to the light
+    float3 light_dir = light_pos - intrs_point;
+    float3 normalized_light_dir = fast_normalize(light_dir);
+    Ray shadow_ray = create_ray(intrs_point, normalized_light_dir);
+    shadow_ray.length = length(light_dir);
+
+    // Shade the pixel if ray is not blocked
+    if (!compute_intersection(triangles, bvh, &shadow_ray, true)) {
+      float3 normal = fast_normalize(cross(tri.edge1, tri.edge2));
+      color += shade(normalized_light_dir, ray.direction, normal,
+                     mat.diffuse, mat.specular, SHININESS);
+    }
   }
 
   write_imagei(image_out, pixel_coords, convert_int4((float4)(color, 1) * 255));

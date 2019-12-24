@@ -7,7 +7,7 @@ void IntersectableManager::add_triangle(const Triangle& tri, const Material& mat
 }
 
 void IntersectableManager::build_buffers(const cl::Context& context,
-                                         std::pair<cl::Buffer, size_t>& triangle_buf,
+                                         cl::Buffer& triangle_buf,
                                          cl::Buffer& materials_buf,
                                          cl::Buffer& bvh_buf) {
   BVH bvh(triangles);
@@ -38,12 +38,10 @@ void IntersectableManager::build_buffers(const cl::Context& context,
     });
   }
 
-  cl::Buffer tri_buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+  triangle_buf = cl::Buffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
                      triangle_data.size() * sizeof(decltype(triangle_data)::value_type),
                      triangle_data.data());
-  triangle_buf = { tri_buf, triangle_data.size() };
-  cl::Buffer mat_buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+  materials_buf = cl::Buffer (context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
                      material_data.size() * sizeof(decltype(material_data)::value_type),
                      material_data.data());
-  materials_buf = mat_buf;
 }

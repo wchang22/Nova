@@ -3,10 +3,9 @@
 
 const float3 light_pos = { -4, 2.8, 7 };
 
-float3 shade(float3 intrs_point, float3 eye_dir, float3 normal,
+float3 shade(float3 light_dir, float3 eye_dir, float3 normal,
              float3 diffuse, float3 specular, int shininess) {
-  float3 light_dir = normalize(light_pos - intrs_point);
-  float3 half_dir = normalize(light_dir - eye_dir);
+  float3 half_dir = fast_normalize(light_dir - eye_dir);
   float3 diffuse_shading = diffuse * max(dot(normal, light_dir), 0.f);
   float3 specular_shading = specular * pown(max(dot(normal, half_dir), 0.f), shininess);
 
