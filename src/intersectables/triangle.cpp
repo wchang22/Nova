@@ -1,7 +1,10 @@
 #include <glm/gtx/extended_min_max.hpp>
 #include <functional>
+#include <algorithm>
 
 #include "triangle.h"
+
+const vec3 VEC_MAX(std::numeric_limits<float>::max());
 
 // https://stackoverflow.com/questions/19195183/how-to-properly-hash-the-custom-struct
 template <class T>
@@ -28,6 +31,55 @@ AABB Triangle::get_bounds() const {
   vec3 top = max(v1, v2, v3);
   vec3 bottom = min(v1, v2, v3);
 
+  return { top, bottom };
+}
+
+AABB Triangle::get_clipped_bounds(const AABB& clip) const {
+  auto [top, bottom] = get_bounds();
+
+  vec3 vertices[] = { v1, v2, v3 };
+
+  for (int axis = 0; axis < 3; axis++) {
+    // Find the intersection of a triangle edge and a given plane
+    auto find_intersection = [&](const vec3& a, const vec3& b, float plane) {
+      vec3 d = b - a;
+      assert(d[axis] != 0);
+      float t = (plane - a[axis]) / d[axis];
+      return a + t * d;
+    };
+
+    // Update the AABB bounds by clipping the triangle
+    auto update_bounds = [&](vec3& bound, float plane,
+                             vec3 (*comp)(const vec3& a, const vec3& b, const vec3& c)) {
+      // Make sure the two farthest points are on either side of the plane
+      if (vertices[0][axis] < plane && vertices[2][axis] > plane) {
+        vec3 intrs1 = find_intersection(vertices[0], vertices[2], plane);
+        vec3 intrs2;
+        // Determine which side the middle point is on
+        if (vertices[1][axis] < plane) {
+          intrs2 = find_intersection(vertices[1], vertices[2], plane);
+        } else {
+          intrs2 = find_intersection(vertices[0], vertices[1], plane);
+        }
+        bound = comp(bound, intrs1, intrs2);
+      }
+    };
+
+    vec3 plane_vertices(vertices[0][axis], vertices[1][axis], vertices[2][axis]);
+    if (all(greaterThan(plane_vertices, vec3(clip.top[axis]))) ||
+        all(lessThan(plane_vertices, vec3(clip.bottom[axis])))) {
+      return { -VEC_MAX, VEC_MAX };
+    }
+
+    // Sort the three vertices perpendicular to the axis
+    std::sort(vertices, vertices + 3, [axis](const vec3& a, const vec3& b) {
+      return a[axis] < b[axis];
+    });
+
+    update_bounds(top, clip.top[axis], min);
+    update_bounds(bottom, clip.bottom[axis], max);
+  }
+  
   return { top, bottom };
 }
 

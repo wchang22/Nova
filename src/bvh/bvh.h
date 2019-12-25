@@ -22,6 +22,7 @@ struct BVHNode {
   std::unique_ptr<BVHNode> right;
 
   BVHNode() : aabb({ -VEC_MAX, VEC_MAX }) {}
+  float get_cost() const { return aabb.get_cost(triangles.size()); }
 };
 
 std::istream& operator>>(std::istream& in, FlatBVHNode& node);
@@ -34,23 +35,9 @@ public:
   // Note: Modifies `triangles`
   std::vector<FlatBVHNode> build();
 private:
-  struct SplitParams {
-    float cost;
-    float split;
-    int axis;
-    AABB left;
-    AABB right;
-    size_t left_num_triangles;
-    size_t right_num_triangles;
-
-    SplitParams min(SplitParams& other) {
-      return cost < other.cost ? *this : other;
-    }
-  };
-
   std::unique_ptr<BVHNode> build_bvh();
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
-  void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);
+  void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float root_sa);
   size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
 
   std::string name;

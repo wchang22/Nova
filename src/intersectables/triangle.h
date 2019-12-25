@@ -15,6 +15,7 @@ struct Triangle {
   vec3 v3;
 
   AABB get_bounds() const;
+  AABB get_clipped_bounds(const AABB& clip) const;
   bool operator==(const Triangle& t) const;
 };
 

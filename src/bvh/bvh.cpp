@@ -6,6 +6,21 @@
 #include "util/serialization/serialization.h"
 #include "constants.h"
 
+struct SplitParams {
+  float cost;
+  float split;
+  int axis;
+  AABB left;
+  AABB right;
+  size_t left_num_triangles;
+  size_t right_num_triangles;
+  bool type_object;
+
+  SplitParams min(SplitParams& other) {
+    return cost < other.cost ? *this : other;
+  }
+};
+
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
 BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
@@ -76,17 +91,113 @@ std::unique_ptr<BVHNode> BVH::build_bvh() {
   triangles.clear();
 
   // Recursively build bvh
-  build_bvh_node(root, 0);
+  build_bvh_node(root, 0, root->aabb.get_surface_area());
   return root;
 }
 
-void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
+SplitParams get_object_split(int axis, float split, std::unique_ptr<BVHNode>& node) {
+  AABB left { -VEC_MAX, VEC_MAX };
+  AABB right { -VEC_MAX, VEC_MAX };
+
+  uint32_t left_num_triangles = 0;
+  uint32_t right_num_triangles = 0;
+
+  // Try putting each triangle in either the left or right node based on center
+  for (const auto& triangle : node->triangles) {
+    AABB bounds = triangle.get_bounds();
+    float center = bounds.get_center()[axis];
+
+    if (center < split) {
+      left.grow(bounds);
+      left_num_triangles++;
+    } else {
+      right.grow(bounds);
+      right_num_triangles++;
+    }
+  }
+
+  // Useless splits
+  if (left_num_triangles <= 1 || right_num_triangles <= 1) {
+    SplitParams params;
+    params.cost = std::numeric_limits<float>::max();
+    return params;
+  }
+
+  float left_cost = left.get_cost(left_num_triangles);
+  float right_cost = right.get_cost(right_num_triangles);
+  float total_cost = left_cost + right_cost;
+
+  return {
+    total_cost,
+    split,
+    axis,
+    left,
+    right,
+    left_num_triangles,
+    right_num_triangles,
+    true,
+  };
+}
+
+SplitParams get_spatial_split(int axis, float split, std::unique_ptr<BVHNode>& node) {
+  AABB left, right;
+  left = node->aabb;
+  left.top[axis] = split;
+  right = node->aabb;
+  right.bottom[axis] = split;
+
+  uint32_t left_num_triangles = 0;
+  uint32_t right_num_triangles = 0;
+
+  // Try putting each triangle in either the left or right node based on center
+  for (const auto& triangle : node->triangles) {
+    AABB bounds = triangle.get_bounds();
+    AABB left_bounds = triangle.get_clipped_bounds(left);
+    AABB right_bounds = triangle.get_clipped_bounds(right);
+
+    left.grow(left_bounds);
+    right.grow(right_bounds);
+
+    if (left_bounds == bounds) {
+      left_num_triangles++;
+    } else if (right_bounds == bounds) {
+      right_num_triangles++;
+    } else {
+      left_num_triangles++;
+      right_num_triangles++;
+    }
+  }
+
+  // Useless splits
+  if (left_num_triangles <= 1 || right_num_triangles <= 1) {
+    SplitParams params;
+    params.cost = std::numeric_limits<float>::max();
+    return params;
+  }
+
+  float left_cost = left.get_cost(left_num_triangles);
+  float right_cost = right.get_cost(right_num_triangles);
+  float total_cost = left_cost + right_cost;
+
+  return {
+    total_cost,
+    split,
+    axis,
+    left,
+    right,
+    left_num_triangles,
+    right_num_triangles,
+    false,
+  };
+}
+
+void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float root_sa) {
   if (node->triangles.size() <= MIN_TRIANGLES_PER_LEAF) {
     return;
   }
 
   SplitParams best_params {
-    std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0
+    node->get_cost(), 0, -1, {}, {}, 0, 0, {}
   };
 
   // Find best axis to split
@@ -107,55 +218,30 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
     #pragma omp declare reduction \
       (param_min:SplitParams:omp_out=omp_out.min(omp_in)) \
       initializer(omp_priv={ \
-        std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0 \
+        std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0, {} \
       })
 
     #pragma omp parallel for default(none) \
-      shared(node, axis, bin_start, bin_end, bin_step, num_bins) \
+      shared(node, axis, bin_start, bin_end, bin_step, num_bins, root_sa) \
       reduction(param_min:best_params) \
       schedule(dynamic)
     for (int i = 0; i < num_bins; i++) {
       float split = bin_start + (i + 1) * bin_step;
 
-      AABB left { -VEC_MAX, VEC_MAX };
-      AABB right { -VEC_MAX, VEC_MAX };
+      SplitParams object_split_params = get_object_split(axis, split, node);
+      best_params = best_params.min(object_split_params);
 
-      uint32_t left_num_triangles = 0;
-      uint32_t right_num_triangles = 0;
+      // AABBs overlap
+      if (object_split_params.left.intersects(object_split_params.right, axis)) {
+        AABB intersection = object_split_params.left.get_intersection(object_split_params.right);
+        float intersection_sa = intersection.get_surface_area();
 
-      // Try putting each triangle in either the left or right node based on center
-      for (const auto& triangle : node->triangles) {
-        AABB bounds = triangle.get_bounds();
-        float center = bounds.get_center()[axis];
-
-        if (center < split) {
-          left.grow(bounds);
-          left_num_triangles++;
-        } else {
-          right.grow(bounds);
-          right_num_triangles++;
+        // Only compute spatial split if overlap is significant
+        if (intersection_sa / root_sa > OVERLAP_TOLERANCE) {
+          SplitParams spatial_split_params = get_spatial_split(axis, split, node);
+          best_params = best_params.min(spatial_split_params);
         }
       }
-
-      // Useless splits
-      if (left_num_triangles <= 1 || right_num_triangles <= 1) {
-        continue;
-      }
-
-      float left_cost = left.get_cost(left_num_triangles);
-      float right_cost = right.get_cost(right_num_triangles);
-      float total_cost = left_cost + right_cost;
-
-      SplitParams params {
-        total_cost,
-        split,
-        axis,
-        left,
-        right,
-        left_num_triangles,
-        right_num_triangles,
-      };
-      best_params = best_params.min(params);
     }
   }
 
@@ -167,26 +253,46 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
-  left->aabb = best_params.left;
-  right->aabb = best_params.right;
+  left->aabb = node->aabb;
+  left->aabb.top[best_params.axis] = best_params.split;
+  right->aabb = node->aabb;
+  right->aabb.bottom[best_params.axis] = best_params.split;
   left->triangles.reserve(best_params.left_num_triangles);
   right->triangles.reserve(best_params.right_num_triangles);
 
   for (const auto& triangle : node->triangles) {
-    float center = triangle.get_bounds().get_center()[best_params.axis];
+    AABB bounds = triangle.get_bounds();
 
-    if (center < best_params.split) {
-      left->triangles.emplace_back(std::move(triangle));
+    if (best_params.type_object) {
+      float center = bounds.get_center()[best_params.axis];
+
+      if (center < best_params.split) {
+        left->triangles.emplace_back(std::move(triangle));
+      } else {
+        right->triangles.emplace_back(std::move(triangle));
+      }
     } else {
-      right->triangles.emplace_back(std::move(triangle));
+      AABB left_bounds = triangle.get_clipped_bounds(left->aabb);
+      AABB right_bounds = triangle.get_clipped_bounds(right->aabb);
+
+      if (left_bounds == bounds) {
+        left->triangles.emplace_back(std::move(triangle));
+      } else if (right_bounds == bounds) {
+        right->triangles.emplace_back(std::move(triangle));
+      } else {
+        left->triangles.emplace_back(triangle);
+        right->triangles.emplace_back(std::move(triangle));
+      }
     }
   }
+  left->aabb = best_params.left;
+  right->aabb = best_params.right;
   // Clear triangles from parent
   node->triangles.clear();
 
   // Recursively build left and right nodes
-  build_bvh_node(left, depth + 1);
-  build_bvh_node(right, depth + 1);
+  build_bvh_node(left, depth + 1, root_sa);
+  build_bvh_node(right, depth + 1, root_sa);
 
   node->left = std::move(left);
   node->right = std::move(right);

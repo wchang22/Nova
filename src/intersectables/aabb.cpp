@@ -25,6 +25,17 @@ void AABB::shrink(const AABB& other) {
   bottom = max(bottom, other.bottom);
 }
 
+bool AABB::intersects(const AABB& other, int axis) const {
+  return top[axis] > other.bottom[axis] || other.top[axis] > bottom[axis];
+}
+
+AABB AABB::get_intersection(const AABB& other) const {
+  return {
+    min(top, other.top),
+    max(bottom, other.bottom)
+  };
+}
+
 bool AABB::operator==(const AABB& other) const {
   return top == other.top && bottom == other.bottom;
 }

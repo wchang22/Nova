@@ -15,6 +15,9 @@ struct AABB {
   vec3 get_center() const;
   void grow(const AABB& other);
   void shrink(const AABB& other);
+  bool intersects(const AABB& other, int axis) const;
+  AABB get_intersection(const AABB& other) const;
+
   bool operator==(const AABB& other) const;
 };
 
