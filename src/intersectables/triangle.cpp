@@ -26,7 +26,7 @@ size_t TriangleHash::operator()(const Triangle& tri) const {
   return hash;
 }
 
-std::pair<vec3, vec3> Triangle::get_bounds() const {
+AABB Triangle::get_bounds() const {
   vec3 top = max(v1, v2, v3);
   vec3 bottom = min(v1, v2, v3);
   

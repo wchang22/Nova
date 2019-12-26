@@ -9,19 +9,19 @@
 #include <fstream>
 
 #include "intersectables/triangle.h"
+#include "intersectables/aabb.h"
 
 using namespace glm;
 
 const vec3 VEC_MAX(std::numeric_limits<float>::max());
 
 struct BVHNode {
-  vec3 top;
-  vec3 bottom;
+  AABB aabb;
   std::vector<Triangle> triangles;
   std::unique_ptr<BVHNode> left;
   std::unique_ptr<BVHNode> right;
 
-  BVHNode() : top(-VEC_MAX), bottom(VEC_MAX) {};
+  BVHNode() : aabb({ -VEC_MAX, VEC_MAX }) {}
 };
 
 // Packed to 32 bytes to fit in a cache line
@@ -44,6 +44,20 @@ public:
   // Note: Modifies `triangles`
   cl::Buffer build_bvh_buffer(const cl::Context& context);
 private:
+  struct SplitParams {
+    float cost;
+    float split;
+    int axis;
+    AABB left;
+    AABB right;
+    size_t left_num_triangles;
+    size_t right_num_triangles;
+
+    SplitParams min(SplitParams& other) {
+      return cost < other.cost ? *this : other;
+    }
+  };
+
   std::unique_ptr<BVHNode> build_bvh();
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
   void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);

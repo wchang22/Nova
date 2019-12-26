@@ -4,6 +4,8 @@
 #include <CL/cl2.hpp>
 #include <glm/glm.hpp>
 
+#include "intersectables/aabb.h"
+
 using namespace glm;
 
 struct Triangle {
@@ -11,7 +13,7 @@ struct Triangle {
   vec3 v2;
   vec3 v3;
 
-  std::pair<vec3, vec3> get_bounds() const;
+  AABB get_bounds() const;
   bool operator==(const Triangle& t) const;
 };
 
