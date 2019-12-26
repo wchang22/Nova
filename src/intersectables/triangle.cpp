@@ -1,6 +1,11 @@
 #include <glm/gtx/extended_min_max.hpp>
 #include <functional>
 #include <algorithm>
+#include <glm/gtx/string_cast.hpp>
+#include <numeric>
+#include <execution>
+#include <iostream>
+#include <cassert>
 
 #include "triangle.h"
 
@@ -35,12 +40,21 @@ AABB Triangle::get_bounds() const {
 }
 
 AABB Triangle::get_clipped_bounds(const AABB& clip) const {
-  auto [top, bottom] = get_bounds();
+  AABB bounds = get_bounds();
 
-  vec3 vertices[] = { v1, v2, v3 };
+  if (!bounds.intersects(clip) && !clip.intersects(bounds)) {
+    return { -VEC_MAX, VEC_MAX };
+  }
+  if (bounds.is_in(clip)) {
+    return bounds;
+  }
+  if (clip.is_in(bounds)) {
+    return clip;
+  }
+
+  std::vector<vec3> output_vertices { v1, v2, v3 };
 
   for (int axis = 0; axis < 3; axis++) {
-    // Find the intersection of a triangle edge and a given plane
     auto find_intersection = [&](const vec3& a, const vec3& b, float plane) {
       vec3 d = b - a;
       assert(d[axis] != 0);
@@ -48,38 +62,50 @@ AABB Triangle::get_clipped_bounds(const AABB& clip) const {
       return a + t * d;
     };
 
-    // Update the AABB bounds by clipping the triangle
-    auto update_bounds = [&](vec3& bound, float plane,
-                             vec3 (*comp)(const vec3& a, const vec3& b, const vec3& c)) {
-      // Make sure the two farthest points are on either side of the plane
-      if (vertices[0][axis] < plane && vertices[2][axis] > plane) {
-        vec3 intrs1 = find_intersection(vertices[0], vertices[2], plane);
-        vec3 intrs2;
-        // Determine which side the middle point is on
-        if (vertices[1][axis] < plane) {
-          intrs2 = find_intersection(vertices[1], vertices[2], plane);
-        } else {
-          intrs2 = find_intersection(vertices[0], vertices[1], plane);
+    auto plane_clip = [&](float plane, bool (*is_inside)(float, float)) {
+      if (output_vertices.empty()) {
+        return;
+      }
+
+      std::vector<vec3> input_vertices;
+      std::swap(input_vertices, output_vertices);
+
+      vec3 prev_point = input_vertices.back();
+      for (const auto& curr_point : input_vertices) {
+        if (is_inside(curr_point[axis], plane)) {
+          if (!is_inside(prev_point[axis], plane)) {
+            output_vertices.push_back(find_intersection(prev_point, curr_point, plane));
+          }
+          output_vertices.push_back(curr_point);
+        } else if (is_inside(prev_point[axis], plane)) {
+          output_vertices.push_back(find_intersection(prev_point, curr_point, plane));
         }
-        bound = comp(bound, intrs1, intrs2);
+
+        prev_point = curr_point;
       }
     };
 
-    vec3 plane_vertices(vertices[0][axis], vertices[1][axis], vertices[2][axis]);
-    if (all(greaterThan(plane_vertices, vec3(clip.top[axis]))) ||
-        all(lessThan(plane_vertices, vec3(clip.bottom[axis])))) {
-      return { -VEC_MAX, VEC_MAX };
-    }
-
-    // Sort the three vertices perpendicular to the axis
-    std::sort(vertices, vertices + 3, [axis](const vec3& a, const vec3& b) {
-      return a[axis] < b[axis];
-    });
-
-    update_bounds(top, clip.top[axis], min);
-    update_bounds(bottom, clip.bottom[axis], max);
+    plane_clip(clip.bottom[axis], [](float point, float plane) { return point >= plane; });
+    plane_clip(clip.top[axis], [](float point, float plane) { return point <= plane; });
   }
-  
+
+  if (output_vertices.empty()) {
+    return { -VEC_MAX, VEC_MAX };
+  }
+
+  assert(output_vertices.size() >= 3);
+
+  vec3 top = std::reduce(std::execution::seq, output_vertices.begin(), output_vertices.end(),
+                         -VEC_MAX, [](const vec3& a, const vec3& b) {
+                           return max(a, b);
+                         });
+  vec3 bottom = std::reduce(std::execution::seq, output_vertices.begin(), output_vertices.end(),
+                            VEC_MAX, [](const vec3& a, const vec3& b) {
+                              return min(a, b);
+                            });
+  top = clamp(top, clip.bottom, clip.top);
+  bottom = clamp(bottom, clip.bottom, clip.top);
+
   return { top, bottom };
 }
 

@@ -26,13 +26,28 @@ void AABB::shrink(const AABB& other) {
 }
 
 bool AABB::intersects(const AABB& other, int axis) const {
-  return top[axis] > other.bottom[axis] || other.top[axis] > bottom[axis];
+  return top[axis] > other.bottom[axis] && bottom[axis] < other.top[axis];
+}
+
+bool AABB::intersects(const AABB& other) const {
+  return all(greaterThanEqual(top, other.bottom)) && all(lessThanEqual(bottom, other.top));
+}
+
+bool AABB::is_in(const AABB& other) const {
+  return all(lessThanEqual(top, other.top)) && all(greaterThanEqual(bottom, other.bottom));
 }
 
 AABB AABB::get_intersection(const AABB& other) const {
   return {
     min(top, other.top),
     max(bottom, other.bottom)
+  };
+}
+
+AABB AABB::get_union(const AABB& other) const {
+  return {
+    max(top, other.top),
+    min(bottom, other.bottom)
   };
 }
 

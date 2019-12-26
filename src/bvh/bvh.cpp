@@ -1,3 +1,5 @@
+#include <glm/gtx/vec_swizzle.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <cassert>
 #include <filesystem>
 
@@ -5,6 +7,12 @@
 #include "util/exception/exception.h"
 #include "util/serialization/serialization.h"
 #include "constants.h"
+
+enum class SplitType : uint8_t {
+  LEFT,
+  RIGHT,
+  BOTH,
+};
 
 struct SplitParams {
   float cost;
@@ -14,12 +22,18 @@ struct SplitParams {
   AABB right;
   size_t left_num_triangles;
   size_t right_num_triangles;
-  bool type_object;
+  std::vector<SplitType> split_type;
 
-  SplitParams min(SplitParams& other) {
-    return cost < other.cost ? *this : other;
+  static SplitParams make_default() {
+    return { std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0, {} };
+  }
+
+  SplitParams min(SplitParams&& other) {
+    return cost < other.cost ? std::move(*this) : std::move(other);
   }
 };
+
+const AABB NO_INTERSECTION { -VEC_MAX, VEC_MAX };
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
@@ -102,25 +116,28 @@ SplitParams get_object_split(int axis, float split, std::unique_ptr<BVHNode>& no
   uint32_t left_num_triangles = 0;
   uint32_t right_num_triangles = 0;
 
+  std::vector<SplitType> split_type(node->triangles.size());
+
   // Try putting each triangle in either the left or right node based on center
-  for (const auto& triangle : node->triangles) {
+  for (size_t i = 0; i < node->triangles.size(); i++) {
+    const auto& triangle = node->triangles[i];
     AABB bounds = triangle.get_bounds();
     float center = bounds.get_center()[axis];
 
     if (center < split) {
       left.grow(bounds);
       left_num_triangles++;
+      split_type[i] = SplitType::LEFT;
     } else {
       right.grow(bounds);
       right_num_triangles++;
+      split_type[i] = SplitType::RIGHT;
     }
   }
 
   // Useless splits
   if (left_num_triangles <= 1 || right_num_triangles <= 1) {
-    SplitParams params;
-    params.cost = std::numeric_limits<float>::max();
-    return params;
+    return SplitParams::make_default();
   }
 
   float left_cost = left.get_cost(left_num_triangles);
@@ -135,44 +152,93 @@ SplitParams get_object_split(int axis, float split, std::unique_ptr<BVHNode>& no
     right,
     left_num_triangles,
     right_num_triangles,
-    true,
+    split_type,
   };
 }
 
 SplitParams get_spatial_split(int axis, float split, std::unique_ptr<BVHNode>& node) {
-  AABB left, right;
-  left = node->aabb;
-  left.top[axis] = split;
-  right = node->aabb;
-  right.bottom[axis] = split;
+  AABB left = NO_INTERSECTION;
+  AABB right = NO_INTERSECTION;
+
+  AABB left_clip = node->aabb;
+  AABB right_clip = node->aabb;
+  left_clip.top[axis] = split;
+  right_clip.bottom[axis] = split;
 
   uint32_t left_num_triangles = 0;
   uint32_t right_num_triangles = 0;
 
+  std::vector<SplitType> split_type(node->triangles.size());
+
   // Try putting each triangle in either the left or right node based on center
-  for (const auto& triangle : node->triangles) {
+  for (size_t i = 0; i < node->triangles.size(); i++) {
+    const auto& triangle = node->triangles[i];
     AABB bounds = triangle.get_bounds();
-    AABB left_bounds = triangle.get_clipped_bounds(left);
-    AABB right_bounds = triangle.get_clipped_bounds(right);
+    AABB left_bounds = triangle.get_clipped_bounds(left_clip);
+    AABB right_bounds = triangle.get_clipped_bounds(right_clip);
 
-    left.grow(left_bounds);
-    right.grow(right_bounds);
+    assert(all(lessThanEqual(left_bounds.top, left_clip.top)));
+    assert(all(greaterThanEqual(left_bounds.bottom, left_clip.bottom)));
+    assert(all(lessThanEqual(right_bounds.top, right_clip.top)));
+    assert(all(greaterThanEqual(right_bounds.bottom, right_clip.bottom)));
 
-    if (left_bounds == bounds) {
+    assert(all(greaterThanEqual(left.top, left.bottom)) || left == NO_INTERSECTION);
+    assert(all(greaterThanEqual(right.top, right.bottom)) || right == NO_INTERSECTION);
+    assert(bounds.intersects(node->aabb) || node->aabb.intersects(bounds));
+    assert(!(left_bounds == NO_INTERSECTION) || !(right_bounds == NO_INTERSECTION));
+    assert((bounds.intersects(left_clip) || left_clip.intersects(bounds)) ||
+               (bounds.intersects(right_clip) || right_clip.intersects(bounds)));
+
+    if (right_bounds == NO_INTERSECTION) {
+      left.grow(left_bounds);
+      assert((bounds.intersects(left) || left.intersects(bounds)));
       left_num_triangles++;
-    } else if (right_bounds == bounds) {
+      split_type[i] = SplitType::LEFT;
+    } else if (left_bounds == NO_INTERSECTION) {
+      right.grow(right_bounds);
+      assert((bounds.intersects(right) || right.intersects(bounds)));
       right_num_triangles++;
+      split_type[i] = SplitType::RIGHT;
     } else {
+      left.grow(left_bounds);
+      right.grow(right_bounds);
+      assert((bounds.intersects(left) || left.intersects(bounds)) &&
+               (bounds.intersects(right) || right.intersects(bounds)));
       left_num_triangles++;
       right_num_triangles++;
+
+      // Reference unsplit
+      float left_cost = left.get_cost(left_num_triangles);
+      float right_cost = right.get_cost(right_num_triangles);
+      float split_cost = left_cost + right_cost;
+
+      left_cost = left.get_union(bounds).get_cost(left_num_triangles);
+      right_cost = right.get_cost(right_num_triangles - 1);
+      float unsplit_left_cost = left_cost + right_cost;
+
+      left_cost = left.get_cost(left_num_triangles - 1);
+      right_cost = left.get_union(bounds).get_cost(right_num_triangles);
+      float unsplit_right_cost = left_cost + right_cost;
+
+      float min_cost = std::min(split_cost, std::min(unsplit_left_cost, unsplit_right_cost));
+
+      if (min_cost == unsplit_left_cost) {
+        left.grow(bounds);
+        right_num_triangles--;
+        split_type[i] = SplitType::LEFT;
+      } else if (min_cost == unsplit_right_cost) {
+        right.grow(bounds);
+        left_num_triangles--;
+        split_type[i] = SplitType::RIGHT;
+      } else {
+        split_type[i] = SplitType::BOTH;
+      }
     }
   }
 
   // Useless splits
   if (left_num_triangles <= 1 || right_num_triangles <= 1) {
-    SplitParams params;
-    params.cost = std::numeric_limits<float>::max();
-    return params;
+    return SplitParams::make_default();
   }
 
   float left_cost = left.get_cost(left_num_triangles);
@@ -180,14 +246,14 @@ SplitParams get_spatial_split(int axis, float split, std::unique_ptr<BVHNode>& n
   float total_cost = left_cost + right_cost;
 
   return {
-    total_cost,
+    total_cost * 1.02f,
     split,
     axis,
     left,
     right,
     left_num_triangles,
     right_num_triangles,
-    false,
+    split_type,
   };
 }
 
@@ -196,9 +262,8 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
     return;
   }
 
-  SplitParams best_params {
-    node->get_cost(), 0, -1, {}, {}, 0, 0, {}
-  };
+  SplitParams best_params = SplitParams::make_default();
+  best_params.cost = node->get_cost();
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
@@ -216,10 +281,8 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
 
     // Find best split (split with least total cost)
     #pragma omp declare reduction \
-      (param_min:SplitParams:omp_out=omp_out.min(omp_in)) \
-      initializer(omp_priv={ \
-        std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0, {} \
-      })
+      (param_min:SplitParams:omp_out=omp_out.min(std::move(omp_in))) \
+      initializer(omp_priv=SplitParams::make_default())
 
     #pragma omp parallel for default(none) \
       shared(node, axis, bin_start, bin_end, bin_step, num_bins, root_sa) \
@@ -229,17 +292,20 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
       float split = bin_start + (i + 1) * bin_step;
 
       SplitParams object_split_params = get_object_split(axis, split, node);
-      best_params = best_params.min(object_split_params);
+      AABB left_aabb = object_split_params.left;
+      AABB right_aabb = object_split_params.right;
+
+      best_params = best_params.min(std::move(object_split_params));
 
       // AABBs overlap
-      if (object_split_params.left.intersects(object_split_params.right, axis)) {
-        AABB intersection = object_split_params.left.get_intersection(object_split_params.right);
+      if (left_aabb.intersects(right_aabb)) {
+        AABB intersection = left_aabb.get_intersection(right_aabb);
         float intersection_sa = intersection.get_surface_area();
 
         // Only compute spatial split if overlap is significant
         if (intersection_sa / root_sa > OVERLAP_TOLERANCE) {
           SplitParams spatial_split_params = get_spatial_split(axis, split, node);
-          best_params = best_params.min(spatial_split_params);
+          best_params = best_params.min(std::move(spatial_split_params));
         }
       }
     }
@@ -253,40 +319,26 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
-  left->aabb = node->aabb;
-  left->aabb.top[best_params.axis] = best_params.split;
-  right->aabb = node->aabb;
-  right->aabb.bottom[best_params.axis] = best_params.split;
+  left->aabb = best_params.left;
+  right->aabb = best_params.right;
   left->triangles.reserve(best_params.left_num_triangles);
   right->triangles.reserve(best_params.right_num_triangles);
 
-  for (const auto& triangle : node->triangles) {
-    AABB bounds = triangle.get_bounds();
-
-    if (best_params.type_object) {
-      float center = bounds.get_center()[best_params.axis];
-
-      if (center < best_params.split) {
+  for (size_t i = 0; i < node->triangles.size(); i++) {
+    const auto& triangle = node->triangles[i];
+    switch (best_params.split_type[i]) {
+      case SplitType::LEFT:
         left->triangles.emplace_back(std::move(triangle));
-      } else {
+        break;
+      case SplitType::RIGHT:
         right->triangles.emplace_back(std::move(triangle));
-      }
-    } else {
-      AABB left_bounds = triangle.get_clipped_bounds(left->aabb);
-      AABB right_bounds = triangle.get_clipped_bounds(right->aabb);
-
-      if (left_bounds == bounds) {
-        left->triangles.emplace_back(std::move(triangle));
-      } else if (right_bounds == bounds) {
-        right->triangles.emplace_back(std::move(triangle));
-      } else {
+        break;
+      case SplitType::BOTH:
         left->triangles.emplace_back(triangle);
         right->triangles.emplace_back(std::move(triangle));
-      }
+        break;
     }
   }
-  left->aabb = best_params.left;
-  right->aabb = best_params.right;
   // Clear triangles from parent
   node->triangles.clear();
 
@@ -322,6 +374,7 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   // Leaf node
   if (!node->triangles.empty()) {
     assert(!node->left && !node->right);
+    assert(node->triangles.size() <= MAX_TRIANGLES_PER_LEAF);
 
     // Denote that the node is a leaf node by negating
     w(flat_nodes[flat_node_index].top_offset_left) = triangles.size();

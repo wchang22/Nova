@@ -16,7 +16,10 @@ struct AABB {
   void grow(const AABB& other);
   void shrink(const AABB& other);
   bool intersects(const AABB& other, int axis) const;
+  bool intersects(const AABB& other) const;
+  bool is_in(const AABB& other) const;
   AABB get_intersection(const AABB& other) const;
+  AABB get_union(const AABB& other) const;
 
   bool operator==(const AABB& other) const;
 };

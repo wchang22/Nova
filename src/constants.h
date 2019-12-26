@@ -31,6 +31,7 @@ constexpr size_t TRIANGLE_NUM_SHIFT = 32 - TRIANGLES_PER_LEAF_BITS;
 constexpr size_t TRIANGLE_OFFSET_MASK =
   (0xFFFFFFFF << TRIANGLES_PER_LEAF_BITS) >> TRIANGLES_PER_LEAF_BITS;
 constexpr size_t MIN_TRIANGLES_PER_LEAF = 8;
+constexpr size_t MAX_TRIANGLES_PER_LEAF = (1 << TRIANGLES_PER_LEAF_BITS) - 1;
 constexpr float MAX_BINS = 1024.f;
 constexpr float OVERLAP_TOLERANCE = 1e-5f;
 constexpr size_t MAX_TRIANGLES = (1 << (32 - TRIANGLES_PER_LEAF_BITS)) - 1;
