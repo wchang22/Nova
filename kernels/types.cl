@@ -1,6 +1,8 @@
 #ifndef TYPES_CL
 #define TYPES_CL
 
+#include "configuration.cl"
+
 typedef struct {
   float3 point;
   float3 direction;
@@ -10,7 +12,7 @@ typedef struct {
 } Ray;
 
 Ray create_ray(float3 point, float3 direction) {
-  return (Ray) { point + direction * 1e-2f, direction, 1.0f / direction, FLT_MAX, -1 };
+  return (Ray) { point + direction * RAY_EPSILON, direction, 1.0f / direction, FLT_MAX, -1 };
 }
 
 typedef struct {

@@ -2,10 +2,10 @@
 #define CONFIGURATION_H
 
 #ifndef KERNELS_PATH
-  #define KERNELS_PATH
+  #define KERNELS_PATH ""
 #endif
 #ifndef ASSETS_PATH
-  #define ASSETS_PATH
+  #define ASSETS_PATH ""
 #endif
 
 #ifndef NDEBUG
@@ -21,6 +21,7 @@ using namespace glm;
 
 // Raytracer constants
 constexpr cl_device_type DEVICE_TYPE = CL_DEVICE_TYPE_GPU;
+const cl::NDRange LOCAL_SIZE(16, 16);
 constexpr char MODEL_PATH[] = ASSETS_PATH"aircraft/aircraft.obj";
 constexpr char KERNEL_PATH[] = KERNELS_PATH"raytrace.cl";
 

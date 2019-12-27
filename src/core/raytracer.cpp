@@ -3,7 +3,7 @@
 #include <filesystem>
 
 #include "raytracer.h"
-#include "util/utils.h"
+#include "util/file/fileutils.h"
 #include "util/exception/exception.h"
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
@@ -18,7 +18,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
     context(DEVICE_TYPE),
     device(context.getInfo<CL_CONTEXT_DEVICES>().front()),
     queue(context),
-    program(context, utils::read_file(KERNEL_PATH)),
+    program(context, file_utils::read_file(KERNEL_PATH)),
     image(context, CL_MEM_WRITE_ONLY, cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height)
 {
   try {
@@ -50,7 +50,7 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_START("Enqueue kernel");
     kernel_utils::set_args(kernel, image, ec, triangle_buf, material_buf, bvh_buf);
     queue.enqueueNDRangeKernel(kernel,
-                               cl::NDRange(0, 0), cl::NDRange(width, height), cl::NDRange(16, 16));
+                               cl::NDRange(0, 0), cl::NDRange(width, height), LOCAL_SIZE);
     queue.finish();
     PROFILE_SECTION_END();
 

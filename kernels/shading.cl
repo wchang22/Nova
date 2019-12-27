@@ -1,8 +1,6 @@
 #ifndef SHADING_CL
 #define SHADING_CL
 
-const float3 light_pos = { -4, 2.8, 7 };
-
 float3 shade(float3 light_dir, float3 eye_dir, float3 normal,
              float3 diffuse, float3 specular, int shininess) {
   float3 half_dir = fast_normalize(light_dir - eye_dir);

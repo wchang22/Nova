@@ -6,6 +6,7 @@
 
 using namespace glm;
 
+// Axis-aligned bounding box
 struct AABB {
   vec3 top;
   vec3 bottom;

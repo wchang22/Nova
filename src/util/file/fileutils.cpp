@@ -1,10 +1,10 @@
-#include "utils.h"
+#include "fileutils.h"
 #include "util/exception/exception.h"
 
 #include <fstream>
 #include <streambuf>
 
-namespace utils {
+namespace file_utils {
   std::string read_file(const char* path) {
     std::ifstream file(path);
 

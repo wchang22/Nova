@@ -29,7 +29,7 @@ size_t TriangleHash::operator()(const Triangle& tri) const {
 AABB Triangle::get_bounds() const {
   vec3 top = max(v1, v2, v3);
   vec3 bottom = min(v1, v2, v3);
-  
+
   return { top, bottom };
 }
 

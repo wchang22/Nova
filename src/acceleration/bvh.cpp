@@ -43,7 +43,7 @@ cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
     size_t triangles_size = triangles.size();
 
     // Each line is a bvh node
-    std::string line; 
+    std::string line;
     getline(bvh_file, line);
     if (line.empty()) {
       throw FileException("Invalid bvh file " + bvh_file_name);
@@ -224,7 +224,6 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     // Denote that the node is a leaf node by negating
     flat_nodes[flat_node_index].top_offset_left.s[3] = -static_cast<float>(triangles.size());
     flat_nodes[flat_node_index].bottom_num_right.s[3] = node->triangles.size();
-    // TODO: Sort?
     triangles.insert(triangles.end(),
                      std::make_move_iterator(node->triangles.begin()),
                      std::make_move_iterator(node->triangles.end()));

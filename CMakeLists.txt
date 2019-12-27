@@ -12,6 +12,8 @@ set(LIBS_NAME cllib)
 file(GLOB_RECURSE LIBS_SOURCES include/*)
 add_library(${LIBS_NAME} ${LIBS_SOURCES})
 target_include_directories(${LIBS_NAME} PRIVATE include)
+target_compile_definitions(${LIBS_NAME} PRIVATE -DGLM_FORCE_INTRINSICS -DGLM_FORCE_SILENT_WARNINGS)
+target_compile_options(${LIBS_NAME} PRIVATE -march=native)
 
 # Source files
 file(GLOB_RECURSE SOURCES src/*)
@@ -52,7 +54,6 @@ endif()
 # Defines
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_ENABLE_EXCEPTIONS)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=200)
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DGLM_FORCE_AVX -DGLM_FORCE_SILENT_WARNINGS)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
 

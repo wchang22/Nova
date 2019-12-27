@@ -1,8 +1,6 @@
 #include "intersection.cl"
 #include "shading.cl"
-
-const int SHININESS = 32;
-const int STACK_SIZE = 30;
+#include "configuration.cl"
 
 bool compute_intersection(Triangle* triangles, BVHNode* bvh, Ray* ray, bool fast) {
   int stack[STACK_SIZE];
@@ -75,13 +73,13 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   if (compute_intersection(triangles, bvh, &ray, false)) {
     Triangle tri = triangles[ray.intrs];
     Material mat = materials[ray.intrs];
-    
+
     float3 intrs_point = ray.point + ray.direction * ray.length;
 
     color += mat.ambient;
 
     // Cast a shadow ray to the light
-    float3 light_dir = light_pos - intrs_point;
+    float3 light_dir = LIGHT_POS - intrs_point;
     float3 normalized_light_dir = fast_normalize(light_dir);
     Ray shadow_ray = create_ray(intrs_point, normalized_light_dir);
     shadow_ray.length = length(light_dir);
