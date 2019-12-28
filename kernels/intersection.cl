@@ -7,6 +7,10 @@ bool intersects(Ray* ray, int intrs, Triangle tri) {
   float3 normal = cross(tri.edge1, tri.edge2);
   float a = dot(-normal, ray->direction);
 
+  if (a == 0.0) {
+    return false;
+  }
+
   float f = 1.0 / a;
   float3 s = ray->point - tri.vertex;
   float t = f * dot(normal, s);

@@ -105,7 +105,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
 
     // Reduce number of bins according to depth
     float bin_step = (bin_end - bin_start) / (MAX_BINS / (depth + 1));
-    int num_bins = MAX_BINS / (depth + 1) - 2;
+    int num_bins = MAX_BINS / (depth + 1) - 1;
 
     // Find best split (split with least total cost)
     #pragma omp declare reduction \

@@ -2,7 +2,7 @@
 #include "shading.cl"
 #include "configuration.cl"
 
-bool compute_intersection(Triangle* triangles, BVHNode* bvh, Ray* ray, bool fast) {
+bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fast) {
   int stack[STACK_SIZE];
   int stack_ptr = 0;
   // Push first node onto stack
@@ -43,13 +43,13 @@ bool compute_intersection(Triangle* triangles, BVHNode* bvh, Ray* ray, bool fast
 
     // If intersected, compute intersection for all triangles in the node
     for (int i = offset; i < offset + num; i++) {
-      if (intersects(ray, i, triangles[i]) && fast) {
+      if (intersects(ray, i, triangles[i]) && fast && ray->length < max_dist) {
         return true;
       }
     }
   }
 
-  return ray->intrs != -1;
+  return ray->length < max_dist;
 }
 
 kernel
@@ -70,7 +70,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   Ray ray = create_ray(ray_pos, ray_dir);
 
   // Cast primary ray
-  if (compute_intersection(triangles, bvh, &ray, false)) {
+  if (trace(triangles, bvh, &ray, FLT_MAX, false)) {
     Triangle tri = triangles[ray.intrs];
     Material mat = materials[ray.intrs];
 
@@ -82,10 +82,9 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     float3 light_dir = LIGHT_POS - intrs_point;
     float3 normalized_light_dir = fast_normalize(light_dir);
     Ray shadow_ray = create_ray(intrs_point, normalized_light_dir);
-    shadow_ray.length = length(light_dir);
 
     // Shade the pixel if ray is not blocked
-    if (!compute_intersection(triangles, bvh, &shadow_ray, true)) {
+    if (!trace(triangles, bvh, &shadow_ray, length(light_dir), true)) {
       float3 normal = fast_normalize(cross(tri.edge1, tri.edge2));
       color += shade(normalized_light_dir, ray.direction, normal,
                      mat.diffuse, mat.specular, SHININESS);

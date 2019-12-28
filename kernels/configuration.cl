@@ -1,7 +1,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-const int STACK_SIZE = 30;
+const int STACK_SIZE = 64;
 
 const float3 LIGHT_POS = { -4, 2.8, 7 };
 
