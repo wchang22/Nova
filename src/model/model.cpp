@@ -55,9 +55,19 @@ void Model::process_mesh(aiMesh* mesh)
     aiFace face = mesh->mFaces[i];
     assert(face.mNumIndices == 3);
 
-    intersectables.add_triangle({
-      vertices[face.mIndices[0]], vertices[face.mIndices[1]], vertices[face.mIndices[2]]
-    }, {
+    vec3& v1 = vertices[face.mIndices[0]];
+    vec3& v2 = vertices[face.mIndices[1]];
+    vec3& v3 = vertices[face.mIndices[2]];
+
+    float lengths[] = { distance(v1, v2), distance(v2, v3), distance(v1, v3) };
+    std::sort(lengths, lengths + 3);
+
+    // Ignore degenerate triangles
+    if (lengths[0] + lengths[1] <= lengths[2]) {
+      continue;
+    }
+
+    intersectables.add_triangle({ v1, v2, v3 }, {
       vec3(0.1, 0.1, 0.1), vec3(0.4, 0.4, 0.4), vec3(0.7, 0.7, 0.7)
     });
   }

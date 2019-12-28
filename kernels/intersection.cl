@@ -3,32 +3,31 @@
 
 #include "types.cl"
 
-bool intersects(Ray* ray, int intrs, Triangle tri) {
-  float3 normal = cross(tri.edge1, tri.edge2);
-  float a = dot(-normal, ray->direction);
+// Use woop transformation to transform ray to unit triangle space
+// http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
+bool intersects_triangle(Ray* ray, int intrs, Triangle tri) {
+  float3 o, d;
 
-  if (a == 0.0) {
+  o.x = dot(tri.transform_x.xyz, ray->point) + tri.transform_x.w;
+  o.y = dot(tri.transform_y.xyz, ray->point) + tri.transform_y.w;
+  o.z = dot(tri.transform_z.xyz, ray->point) + tri.transform_z.w;
+
+  d.x = dot(tri.transform_x.xyz, ray->direction);
+  d.y = dot(tri.transform_y.xyz, ray->direction);
+  d.z = dot(tri.transform_z.xyz, ray->direction);
+
+  float t = -o.z / d.z;
+  if (t < 0.0f || t >= ray->length) {
     return false;
   }
 
-  float f = 1.0 / a;
-  float3 s = ray->point - tri.vertex;
-  float t = f * dot(normal, s);
-
-  if (t < 0.0 || t >= ray->length) {
+  float u = o.x + t * d.x;
+  if (u < 0.0f) {
     return false;
   }
 
-  float3 m = cross(s, ray->direction);
-  float u = f * dot(m, tri.edge2);
-
-  if (u < 0.0) {
-    return false;
-  }
-
-  float v = f * dot(-m, tri.edge1);
-
-  if (v < 0.0 || u + v > 1.0) {
+  float v = o.y + t * d.y;
+  if (v < 0.0f || u + v > 1.0f) {
     return false;
   }
 

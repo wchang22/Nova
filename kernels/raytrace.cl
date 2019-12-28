@@ -43,7 +43,7 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fas
 
     // If intersected, compute intersection for all triangles in the node
     for (int i = offset; i < offset + num; i++) {
-      if (intersects(ray, i, triangles[i]) && fast && ray->length < max_dist) {
+      if (intersects_triangle(ray, i, triangles[i]) && fast && ray->length < max_dist) {
         return true;
       }
     }
@@ -55,6 +55,7 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fas
 kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
               global Triangle* triangles,
+              global float3* tri_normals,
               global Material* materials,
               global BVHNode* bvh) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
@@ -85,7 +86,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
     // Shade the pixel if ray is not blocked
     if (!trace(triangles, bvh, &shadow_ray, length(light_dir), true)) {
-      float3 normal = fast_normalize(cross(tri.edge1, tri.edge2));
+      float3 normal = tri_normals[ray.intrs];
       color += shade(normalized_light_dir, ray.direction, normal,
                      mat.diffuse, mat.specular, SHININESS);
     }

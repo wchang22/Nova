@@ -24,10 +24,11 @@ struct TriangleHash {
 std::istream& operator>>(std::istream& in, Triangle& tri);
 std::ostream& operator<<(std::ostream& out, const Triangle& tri);
 
+// Woop 4x3 affine transform matrix
 struct TriangleData {
-  cl_float3 vertex;
-  cl_float3 edge1;
-  cl_float3 edge2;
+  cl_float4 transform_x;
+  cl_float4 transform_y;
+  cl_float4 transform_z;
 };
 
 #endif // TRIANGLE_H

@@ -24,10 +24,12 @@ typedef struct {
   float3 eye_coord_frame2;
 } EyeCoords;
 
+// Woop 4x3 affine transform matrix
+// We look up the triangle normal separately to reduce cache pressure
 typedef struct {
-  float3 vertex;
-  float3 edge1;
-  float3 edge2;
+  float4 transform_x;
+  float4 transform_y;
+  float4 transform_z;
 } Triangle;
 
 typedef struct {
