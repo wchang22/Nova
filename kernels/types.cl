@@ -6,13 +6,13 @@
 typedef struct {
   float3 point;
   float3 direction;
-  float3 inv_direction;
+  float3 barycentric_coords;
   float length;
   int intrs;
 } Ray;
 
-Ray create_ray(float3 point, float3 direction) {
-  return (Ray) { point + direction * RAY_EPSILON, direction, 1.0f / direction, FLT_MAX, -1 };
+Ray create_ray(float3 point, float3 direction, float epsilon) {
+  return (Ray) { point + direction * epsilon, direction, 0, FLT_MAX, -1 };
 }
 
 typedef struct {
@@ -25,12 +25,18 @@ typedef struct {
 } EyeCoords;
 
 // Woop 4x3 affine transform matrix
-// We look up the triangle normal separately to reduce cache pressure
 typedef struct {
   float4 transform_x;
   float4 transform_y;
   float4 transform_z;
 } Triangle;
+
+// We look up the triangle metadata and material separately to reduce cache pressure
+typedef struct {
+  float3 normal1;
+  float3 normal2;
+  float3 normal3;
+} TriangleMeta;
 
 typedef struct {
   float3 ambient;

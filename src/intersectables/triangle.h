@@ -31,4 +31,16 @@ struct TriangleData {
   cl_float4 transform_z;
 };
 
+struct TriangleMeta {
+  vec3 normal1;
+  vec3 normal2;
+  vec3 normal3;
+};
+
+struct TriangleMetaData {
+  cl_float3 normal1;
+  cl_float3 normal2;
+  cl_float3 normal3;
+};
+
 #endif // TRIANGLE_H

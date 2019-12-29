@@ -16,7 +16,6 @@ private:
   void process_mesh(aiMesh* mesh);
 
   IntersectableManager& intersectables;
-  std::string directory;
 };
 
 #endif // MODEL_H

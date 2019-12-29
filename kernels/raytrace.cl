@@ -1,6 +1,7 @@
 #include "intersection.cl"
 #include "shading.cl"
 #include "configuration.cl"
+#include "transforms.cl"
 
 bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fast) {
   int stack[STACK_SIZE];
@@ -55,7 +56,7 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fas
 kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
               global Triangle* triangles,
-              global float3* tri_normals,
+              global TriangleMeta* tri_meta,
               global Material* materials,
               global BVHNode* bvh) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
@@ -68,7 +69,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
   float3 color = 0;
 
-  Ray ray = create_ray(ray_pos, ray_dir);
+  Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
   // Cast primary ray
   if (trace(triangles, bvh, &ray, FLT_MAX, false)) {
@@ -82,11 +83,17 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     // Cast a shadow ray to the light
     float3 light_dir = LIGHT_POS - intrs_point;
     float3 normalized_light_dir = fast_normalize(light_dir);
-    Ray shadow_ray = create_ray(intrs_point, normalized_light_dir);
+    Ray shadow_ray = create_ray(intrs_point, normalized_light_dir, RAY_EPSILON);
 
     // Shade the pixel if ray is not blocked
     if (!trace(triangles, bvh, &shadow_ray, length(light_dir), true)) {
-      float3 normal = tri_normals[ray.intrs];
+      TriangleMeta meta = tri_meta[ray.intrs];
+
+      // Interpolate triangle normal from vertex normals
+      float3 normal = normalize(
+        triangle_interpolate(ray.barycentric_coords, meta.normal1, meta.normal2, meta.normal3)
+      );
+
       color += shade(normalized_light_dir, ray.direction, normal,
                      mat.diffuse, mat.specular, SHININESS);
     }

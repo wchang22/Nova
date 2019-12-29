@@ -37,10 +37,10 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  cl::Buffer triangle_buf, tri_normal_buf, material_buf, bvh_buf;
+  cl::Buffer triangle_buf, tri_meta_buf, material_buf, bvh_buf;
 
   auto ec = camera.get_eye_coords();
-  intersectables.build_buffers(context, triangle_buf, tri_normal_buf, material_buf, bvh_buf);
+  intersectables.build_buffers(context, triangle_buf, tri_meta_buf, material_buf, bvh_buf);
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
@@ -48,7 +48,7 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    kernel_utils::set_args(kernel, image, ec, triangle_buf, tri_normal_buf, material_buf, bvh_buf);
+    kernel_utils::set_args(kernel, image, ec, triangle_buf, tri_meta_buf, material_buf, bvh_buf);
     queue.enqueueNDRangeKernel(kernel,
                                cl::NDRange(0, 0), cl::NDRange(width, height), LOCAL_SIZE);
     queue.finish();
