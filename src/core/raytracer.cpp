@@ -14,7 +14,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
   : width(width), height(height),
     image_buf(width * height * sizeof(ivec4)),
     camera(CAMERA_POSITION, CAMERA_FORWARD, CAMERA_UP, width, height, CAMERA_FOVY),
-    model(MODEL_PATH, intersectables),
+    model(MODEL_PATH, intersectables, material_loader),
     context(DEVICE_TYPE),
     device(context.getInfo<CL_CONTEXT_DEVICES>().front()),
     queue(context),
@@ -37,10 +37,11 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  cl::Buffer triangle_buf, tri_meta_buf, material_buf, bvh_buf;
+  cl::Buffer triangle_buf, tri_meta_buf, bvh_buf;
 
   auto ec = camera.get_eye_coords();
-  intersectables.build_buffers(context, triangle_buf, tri_meta_buf, material_buf, bvh_buf);
+  intersectables.build_buffers(context, triangle_buf, tri_meta_buf, bvh_buf);
+  cl::Image2DArray material_ims = material_loader.build_images(context);
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
@@ -48,7 +49,7 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    kernel_utils::set_args(kernel, image, ec, triangle_buf, tri_meta_buf, material_buf, bvh_buf);
+    kernel_utils::set_args(kernel, image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims);
     queue.enqueueNDRangeKernel(kernel,
                                cl::NDRange(0, 0), cl::NDRange(width, height), LOCAL_SIZE);
     queue.finish();
@@ -63,6 +64,6 @@ void Raytracer::raytrace() {
 
   PROFILE_SECTION_START("Write image");
   std::string image_out_name = std::filesystem::path(MODEL_PATH).stem().string() + ".jpg";
-  image_utils::write_image(image_out_name.c_str(), width, height, image_buf);
+  image_utils::write_image(image_out_name.c_str(), { image_buf, width, height });
   PROFILE_SECTION_END();
 }

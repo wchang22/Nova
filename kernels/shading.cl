@@ -1,6 +1,31 @@
 #ifndef SHADING_CL
 #define SHADING_CL
 
+constant sampler_t material_sampler =
+  CLK_ADDRESS_CLAMP |
+  CLK_FILTER_NEAREST |
+  CLK_NORMALIZED_COORDS_TRUE;
+
+float3 read_material(read_only image2d_array_t materials,
+                     Ray ray, TriangleMeta meta, int index, float3 default_material) {
+  if (!meta.has_textures) {
+    return default_material;
+  }
+  if (index == -1) {
+    return 0;
+  }
+
+  float2 texture_coord = triangle_interpolate2(
+    ray.barycentric_coords, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
+  );
+
+  float3 texture = convert_float3(
+    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0)).xyz
+  );
+
+  return uint3_to_float3(texture);
+}
+
 float3 shade(float3 light_dir, float3 eye_dir, float3 normal,
              float3 diffuse, float3 specular, int shininess) {
   float3 half_dir = fast_normalize(light_dir - eye_dir);

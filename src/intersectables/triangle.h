@@ -35,12 +35,26 @@ struct TriangleMeta {
   vec3 normal1;
   vec3 normal2;
   vec3 normal3;
+  vec2 texture_coord1;
+  vec2 texture_coord2;
+  vec2 texture_coord3;
+  bool has_textures;
+  int ambient_index;
+  int diffuse_index;
+  int specular_index;
 };
 
 struct TriangleMetaData {
   cl_float3 normal1;
   cl_float3 normal2;
   cl_float3 normal3;
+  cl_float2 texture_coord1;
+  cl_float2 texture_coord2;
+  cl_float2 texture_coord3;
+  cl_bool has_textures;
+  cl_int ambient_index;
+  cl_int diffuse_index;
+  cl_int specular_index;
 };
 
 #endif // TRIANGLE_H

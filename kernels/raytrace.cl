@@ -57,8 +57,8 @@ kernel
 void raytrace(write_only image2d_t image_out, EyeCoords ec,
               global Triangle* triangles,
               global TriangleMeta* tri_meta,
-              global Material* materials,
-              global BVHNode* bvh) {
+              global BVHNode* bvh,
+              read_only image2d_array_t materials) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
@@ -74,11 +74,12 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   // Cast primary ray
   if (trace(triangles, bvh, &ray, FLT_MAX, false)) {
     Triangle tri = triangles[ray.intrs];
-    Material mat = materials[ray.intrs];
+    TriangleMeta meta = tri_meta[ray.intrs];
 
     float3 intrs_point = ray.point + ray.direction * ray.length;
 
-    color += mat.ambient;
+    // Add ambient color even if pixel is in shadow
+    color += read_material(materials, ray, meta, meta.ambient_index, DEFAULT_AMBIENT);
 
     // Cast a shadow ray to the light
     float3 light_dir = LIGHT_POS - intrs_point;
@@ -87,17 +88,17 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
     // Shade the pixel if ray is not blocked
     if (!trace(triangles, bvh, &shadow_ray, length(light_dir), true)) {
-      TriangleMeta meta = tri_meta[ray.intrs];
-
       // Interpolate triangle normal from vertex normals
       float3 normal = normalize(
-        triangle_interpolate(ray.barycentric_coords, meta.normal1, meta.normal2, meta.normal3)
+        triangle_interpolate3(ray.barycentric_coords, meta.normal1, meta.normal2, meta.normal3)
       );
 
-      color += shade(normalized_light_dir, ray.direction, normal,
-                     mat.diffuse, mat.specular, SHININESS);
+      float3 diffuse = read_material(materials, ray, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
+      float3 specular = read_material(materials, ray, meta, meta.specular_index, DEFAULT_SPECULAR);
+
+      color += shade(normalized_light_dir, ray.direction, normal, diffuse, specular, SHININESS);
     }
   }
 
-  write_imagei(image_out, pixel_coords, convert_int4((float4)(color, 1) * 255));
+  write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1) * 255));
 }

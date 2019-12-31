@@ -6,6 +6,7 @@
 #include "camera/camera.h"
 #include "intersectables/intersectable_manager.h"
 #include "model/model.h"
+#include "material/material_loader.h"
 
 class Raytracer {
 public:
@@ -18,6 +19,7 @@ private:
   std::vector<uint8_t> image_buf;
   Camera camera;
   IntersectableManager intersectables;
+  MaterialLoader material_loader;
   Model model;
 
   cl::Context context;

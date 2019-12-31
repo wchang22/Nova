@@ -36,13 +36,14 @@ typedef struct {
   float3 normal1;
   float3 normal2;
   float3 normal3;
+  float2 texture_coord1;
+  float2 texture_coord2;
+  float2 texture_coord3;
+  bool has_textures;
+  int ambient_index;
+  int diffuse_index;
+  int specular_index;
 } TriangleMeta;
-
-typedef struct {
-  float3 ambient;
-  float3 diffuse;
-  float3 specular;
-} Material;
 
 // Packed to 32 bytes to fit in a cache line
 // The 4th element of top_offset_left contains either the triangle offset or the left index
