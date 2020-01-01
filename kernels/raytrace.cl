@@ -4,18 +4,25 @@
 #include "transforms.cl"
 
 bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fast) {
-  int stack[STACK_SIZE];
-  int stack_ptr = 0;
-  // Push first node onto stack
-  stack[++stack_ptr] = 0;
+  /*
+   * We maintain a double ended stack for space efficiency.
+   * BVHNodes are pushed from the front to the back of the stack and
+   * triangle offsets and nums are pushed from the back to the front of the stack.
+   * This allows work items to find more than one leaf node before searching for
+   * triangles and reduces branch divergence.
+   */
+  uint stack[STACK_SIZE];
+  int node_ptr = -1;
+  int tri_ptr = STACK_SIZE;
 
-  while (stack_ptr) {
-    int offset = 0;
-    int num = 0;
+  // Push first node onto stack front
+  stack[++node_ptr] = 0;
 
-    while (stack_ptr) {
-      // Pop a node from the stack
-      BVHNode node = bvh[stack[stack_ptr--]];
+  while (node_ptr >= 0) {
+    // Make sure tri_ptr and node_ptr do not collide
+    while (node_ptr >= 0 && tri_ptr > node_ptr + 2) {
+      // Pop a node from the stack front
+      BVHNode node = bvh[stack[node_ptr--]];
 
       if (!intersects_aabb(ray, node.top_offset_left.xyz, node.bottom_num_right.xyz)) {
         continue;
@@ -23,29 +30,42 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fas
 
       // Inner node, no triangles
       if (node.top_offset_left.w > 0) {
-        // Push left and right children onto stack
-        int left = node.top_offset_left.w;
-        int right = node.bottom_num_right.w;
+        // Push left and right children onto stack front
+        uint left = node.top_offset_left.w;
+        uint right = node.bottom_num_right.w;
 
         if (right) {
-          stack[++stack_ptr] = right;
+          stack[++node_ptr] = right;
         }
         if (left) {
-          stack[++stack_ptr] = left;
+          stack[++node_ptr] = left;
         }
       }
       // Leaf node, no children
       else {
-        offset = -node.top_offset_left.w;
-        num = node.bottom_num_right.w;
-        break;
+        uint offset = -node.top_offset_left.w;
+        uint num = node.bottom_num_right.w;
+
+        // Pack offset and num into a single uint to save memory
+        uint packed_triangle_data = (offset & TRIANGLE_OFFSET_MASK) | (num << TRIANGLE_NUM_SHIFT);
+
+        // Push list of triangles to stack back
+        stack[--tri_ptr] = packed_triangle_data;
       }
     }
 
-    // If intersected, compute intersection for all triangles in the node
-    for (int i = offset; i < offset + num; i++) {
-      if (intersects_triangle(ray, i, triangles[i]) && fast && ray->length < max_dist) {
-        return true;
+    while (tri_ptr < STACK_SIZE) {
+      // Pop list of triangles from stack back
+      uint packed_triangle_data = stack[tri_ptr++];
+
+      uint offset = packed_triangle_data & TRIANGLE_OFFSET_MASK;
+      uint num = packed_triangle_data >> TRIANGLE_NUM_SHIFT;
+
+      // If intersected, compute intersection for all triangles in the node
+      for (uint i = offset; i < offset + num; i++) {
+        if (intersects_triangle(ray, i, triangles[i]) && fast && ray->length < max_dist) {
+          return true;
+        }
       }
     }
   }

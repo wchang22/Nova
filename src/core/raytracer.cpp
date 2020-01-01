@@ -25,6 +25,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
     std::stringstream build_args;
     build_args << "-cl-std=CL2.0";
     build_args << " -I" << KERNELS_PATH;
+    build_args << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS;
     program.build(build_args.str().c_str());
   } catch (...) {
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));

@@ -1,9 +1,15 @@
 #include "intersectable_manager.h"
 #include "acceleration/bvh.h"
+#include "util/exception/exception.h"
+#include "configuration.h"
 
 #include <glm/gtx/string_cast.hpp>
 
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
+  if (triangles.size() >= MAX_TRIANGLES) {
+    throw TriangleException("Max number of triangles exceeded");
+  }
+
   triangles.push_back(tri);
   triangle_map[tri] = meta;
 }
