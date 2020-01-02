@@ -16,9 +16,9 @@ float3 uint3_to_float3(float3 u) {
 Ray transform_ray(Ray ray, Triangle tri) {
   Ray woop_ray = ray;
 
-  woop_ray.point.x = dot(tri.transform_x.xyz, ray.point) + tri.transform_x.w;
-  woop_ray.point.y = dot(tri.transform_y.xyz, ray.point) + tri.transform_y.w;
-  woop_ray.point.z = dot(tri.transform_z.xyz, ray.point) + tri.transform_z.w;
+  woop_ray.origin.x = dot(tri.transform_x.xyz, ray.origin) + tri.transform_x.w;
+  woop_ray.origin.y = dot(tri.transform_y.xyz, ray.origin) + tri.transform_y.w;
+  woop_ray.origin.z = dot(tri.transform_z.xyz, ray.origin) + tri.transform_z.w;
 
   woop_ray.direction.x = dot(tri.transform_x.xyz, ray.direction);
   woop_ray.direction.y = dot(tri.transform_y.xyz, ray.direction);

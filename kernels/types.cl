@@ -4,16 +4,24 @@
 #include "configuration.cl"
 
 typedef struct {
-  float3 point;
+  float3 origin;
   float3 direction;
-  float3 barycentric_coords;
-  float length;
-  int intrs;
 } Ray;
 
 Ray create_ray(float3 point, float3 direction, float epsilon) {
-  return (Ray) { point + direction * epsilon, direction, 0, FLT_MAX, -1 };
+  return (Ray) { point + direction * epsilon, direction };
 }
+
+typedef struct {
+  float3 point;
+  float3 barycentric;
+  float length;
+  int tri_index;
+} Intersection;
+
+Intersection NO_INTERSECTION = {
+  (float3) 0, (float3) 0, FLT_MAX, -1
+};
 
 typedef struct {
   float2 coord_scale;

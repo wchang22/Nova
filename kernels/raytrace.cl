@@ -3,7 +3,8 @@
 #include "configuration.cl"
 #include "transforms.cl"
 
-bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fast) {
+bool trace(Triangle* triangles, BVHNode* bvh, Ray ray, Intersection* min_intrs,
+           float max_dist, bool fast) {
   /*
    * We maintain a double ended stack for space efficiency.
    * BVHNodes are pushed from the front to the back of the stack and
@@ -63,14 +64,15 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray* ray, float max_dist, bool fas
 
       // If intersected, compute intersection for all triangles in the node
       for (uint i = offset; i < offset + num; i++) {
-        if (intersects_triangle(ray, i, triangles[i]) && fast && ray->length < max_dist) {
+        if (intersects_triangle(ray, min_intrs, i, triangles[i])
+            && fast && min_intrs->length < max_dist) {
           return true;
         }
       }
     }
   }
 
-  return ray->length < max_dist;
+  return min_intrs->tri_index != -1;
 }
 
 kernel
@@ -91,30 +93,36 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
   Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
-  // Cast primary ray
-  if (trace(triangles, bvh, &ray, FLT_MAX, false)) {
-    Triangle tri = triangles[ray.intrs];
-    TriangleMeta meta = tri_meta[ray.intrs];
+  Intersection intrs = NO_INTERSECTION;
 
-    float3 intrs_point = ray.point + ray.direction * ray.length;
+  // Cast primary ray
+  if (trace(triangles, bvh, ray, &intrs, FLT_MAX, false)) {
+    Triangle tri = triangles[intrs.tri_index];
+    TriangleMeta meta = tri_meta[intrs.tri_index];
+
+    intrs.point = ray.origin + ray.direction * intrs.length;
 
     // Add ambient color even if pixel is in shadow
-    color += read_material(materials, ray, meta, meta.ambient_index, DEFAULT_AMBIENT);
+    color += read_material(materials, intrs.barycentric, meta, meta.ambient_index, DEFAULT_AMBIENT);
 
     // Cast a shadow ray to the light
-    float3 light_dir = LIGHT_POS - intrs_point;
+    float3 light_dir = LIGHT_POS - intrs.point;
     float3 normalized_light_dir = fast_normalize(light_dir);
-    Ray shadow_ray = create_ray(intrs_point, normalized_light_dir, RAY_EPSILON);
+    Ray shadow_ray = create_ray(intrs.point, normalized_light_dir, RAY_EPSILON);
+
+    Intersection light_intrs = NO_INTERSECTION;
 
     // Shade the pixel if ray is not blocked
-    if (!trace(triangles, bvh, &shadow_ray, length(light_dir), true)) {
+    if (!trace(triangles, bvh, shadow_ray, &light_intrs, length(light_dir), true)) {
       // Interpolate triangle normal from vertex normals
       float3 normal = normalize(
-        triangle_interpolate3(ray.barycentric_coords, meta.normal1, meta.normal2, meta.normal3)
+        triangle_interpolate3(intrs.barycentric, meta.normal1, meta.normal2, meta.normal3)
       );
 
-      float3 diffuse = read_material(materials, ray, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
-      float3 specular = read_material(materials, ray, meta, meta.specular_index, DEFAULT_SPECULAR);
+      float3 diffuse =
+        read_material(materials, intrs.barycentric, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
+      float3 specular =
+        read_material(materials, intrs.barycentric, meta, meta.specular_index, DEFAULT_SPECULAR);
 
       color += shade(normalized_light_dir, ray.direction, normal, diffuse, specular, SHININESS);
     }
