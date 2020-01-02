@@ -100,10 +100,24 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     Triangle tri = triangles[intrs.tri_index];
     TriangleMeta meta = tri_meta[intrs.tri_index];
 
+    // Calculate intersection point
     intrs.point = ray.origin + ray.direction * intrs.length;
 
+    // Interpolate triangle normal from vertex normals
+    float3 normal = normalize(
+      triangle_interpolate3(intrs.barycentric, meta.normal1, meta.normal2, meta.normal3)
+    );
+
+    // Look up materials
+    float3 ambient =
+      read_material(materials, intrs.barycentric, meta, meta.ambient_index, DEFAULT_AMBIENT);
+    float3 diffuse =
+      read_material(materials, intrs.barycentric, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
+    float3 specular =
+      read_material(materials, intrs.barycentric, meta, meta.specular_index, DEFAULT_SPECULAR);
+
     // Add ambient color even if pixel is in shadow
-    color += read_material(materials, intrs.barycentric, meta, meta.ambient_index, DEFAULT_AMBIENT);
+    color += ambient;
 
     // Cast a shadow ray to the light
     float3 light_dir = LIGHT_POS - intrs.point;
@@ -114,16 +128,6 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
 
     // Shade the pixel if ray is not blocked
     if (!trace(triangles, bvh, shadow_ray, &light_intrs, length(light_dir), true)) {
-      // Interpolate triangle normal from vertex normals
-      float3 normal = normalize(
-        triangle_interpolate3(intrs.barycentric, meta.normal1, meta.normal2, meta.normal3)
-      );
-
-      float3 diffuse =
-        read_material(materials, intrs.barycentric, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
-      float3 specular =
-        read_material(materials, intrs.barycentric, meta, meta.specular_index, DEFAULT_SPECULAR);
-
       color += shade(normalized_light_dir, ray.direction, normal, diffuse, specular, SHININESS);
     }
   }
