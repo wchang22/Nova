@@ -21,4 +21,6 @@ const float3 DEFAULT_SPECULAR = 0.4;
 
 const float RAY_EPSILON = 1e-2; // Prevent self-shadowing
 
+const uint RAY_RECURSION_DEPTH = 5;
+
 #endif // CONFIGURATION_H

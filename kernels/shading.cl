@@ -6,18 +6,14 @@ constant sampler_t material_sampler =
   CLK_FILTER_NEAREST |
   CLK_NORMALIZED_COORDS_TRUE;
 
-float3 read_material(read_only image2d_array_t materials, float3 barycentric,
-                     TriangleMeta meta, int index, float3 default_material) {
+float3 read_material(read_only image2d_array_t materials, TriangleMeta meta,
+                     float2 texture_coord, int index, float3 default_material) {
   if (!meta.has_textures) {
     return default_material;
   }
   if (index == -1) {
     return 0;
   }
-
-  float2 texture_coord = triangle_interpolate2(
-    barycentric, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
-  );
 
   float3 texture = convert_float3(
     read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0)).xyz

@@ -4,7 +4,7 @@
 #include "transforms.cl"
 
 bool trace(Triangle* triangles, BVHNode* bvh, Ray ray, Intersection* min_intrs,
-           float max_dist, bool fast) {
+           bool fast) {
   /*
    * We maintain a double ended stack for space efficiency.
    * BVHNodes are pushed from the front to the back of the stack and
@@ -64,8 +64,7 @@ bool trace(Triangle* triangles, BVHNode* bvh, Ray ray, Intersection* min_intrs,
 
       // If intersected, compute intersection for all triangles in the node
       for (uint i = offset; i < offset + num; i++) {
-        if (intersects_triangle(ray, min_intrs, i, triangles[i])
-            && fast && min_intrs->length < max_dist) {
+        if (intersects_triangle(ray, min_intrs, i, triangles[i]) && fast) {
           return true;
         }
       }
@@ -90,46 +89,67 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   float3 ray_pos = ec.eye_pos;
 
   float3 color = 0;
+  float3 reflectance = 1;
 
-  Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
+  for (int depth = 0; depth < RAY_RECURSION_DEPTH; depth++) {
+    Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
-  Intersection intrs = NO_INTERSECTION;
+    Intersection intrs = NO_INTERSECTION;
 
-  // Cast primary ray
-  if (trace(triangles, bvh, ray, &intrs, FLT_MAX, false)) {
-    Triangle tri = triangles[intrs.tri_index];
+    // Cast primary/reflection ray
+    if (!trace(triangles, bvh, ray, &intrs, false)) {
+      break;
+    }
+
     TriangleMeta meta = tri_meta[intrs.tri_index];
 
     // Calculate intersection point
     intrs.point = ray.origin + ray.direction * intrs.length;
 
-    // Interpolate triangle normal from vertex normals
-    float3 normal = normalize(
+    // Interpolate triangle normal and texture coords from vertex data
+    float3 normal = fast_normalize(
       triangle_interpolate3(intrs.barycentric, meta.normal1, meta.normal2, meta.normal3)
+    );
+    float2 texture_coord = triangle_interpolate2(
+      intrs.barycentric, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
     );
 
     // Look up materials
     float3 ambient =
-      read_material(materials, intrs.barycentric, meta, meta.ambient_index, DEFAULT_AMBIENT);
+      read_material(materials, meta, texture_coord, meta.ambient_index, DEFAULT_AMBIENT);
     float3 diffuse =
-      read_material(materials, intrs.barycentric, meta, meta.diffuse_index, DEFAULT_DIFFUSE);
+      read_material(materials, meta, texture_coord, meta.diffuse_index, DEFAULT_DIFFUSE);
     float3 specular =
-      read_material(materials, intrs.barycentric, meta, meta.specular_index, DEFAULT_SPECULAR);
+      read_material(materials, meta, texture_coord, meta.specular_index, DEFAULT_SPECULAR);
 
     // Add ambient color even if pixel is in shadow
-    color += ambient;
+    float3 intrs_color = ambient;
 
     // Cast a shadow ray to the light
-    float3 light_dir = LIGHT_POS - intrs.point;
-    float3 normalized_light_dir = fast_normalize(light_dir);
-    Ray shadow_ray = create_ray(intrs.point, normalized_light_dir, RAY_EPSILON);
+    float3 light_dir = fast_normalize(LIGHT_POS - intrs.point);
+    float light_distance = fast_distance(LIGHT_POS, intrs.point);
+    Ray shadow_ray = create_ray(intrs.point, light_dir, RAY_EPSILON);
 
     Intersection light_intrs = NO_INTERSECTION;
+    // Ensure objects blocking light are not behind the light
+    light_intrs.length = light_distance;
 
     // Shade the pixel if ray is not blocked
-    if (!trace(triangles, bvh, shadow_ray, &light_intrs, length(light_dir), true)) {
-      color += shade(normalized_light_dir, ray.direction, normal, diffuse, specular, SHININESS);
+    if (!trace(triangles, bvh, shadow_ray, &light_intrs, true)) {
+      intrs_color += shade(light_dir, ray.direction, normal, diffuse, specular, SHININESS);
     }
+
+    /*
+     * Normally, color is calculated recursively:
+     * (intrs_color + specular * (intrs_color of reflected ray))
+     * So we use an additional "reflectance" value to unroll the recursion
+     */
+    color += reflectance * intrs_color;
+    reflectance *= specular;
+
+    // Reflect ray off of intersection point
+    ray_pos = intrs.point;
+    ray_dir = reflect(ray_dir, normal);
   }
 
   write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1) * 255));
