@@ -3,7 +3,7 @@
 #include "configuration.cl"
 #include "transforms.cl"
 
-bool trace(Triangle* triangles, BVHNode* bvh, Ray ray, Intersection* min_intrs,
+bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersection* min_intrs,
            bool fast) {
   /*
    * We maintain a double ended stack for space efficiency.

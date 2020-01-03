@@ -8,6 +8,7 @@
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
 #include "util/kernel/kernelutils.h"
+#include "util/opencl/clutils.h"
 #include "configuration.h"
 
 Raytracer::Raytracer(uint32_t width, uint32_t height)
@@ -23,7 +24,6 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
 {
   try {
     std::stringstream build_args;
-    build_args << "-cl-std=CL2.0";
     build_args << " -I" << KERNELS_PATH;
     build_args << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS;
     program.build(build_args.str().c_str());
@@ -57,8 +57,10 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");
-    queue.enqueueReadImage(image, true, { 0, 0, 0 }, { width, height, 1 },
-                          0, 0, image_buf.data());
+    queue.enqueueReadImage(image, true,
+                           cl_utils::create_size_t<3>({ 0, 0, 0 }),
+                           cl_utils::create_size_t<3>({ width, height, 1 }),
+                           0, 0, image_buf.data());
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();

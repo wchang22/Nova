@@ -1,7 +1,15 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-#include <CL/cl2.hpp>
+#ifdef OPENCL_2
+  #include <CL/cl2.hpp>
+#else
+  #ifdef __APPLE__
+    #include <OpenCL/cl.hpp>
+  #else
+    #include <CL/cl.hpp>
+  #endif
+#endif
 
 namespace kernel_utils {
   void set_args_helper(cl::Kernel& kernel, uint32_t i) {

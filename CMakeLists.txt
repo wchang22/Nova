@@ -52,8 +52,15 @@ if (PROFILE)
 endif()
 
 # Defines
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_ENABLE_EXCEPTIONS)
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=200)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    -DCL_HPP_ENABLE_EXCEPTIONS -D__CL_ENABLE_EXCEPTIONS)
+if (${OpenCL_VERSION_MAJOR} EQUAL 2)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=200)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_2)
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=120)
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
 
@@ -62,3 +69,4 @@ message("Build Options -----------------------------------")
 message("RELEASE ----------------------------------------- ${RELEASE}")
 message("LOG --------------------------------------------- ${LOG}")
 message("PROFILE ----------------------------------------- ${PROFILE}")
+message("OpenCL Version ---------------------------------- ${OpenCL_VERSION_STRING}")

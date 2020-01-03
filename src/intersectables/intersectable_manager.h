@@ -1,9 +1,18 @@
 #ifndef INTERSECTABLE_MANAGER_H
 #define INTERSECTABLE_MANAGER_H
 
+#ifdef OPENCL_2
+  #include <CL/cl2.hpp>
+#else
+  #ifdef __APPLE__
+    #include <OpenCL/cl.hpp>
+  #else
+    #include <CL/cl.hpp>
+  #endif
+#endif
+
 #include <vector>
 #include <unordered_map>
-#include <CL/cl2.hpp>
 
 #include "intersectables/triangle.h"
 

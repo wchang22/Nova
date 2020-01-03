@@ -19,7 +19,7 @@ typedef struct {
   int tri_index;
 } Intersection;
 
-Intersection NO_INTERSECTION = {
+constant Intersection NO_INTERSECTION = {
   (float3) 0, (float3) 0, FLT_MAX, -1
 };
 

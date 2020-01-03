@@ -1,7 +1,15 @@
 #ifndef RAYTRACER_H
 #define RAYTRACER_H
 
-#include <CL/cl2.hpp>
+#ifdef OPENCL_2
+  #include <CL/cl2.hpp>
+#else
+  #ifdef __APPLE__
+    #include <OpenCL/cl.hpp>
+  #else
+    #include <CL/cl.hpp>
+  #endif
+#endif
 
 #include "camera/camera.h"
 #include "intersectables/intersectable_manager.h"

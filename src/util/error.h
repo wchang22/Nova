@@ -1,7 +1,15 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include <CL/cl2.hpp>
+#ifdef OPENCL_2
+  #include <CL/cl2.hpp>
+#else
+  #ifdef __APPLE__
+    #include <OpenCL/cl.hpp>
+  #else
+    #include <CL/cl.hpp>
+  #endif
+#endif
 
 const char* get_error_string(cl_int error)
 {

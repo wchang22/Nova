@@ -1,7 +1,16 @@
 #ifndef BVH_H
 #define BVH_H
 
-#include <CL/cl2.hpp>
+#ifdef OPENCL_2
+  #include <CL/cl2.hpp>
+#else
+  #ifdef __APPLE__
+    #include <OpenCL/cl.hpp>
+  #else
+    #include <CL/cl.hpp>
+  #endif
+#endif
+
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
