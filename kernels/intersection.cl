@@ -7,7 +7,10 @@
 // Use woop transformation to transform ray to unit triangle space
 // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
 bool intersects_triangle(Ray ray, Intersection* intrs, int tri_index, Triangle tri) {
-  Ray woop_ray = transform_ray(ray, tri);
+  // Transform ray to unit triangle space
+  Ray woop_ray = ray;
+  woop_ray.origin = mat4x3_vec3_mult(tri.transform, ray.origin);
+  woop_ray.direction = mat3x3_vec3_mult(mat4x3_to_mat3x3(tri.transform), ray.direction);
 
   float t = -woop_ray.origin.z / woop_ray.direction.z;
   if (t < 0.0f || t >= intrs->length) {

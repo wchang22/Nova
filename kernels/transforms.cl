@@ -2,6 +2,7 @@
 #define TRANSFORMS_CL
 
 #include "types.cl"
+#include "matrix.cl"
 
 float3 reflect(float3 I, float3 N) {
   return I - 2.0f * dot(I, N) * N;
@@ -10,21 +11,6 @@ float3 reflect(float3 I, float3 N) {
 float3 uint3_to_float3(float3 u) {
   // Multiplying by 1 / x can help avoid produce an fdiv instruction
   return u * (1.0f / 255.0f);
-}
-
-// Transform ray to unit triangle space
-Ray transform_ray(Ray ray, Triangle tri) {
-  Ray woop_ray = ray;
-
-  woop_ray.origin.x = dot(tri.transform_x.xyz, ray.origin) + tri.transform_x.w;
-  woop_ray.origin.y = dot(tri.transform_y.xyz, ray.origin) + tri.transform_y.w;
-  woop_ray.origin.z = dot(tri.transform_z.xyz, ray.origin) + tri.transform_z.w;
-
-  woop_ray.direction.x = dot(tri.transform_x.xyz, ray.direction);
-  woop_ray.direction.y = dot(tri.transform_y.xyz, ray.direction);
-  woop_ray.direction.z = dot(tri.transform_z.xyz, ray.direction);
-
-  return woop_ray;
 }
 
 float3 triangle_interpolate3(float3 barycentric_coords, float3 a, float3 b, float3 c) {

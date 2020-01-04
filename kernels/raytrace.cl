@@ -83,9 +83,9 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
-  float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame0 -
-                                  alpha_beta.y * ec.eye_coord_frame1 -
-                                                 ec.eye_coord_frame2);
+  float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
+                                  alpha_beta.y * ec.eye_coord_frame.y -
+                                                 ec.eye_coord_frame.z);
   float3 ray_pos = ec.eye_pos;
 
   float3 color = 0;

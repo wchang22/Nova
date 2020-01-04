@@ -2,6 +2,7 @@
 #define TYPES_CL
 
 #include "configuration.cl"
+#include "matrix.cl"
 
 typedef struct {
   float3 origin;
@@ -27,16 +28,12 @@ typedef struct {
   float2 coord_scale;
   float2 coord_dims;
   float3 eye_pos;
-  float3 eye_coord_frame0;
-  float3 eye_coord_frame1;
-  float3 eye_coord_frame2;
+  Mat3x3 eye_coord_frame;
 } EyeCoords;
 
 // Woop 4x3 affine transform matrix
 typedef struct {
-  float4 transform_x;
-  float4 transform_y;
-  float4 transform_z;
+  Mat4x3 transform;
 } Triangle;
 
 // We look up the triangle metadata and material separately to reduce cache pressure
