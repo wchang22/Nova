@@ -2,7 +2,7 @@
 #define TEXTURE_CL
 
 constant sampler_t material_sampler =
-  CLK_ADDRESS_CLAMP |
+  CLK_ADDRESS_REPEAT |
   CLK_FILTER_NEAREST |
   CLK_NORMALIZED_COORDS_TRUE;
 
