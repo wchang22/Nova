@@ -1,5 +1,5 @@
 #include "intersection.cl"
-#include "shading.cl"
+#include "texture.cl"
 #include "configuration.cl"
 #include "transforms.cl"
 
@@ -106,10 +106,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     // Calculate intersection point
     intrs.point = ray.origin + ray.direction * intrs.length;
 
-    // Interpolate triangle normal and texture coords from vertex data
-    float3 normal = fast_normalize(
-      triangle_interpolate3(intrs.barycentric, meta.normal1, meta.normal2, meta.normal3)
-    );
+    // Interpolate texture coords from vertex data
     float2 texture_coord = triangle_interpolate2(
       intrs.barycentric, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
     );
@@ -121,6 +118,8 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
       read_material(materials, meta, texture_coord, meta.diffuse_index, DEFAULT_DIFFUSE);
     float3 specular =
       read_material(materials, meta, texture_coord, meta.specular_index, DEFAULT_SPECULAR);
+
+    float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
     // Add ambient color even if pixel is in shadow
     float3 intrs_color = ambient;

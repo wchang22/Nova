@@ -22,7 +22,8 @@ void Model::load_model(const std::string& path)
                                            aiProcess_OptimizeGraph |
                                            aiProcess_OptimizeMeshes |
                                            aiProcess_ImproveCacheLocality |
-                                           aiProcess_GenNormals);
+                                           aiProcess_GenNormals |
+                                           aiProcess_CalcTangentSpace);
 
   if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
     throw ModelException(std::string("Assimp Error: ") + importer.GetErrorString());
@@ -48,19 +49,33 @@ void Model::process_node(aiNode* node, const aiScene* scene)
 void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
 {
   bool has_textures = mesh->mTextureCoords[0];
+  bool has_tangents = mesh->mTangents;
 
-  std::vector<vec3> vertices, normals;
+  std::vector<vec3> vertices, normals, tangents, bitangents;
   std::vector<vec2> textures;
   vertices.reserve(mesh->mNumVertices);
   normals.reserve(mesh->mNumVertices);
   if (has_textures) {
     textures.reserve(mesh->mNumVertices);
   }
+  if (has_tangents) {
+    tangents.reserve(mesh->mNumVertices);
+    bitangents.reserve(mesh->mNumVertices);
+  }
 
   aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
   int ambient_index = load_materials(material, aiTextureType_AMBIENT);
   int diffuse_index = load_materials(material, aiTextureType_DIFFUSE);
   int specular_index = load_materials(material, aiTextureType_SPECULAR);
+  int normal_index = load_materials(material, aiTextureType_NORMALS);
+  // Some formats load normal maps into HEIGHT
+  if (normal_index == -1) {
+    normal_index = load_materials(material, aiTextureType_HEIGHT);
+  }
+  // If no normal map, no need for tangents
+  if (normal_index == -1) {
+    has_tangents = false;
+  }
 
   for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
     vertices.emplace_back(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
@@ -68,6 +83,11 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     if (has_textures) {
       // TODO: Support more than one texture coord
       textures.emplace_back(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+    }
+    if (has_tangents) {
+      tangents.emplace_back(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+      bitangents.emplace_back(
+        mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
     }
   }
 
@@ -90,13 +110,34 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     vec3 n1 = normalize(normals[face.mIndices[0]]);
     vec3 n2 = normalize(normals[face.mIndices[1]]);
     vec3 n3 = normalize(normals[face.mIndices[2]]);
+    vec3 tan1 = has_tangents ? tangents[face.mIndices[0]] : vec3(0);
+    vec3 tan2 = has_tangents ? tangents[face.mIndices[1]] : vec3(0);
+    vec3 tan3 = has_tangents ? tangents[face.mIndices[2]] : vec3(0);
+    vec3 bit1 = has_tangents ? bitangents[face.mIndices[0]] : vec3(0);
+    vec3 bit2 = has_tangents ? bitangents[face.mIndices[1]] : vec3(0);
+    vec3 bit3 = has_tangents ? bitangents[face.mIndices[2]] : vec3(0);
     vec2 t1 = has_textures ? textures[face.mIndices[0]] : vec2(0);
     vec2 t2 = has_textures ? textures[face.mIndices[1]] : vec2(0);
     vec2 t3 = has_textures ? textures[face.mIndices[2]] : vec2(0);
 
+    // Fixes models with symmetric uv coordinates
+    vec3 fixed_bit1 = cross(n1, tan1);
+    vec3 fixed_bit2 = cross(n2, tan2);
+    vec3 fixed_bit3 = cross(n3, tan3);
+    if (dot(fixed_bit1, bit1) < 0.0) {
+      fixed_bit1 *= -1.0f;
+    }
+    if (dot(fixed_bit2, bit2) < 0.0) {
+      fixed_bit2 *= -1.0f;
+    }
+    if (dot(fixed_bit3, bit3) < 0.0) {
+      fixed_bit3 *= -1.0f;
+    }
+
     intersectables.add_triangle(
       { v1, v2, v3 },
-      { n1, n2, n3, t1, t2, t3, has_textures, ambient_index, diffuse_index, specular_index }
+      { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
+        ambient_index, diffuse_index, specular_index, normal_index }
     );
   }
 }

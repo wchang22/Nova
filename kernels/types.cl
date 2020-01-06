@@ -41,13 +41,19 @@ typedef struct {
   float3 normal1;
   float3 normal2;
   float3 normal3;
+  float3 tangent1;
+  float3 tangent2;
+  float3 tangent3;
+  float3 bitangent1;
+  float3 bitangent2;
+  float3 bitangent3;
   float2 texture_coord1;
   float2 texture_coord2;
   float2 texture_coord3;
-  bool has_textures;
   int ambient_index;
   int diffuse_index;
   int specular_index;
+  int normal_index;
 } TriangleMeta;
 
 // Packed to 32 bytes to fit in a cache line

@@ -29,6 +29,14 @@ float3 mat3x3_vec3_mult(Mat3x3 mat, float3 vec) {
   );
 }
 
+Mat3x3 mat3x3_transpose(Mat3x3 mat) {
+  return (Mat3x3) {
+    (float3)(mat.x.x, mat.y.x, mat.z.x),
+    (float3)(mat.x.y, mat.y.y, mat.z.y),
+    (float3)(mat.x.z, mat.y.z, mat.z.z)
+  };
+}
+
 float3 mat4x3_vec3_mult(Mat4x3 mat, float3 vec) {
   float4 vec4 = (float4)(vec, 1.0f);
   return (float3)(
