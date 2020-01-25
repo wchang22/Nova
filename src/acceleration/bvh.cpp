@@ -222,8 +222,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     assert(!node->left && !node->right);
 
     // Denote that the node is a leaf node by negating
-    flat_nodes[flat_node_index].top_offset_left.s[3] = -static_cast<float>(triangles.size());
-    flat_nodes[flat_node_index].bottom_num_right.s[3] = node->triangles.size();
+    flat_nodes[flat_node_index].top_offset_left.s[3] = triangles.size();
+    flat_nodes[flat_node_index].bottom_num_right.s[3] = -static_cast<float>(node->triangles.size());
     triangles.insert(triangles.end(),
                      std::make_move_iterator(node->triangles.begin()),
                      std::make_move_iterator(node->triangles.end()));

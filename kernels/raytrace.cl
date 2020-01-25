@@ -30,7 +30,7 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
       }
 
       // Inner node, no triangles
-      if (node.top_offset_left.w > 0) {
+      if (node.bottom_num_right.w >= 0) {
         // Push left and right children onto stack front
         uint left = node.top_offset_left.w;
         uint right = node.bottom_num_right.w;
@@ -44,8 +44,8 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
       }
       // Leaf node, no children
       else {
-        uint offset = -node.top_offset_left.w;
-        uint num = node.bottom_num_right.w;
+        uint offset = node.top_offset_left.w;
+        uint num = -node.bottom_num_right.w;
 
         // Pack offset and num into a single uint to save memory
         uint packed_triangle_data = (offset & TRIANGLE_OFFSET_MASK) | (num << TRIANGLE_NUM_SHIFT);
