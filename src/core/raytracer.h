@@ -11,6 +11,7 @@
   #endif
 #endif
 
+#include "scene_parser.h"
 #include "camera/camera.h"
 #include "intersectables/intersectable_manager.h"
 #include "model/model.h"
@@ -23,9 +24,11 @@ public:
   void raytrace();
 
 private:
+  SceneParser scene_parser;
   uint32_t width, height;
-  std::vector<uint8_t> image_buf;
+  CameraSettings camera_settings;
   Camera camera;
+  std::string model_name;
   IntersectableManager intersectables;
   MaterialLoader material_loader;
   Model model;

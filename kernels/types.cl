@@ -1,7 +1,7 @@
 #ifndef TYPES_CL
 #define TYPES_CL
 
-#include "configuration.cl"
+#include "constants.cl"
 #include "matrix.cl"
 
 typedef struct {

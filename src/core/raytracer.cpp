@@ -9,23 +9,38 @@
 #include "util/profiling/profiling.h"
 #include "util/kernel/kernelutils.h"
 #include "util/opencl/clutils.h"
-#include "configuration.h"
+#include "constants.h"
 
 Raytracer::Raytracer(uint32_t width, uint32_t height)
   : width(width), height(height),
-    image_buf(width * height * sizeof(ivec4)),
-    camera(CAMERA_POSITION, CAMERA_FORWARD, CAMERA_UP, width, height, CAMERA_FOVY),
-    model(MODEL_PATH, intersectables, material_loader),
+    camera_settings(scene_parser.get_camera_settings()),
+    camera(camera_settings.position, camera_settings.forward, camera_settings.up,
+           width, height, camera_settings.fovy),
+    model_name(std::filesystem::path(scene_parser.get_model_path()).stem().string()),
+    intersectables(model_name),
+    model(scene_parser.get_model_path().c_str(), intersectables, material_loader),
     context(DEVICE_TYPE),
     device(context.getInfo<CL_CONTEXT_DEVICES>().front()),
     queue(context),
     program(context, file_utils::read_file(KERNEL_PATH)),
     image(context, CL_MEM_WRITE_ONLY, cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height)
 {
+  const auto [default_ambient, default_diffuse, default_specular, default_shininess]
+    = scene_parser.get_shading_default_settings();
+  const vec3 light_position = scene_parser.get_light_position();
+  const unsigned int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
+
   try {
     std::stringstream build_args;
     build_args << " -I" << KERNELS_PATH;
     build_args << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS;
+    build_args << " -DDEFAULT_AMBIENT=" << default_ambient;
+    build_args << " -DDEFAULT_DIFFUSE=" << default_diffuse;
+    build_args << " -DDEFAULT_SPECULAR=" << default_specular;
+    build_args << " -DDEFAULT_SHININESS=" << default_shininess;
+    build_args << " -DLIGHT_POS=" << "(float3)("
+               << light_position.x << "," << light_position.y << "," << light_position.z << ")";
+    build_args << " -DRAY_RECURSION_DEPTH=" << ray_recursion_depth;
     program.build(build_args.str().c_str());
   } catch (...) {
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));
@@ -38,6 +53,7 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
+  std::vector<uint8_t> image_buf(width * height * STBI_rgb_alpha);
   cl::Buffer triangle_buf, tri_meta_buf, bvh_buf;
 
   auto ec = camera.get_eye_coords();
@@ -66,7 +82,7 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
-  std::string image_out_name = std::filesystem::path(MODEL_PATH).stem().string() + ".jpg";
+  std::string image_out_name = model_name + ".jpg";
   image_utils::write_image(image_out_name.c_str(), { image_buf, width, height });
   PROFILE_SECTION_END();
 }

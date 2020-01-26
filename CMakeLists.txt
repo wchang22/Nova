@@ -61,6 +61,7 @@ else()
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=120)
 endif()
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DSRC_PATH="${CMAKE_SOURCE_DIR}/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
 

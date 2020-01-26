@@ -48,7 +48,7 @@ std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node);
 
 class BVH {
 public:
-  BVH(std::vector<Triangle>& triangles);
+  BVH(const std::string& model_name, std::vector<Triangle>& triangles);
 
   // Note: Modifies `triangles`
   cl::Buffer build_bvh_buffer(const cl::Context& context);
@@ -72,6 +72,7 @@ private:
   void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);
   size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
 
+  std::string model_name;
   std::vector<Triangle>& triangles;
 };
 

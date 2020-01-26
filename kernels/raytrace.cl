@@ -1,6 +1,6 @@
 #include "intersection.cl"
 #include "texture.cl"
-#include "configuration.cl"
+#include "constants.cl"
 #include "transforms.cl"
 
 bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersection* min_intrs,
