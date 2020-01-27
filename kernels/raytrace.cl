@@ -16,30 +16,32 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
   int node_ptr = -1;
   int tri_ptr = STACK_SIZE;
 
-  // Push first node onto stack front
+  // Set first value of stack to 0. We stop traversing when we pop this value.
   stack[++node_ptr] = 0;
 
-  while (node_ptr >= 0) {
-    // Make sure tri_ptr and node_ptr do not collide
-    while (node_ptr >= 0 && tri_ptr > node_ptr + 2) {
-      // Pop a node from the stack front
-      BVHNode node = bvh[stack[node_ptr--]];
+  int node_index = 0;
+  do {
+    do {
+      BVHNode node = bvh[node_index];
 
       if (!intersects_aabb(ray, node.top_offset_left.xyz, node.bottom_num_right.xyz)) {
+        node_index = stack[node_ptr--];
         continue;
       }
 
       // Inner node, no triangles
       if (node.bottom_num_right.w >= 0) {
-        // Push left and right children onto stack front
+        // Traverse left and right children
         uint left = node.top_offset_left.w;
         uint right = node.bottom_num_right.w;
 
-        if (right) {
-          stack[++node_ptr] = right;
-        }
-        if (left) {
-          stack[++node_ptr] = left;
+        if (!left && !right) {
+          node_index = stack[node_ptr--];
+        } else {
+          node_index = left ? left : right;
+          if (left && right) {
+            stack[++node_ptr] = right;
+          }
         }
       }
       // Leaf node, no children
@@ -52,8 +54,11 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
 
         // Push list of triangles to stack back
         stack[--tri_ptr] = packed_triangle_data;
+
+        node_index = stack[node_ptr--];
       }
-    }
+      // Make sure tri_ptr and node_ptr do not collide
+    } while (node_index && tri_ptr > node_ptr + 2);
 
     while (tri_ptr < STACK_SIZE) {
       // Pop list of triangles from stack back
@@ -69,7 +74,7 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
         }
       }
     }
-  }
+  } while (node_index);
 
   return min_intrs->tri_index != -1;
 }
