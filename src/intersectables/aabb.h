@@ -2,6 +2,7 @@
 #define AABB_H
 
 #include <glm/glm.hpp>
+#include <ostream>
 
 using namespace glm;
 
@@ -23,5 +24,7 @@ struct AABB {
 
   bool operator==(const AABB& other) const;
 };
+
+std::ostream& operator<<(std::ostream& out, const AABB& aabb);
 
 #endif // AABB_H

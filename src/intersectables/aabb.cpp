@@ -1,4 +1,5 @@
 #include <glm/gtx/vec_swizzle.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "aabb.h"
 
@@ -53,4 +54,9 @@ AABB AABB::get_union(const AABB& other) const {
 
 bool AABB::operator==(const AABB& other) const {
   return top == other.top && bottom == other.bottom;
+}
+
+std::ostream& operator<<(std::ostream& out, const AABB& aabb) {
+  out << "{ " << to_string(aabb.top) << ", " << to_string(aabb.bottom) << " }";
+  return out;
 }
