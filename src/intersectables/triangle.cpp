@@ -12,15 +12,12 @@ inline void hash_combine(size_t& s, const T & v)
 
 size_t TriangleHash::operator()(const Triangle& tri) const {
   size_t hash = 0;
+  const vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
 
-  for (int i = 0; i < 3; i++) {
-    hash_combine(hash, tri.v1[i]);
-  }
-  for (int i = 0; i < 3; i++) {
-    hash_combine(hash, tri.v2[i]);
-  }
-  for (int i = 0; i < 3; i++) {
-    hash_combine(hash, tri.v3[i]);
+  for (int v = 0; v < 3; v++) {
+    for (int i = 0; i < 3; i++) {
+      hash_combine(hash, (*vertices[v])[i]);
+    }
   }
 
   return hash;

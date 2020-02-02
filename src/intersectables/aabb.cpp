@@ -24,3 +24,7 @@ void AABB::shrink(const AABB& other) {
   top = min(top, other.top);
   bottom = max(bottom, other.bottom);
 }
+
+bool AABB::operator==(const AABB& other) const {
+  return top == other.top && bottom == other.bottom;
+}

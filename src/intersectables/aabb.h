@@ -25,6 +25,7 @@ struct AABB {
   vec3 get_center() const;
   void grow(const AABB& other);
   void shrink(const AABB& other);
+  bool operator==(const AABB& other) const;
 };
 
 #endif // AABB_H

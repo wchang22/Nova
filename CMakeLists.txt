@@ -16,12 +16,12 @@ target_compile_definitions(${LIBS_NAME} PRIVATE -DGLM_FORCE_INTRINSICS -DGLM_FOR
 target_compile_options(${LIBS_NAME} PRIVATE -march=native)
 
 # Source files
-file(GLOB_RECURSE SOURCES src/*)
+file(GLOB_RECURSE SOURCES src/*/*)
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic")
 
 # Link and build
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${LIBS_NAME} ${OpenCL_LIBRARIES} ${ASSIMP_LIBRARIES} OpenMP::OpenMP_CXX)
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
@@ -71,3 +71,5 @@ message("RELEASE ----------------------------------------- ${RELEASE}")
 message("LOG --------------------------------------------- ${LOG}")
 message("PROFILE ----------------------------------------- ${PROFILE}")
 message("OpenCL Version ---------------------------------- ${OpenCL_VERSION_STRING}")
+
+add_subdirectory(tests)
