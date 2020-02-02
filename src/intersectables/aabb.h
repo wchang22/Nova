@@ -23,6 +23,7 @@ struct AABB {
   AABB get_union(const AABB& other) const;
 
   bool operator==(const AABB& other) const;
+  bool operator!=(const AABB& other) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const AABB& aabb);

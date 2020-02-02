@@ -27,7 +27,7 @@ void AABB::shrink(const AABB& other) {
 }
 
 bool AABB::intersects(const AABB& other, int axis) const {
-  return top[axis] > other.bottom[axis] && bottom[axis] < other.top[axis];
+  return top[axis] >= other.bottom[axis] && bottom[axis] <= other.top[axis];
 }
 
 bool AABB::intersects(const AABB& other) const {
@@ -54,6 +54,10 @@ AABB AABB::get_union(const AABB& other) const {
 
 bool AABB::operator==(const AABB& other) const {
   return top == other.top && bottom == other.bottom;
+}
+
+bool AABB::operator!=(const AABB& other) const {
+  return !(*this == other);
 }
 
 std::ostream& operator<<(std::ostream& out, const AABB& aabb) {

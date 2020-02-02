@@ -166,7 +166,8 @@ SplitParams get_object_split(int axis, float split, std::unique_ptr<BVHNode>& no
 
 SplitParams get_spatial_split(int axis, float split, size_t index,
                               std::unique_ptr<BVHNode>& node,
-                              const std::vector<Bin>& bins) {
+                              const std::vector<Bin>& bins,
+                              const std::vector<AABB>& clips) {
   AABB left = NO_INTERSECTION;
   AABB right = NO_INTERSECTION;
 
@@ -175,35 +176,41 @@ SplitParams get_spatial_split(int axis, float split, size_t index,
 
   std::vector<SplitType> split_type(node->triangles.size());
 
+  for (size_t i = 0; i <= index; i++) {
+    const auto& [bounds, enter, exit] = bins[i];
+    left_num_triangles += enter;
+    left.grow(clips[i]);
+  }
+  for (size_t i = index + 1; i < bins.size(); i++) {
+    const auto& [bounds, enter, exit] = bins[i];
+    right_num_triangles += exit;
+    right.grow(clips[i]);
+  }
+
+  // AABB left_clip = node->aabb;
+  // AABB right_clip = node->aabb;
+  // left_clip.top[axis] = split;
+  // right_clip.bottom[axis] = split;
+  // left = left_clip;
+  // right = right_clip;
+
   // Try putting each triangle in either the left or right node based on center
   for (size_t i = 0; i < node->triangles.size(); i++) {
     const auto& triangle = node->triangles[i];
     AABB bounds = triangle.get_bounds();
 
     if (bounds.top[axis] <= split) {
+      assert(bounds.intersects(left));
       split_type[i] = SplitType::LEFT;
     } else if (bounds.bottom[axis] >= split) {
+      assert(bounds.intersects(right));
       split_type[i] = SplitType::RIGHT;
     } else {
+      assert((bounds.intersects(left)) &&
+             (bounds.intersects(right)));
       split_type[i] = SplitType::BOTH;
     }
   }
-
-  for (size_t i = 0; i <= index; i++) {
-    const auto& [bounds, enter, exit] = bins[i];
-    left_num_triangles += enter;
-    left.grow(bounds);
-  }
-  for (size_t i = bins.size() - 1; i > index; i--) {
-    const auto& [bounds, enter, exit] = bins[i];
-    right_num_triangles += exit;
-    right.grow(bounds);
-  }
-
-  left = node->aabb;
-  right = node->aabb;
-  left.top[axis] = split;
-  right.bottom[axis] = split;
 
   // Useless splits
   if (left_num_triangles <= 1 || right_num_triangles <= 1) {
@@ -245,9 +252,10 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
     }
 
     // Reduce number of bins according to depth
-    float bin_step = (bin_end - bin_start) / (MAX_BINS / (depth + 1));
     size_t num_bins = MAX_BINS / (depth + 1);
     size_t num_splits = num_bins - 1;
+    float bin_step = (bin_end - bin_start) / num_bins;
+    float inv_bin_step = 1.0f / bin_step;
 
     // Find best split (split with least total cost)
     #pragma omp declare reduction \
@@ -255,7 +263,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
       initializer(omp_priv=SplitParams::make_default())
 
     #pragma omp parallel for default(none) \
-      shared(node, axis, bin_start, bin_end, bin_step, num_bins, root_sa) \
+      shared(node, axis, bin_start, bin_end, bin_step, num_bins, num_splits, root_sa) \
       reduction(param_min:best_params) \
       schedule(dynamic)
     for (size_t i = 0; i < num_splits; i++) {
@@ -263,42 +271,36 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
       best_params = best_params.min(get_object_split(axis, split, node));
     }
 
-    AABB left_aabb = best_params.left;
-    AABB right_aabb = best_params.right;
-
     // AABBs overlap
-    if (left_aabb.intersects(right_aabb)) {
-      AABB intersection = left_aabb.get_intersection(right_aabb);
+    if (best_params.left.intersects(best_params.right)) {
+      AABB intersection = best_params.left.get_intersection(best_params.right);
       float intersection_sa = intersection.get_surface_area();
 
       // Only compute spatial split if overlap is significant
       if (intersection_sa / root_sa > OVERLAP_TOLERANCE) {
         std::vector<Bin> bins(num_bins, { NO_INTERSECTION, 0, 0 });
-        std::vector<AABB> clips;
-        clips.reserve(num_bins);
+        std::vector<AABB> clips(num_bins);
 
         for (size_t i = 0; i < num_bins; i++) {
-          float split_left = bin_start + i * bin_step;
-          float split_right = split_left + bin_step;
-          AABB clip = node->aabb;
-          clip.bottom[axis] = split_left;
-          clip.top[axis] = split_right;
-          clips.emplace_back(std::move(clip));
+          AABB clip = node->aabb;         
+          clip.bottom[axis] = bin_start + i * bin_step;
+          clip.top[axis] = bin_start + (i + 1) * bin_step;
+          clips[i] = std::move(clip);
         }
 
         for (const auto& triangle : node->triangles) {
           AABB bounds = triangle.get_bounds();
+          assert(bounds.top[axis] >= bounds.bottom[axis]);
           size_t start =
-            std::clamp((bounds.bottom[axis] - bin_start) / bin_step,
+            std::clamp((bounds.bottom[axis] - bin_start) * inv_bin_step,
                         0.0f, static_cast<float>(num_bins - 1));
           size_t end =
-            std::clamp((bounds.top[axis] - bin_start) / bin_step,
+            std::clamp((bounds.top[axis] - bin_start) * inv_bin_step,
                         static_cast<float>(start), static_cast<float>(num_bins - 1));
-          assert(bounds.intersects(node->aabb) || node->aabb.intersects(bounds));
+          assert(bounds.intersects(node->aabb));
 
           for (size_t i = start; i <= end; i++) {
-            AABB clipped_bounds = triangle.get_clipped_bounds(clips[i]);
-            bins[i].bound.grow(clipped_bounds);
+            bins[i].bound.grow(triangle.get_clipped_bounds(clips[i]));
           }
 
           bins[start].enter++;
@@ -307,7 +309,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
 
         for (size_t i = 0; i < num_splits; i++) {
           float split = bin_start + (i + 1) * bin_step;
-          best_params = best_params.min(get_spatial_split(axis, split, i, node, bins));
+          best_params = best_params.min(get_spatial_split(axis, split, i, node, bins, clips));
         }
       }
     }
@@ -328,14 +330,18 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
 
   for (size_t i = 0; i < node->triangles.size(); i++) {
     const auto& triangle = node->triangles[i];
+    AABB bounds = triangle.get_bounds();
     switch (best_params.split_type[i]) {
       case SplitType::LEFT:
+        assert(bounds.intersects(left->aabb));
         left->triangles.emplace_back(std::move(triangle));
         break;
       case SplitType::RIGHT:
+        assert(bounds.intersects(right->aabb));
         right->triangles.emplace_back(std::move(triangle));
         break;
       case SplitType::BOTH:
+        assert(bounds.intersects(left->aabb) && bounds.intersects(right->aabb));
         left->triangles.emplace_back(triangle);
         right->triangles.emplace_back(std::move(triangle));
         break;
