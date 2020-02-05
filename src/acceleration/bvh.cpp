@@ -115,7 +115,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
       })
 
     #pragma omp parallel for default(none) \
-      shared(node, axis, bin_start, bin_end, bin_step, num_bins, VEC_MAX) \
+      shared(node, axis, bin_start, bin_end, bin_step, num_bins) \
       reduction(param_min:best_params) \
       schedule(dynamic)
     for (int i = 0; i < num_bins; i++) {

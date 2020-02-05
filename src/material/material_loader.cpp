@@ -1,5 +1,4 @@
 #include <numeric>
-#include <execution>
 #include <stb_image.h>
 
 #include "material_loader.h"
@@ -23,11 +22,11 @@ cl::Image2DArray MaterialLoader::build_images(const cl::Context& context) {
   }
 
   // Find the average image width and height
-  uint32_t width = std::reduce(std::execution::seq, materials.cbegin(), materials.cend(), 0U,
+  uint32_t width = std::accumulate(materials.cbegin(), materials.cend(), 0U,
     [](uint32_t sum, const auto& im) {
       return sum + im.width;
     }) / materials.size();
-  uint32_t height = std::reduce(std::execution::seq, materials.cbegin(), materials.cend(), 0U,
+  uint32_t height = std::accumulate(materials.cbegin(), materials.cend(), 0U,
     [](uint32_t sum, const auto& im) {
       return sum + im.height;
     }) / materials.size();

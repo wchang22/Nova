@@ -21,9 +21,9 @@ set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic")
 
 # Link and build
+set(PROJECT_LIBS ${LIBS_NAME} ${OpenCL_LIBRARIES} ${ASSIMP_LIBRARIES} OpenMP::OpenMP_CXX stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${LIBS_NAME} ${OpenCL_LIBRARIES} ${ASSIMP_LIBRARIES} OpenMP::OpenMP_CXX)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
 target_include_directories(${PROJECT_NAME} PRIVATE src include)
 

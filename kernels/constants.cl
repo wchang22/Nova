@@ -24,7 +24,7 @@
   #define RAY_RECURSION_DEPTH 5
 #endif
 
-constant uint STACK_SIZE = 96;
+#define STACK_SIZE 96
 
 constant uint TRIANGLE_NUM_SHIFT = 32 - TRIANGLES_PER_LEAF_BITS;
 constant uint TRIANGLE_OFFSET_MASK =

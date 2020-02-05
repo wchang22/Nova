@@ -21,7 +21,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
     model(scene_parser.get_model_path().c_str(), intersectables, material_loader),
     context(DEVICE_TYPE),
     device(context.getInfo<CL_CONTEXT_DEVICES>().front()),
-    queue(context),
+    queue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE),
     program(context, file_utils::read_file(KERNEL_PATH)),
     image(context, CL_MEM_WRITE_ONLY, cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height)
 {
@@ -32,6 +32,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
 
   try {
     std::stringstream build_args;
+    build_args << " -cl-fast-relaxed-math -cl-mad-enable";
     build_args << " -I" << KERNELS_PATH;
     build_args << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS;
     build_args << " -DDEFAULT_AMBIENT=" << default_ambient;
