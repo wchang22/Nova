@@ -8,12 +8,12 @@ constant sampler_t material_sampler =
 
 float3 read_material(read_only image2d_array_t materials, TriangleMeta meta,
                      float2 texture_coord, int index, float3 default_material) {
-  if (meta.ambient_index == -1 && meta.diffuse_index == -1 && meta.specular_index == -1 &&
-      meta.normal_index == -1) {
+  if (meta.diffuse_index == -1 && meta.metallic_index == -1 && meta.roughness_index == -1 &&
+      meta.ambient_occlusion_index == -1 && meta.normal_index == -1) {
     return default_material;
   }
   if (index == -1) {
-    return 0;
+    return default_material;
   }
 
   float3 texture = convert_float3(
@@ -54,13 +54,57 @@ float3 compute_normal(read_only image2d_array_t materials, TriangleMeta meta,
   return normal;
 }
 
-float3 shade(float3 light_dir, float3 eye_dir, float3 normal,
-             float3 diffuse, float3 specular, int shininess) {
-  float3 half_dir = fast_normalize(light_dir - eye_dir);
-  float3 diffuse_shading = diffuse * max(dot(normal, light_dir), 0.f);
-  float3 specular_shading = specular * pown(max(dot(normal, half_dir), 0.f), shininess);
+float3 fresnel_schlick(float cos_theta, float3 f0) {
+  return f0 + (1.0f - f0) * pown(1.0f - cos_theta, 5);
+}
 
-  return diffuse_shading + specular_shading;
+float distribution_ggx(float n_dot_h, float roughness) {
+  float a = roughness * roughness;
+  float a2 = a * a;
+
+  float denom = n_dot_h * n_dot_h * (a2 - 1.0f) + 1.0f;
+  denom = M_PI_F * denom * denom;
+
+  return native_divide(a2, denom);
+}
+
+float geometry_smith(float n_dot_v, float n_dot_l, float nvl, float roughness) {
+  float r = roughness + 1.0f;
+  float k = r * r / 8.0f;
+  float m = 1.0f - k;
+
+  return native_divide(nvl, (n_dot_v * m + k) * (n_dot_l * m + k));
+}
+
+float3 specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metallic) {
+  float h_dot_v = max(dot(half_dir, view_dir), 0.0f);
+  float3 f0 = mix(0.04f, diffuse, metallic);
+  // fresnel equation
+  float3 f = fresnel_schlick(h_dot_v, f0);
+
+  return f;
+}
+
+float3 shade(float3 light_dir, float3 view_dir, float3 half_dir, float light_distance, 
+             float3 normal, float3 diffuse, float3 kS, float metallic, float roughness) {
+  float n_dot_v = max(dot(normal, view_dir), 0.0f);
+  float n_dot_l = max(dot(normal, light_dir), 0.0f);
+  float n_dot_h = max(dot(normal, half_dir), 0.0f);
+  
+  float nvl = n_dot_v * n_dot_l;
+
+  // normal distribution function
+  float d = distribution_ggx(n_dot_h, roughness);
+  // geometry function
+  float g = geometry_smith(n_dot_v, n_dot_l, nvl, roughness);
+
+  // diffuse
+  float3 kD = (1.0f - kS) * (1.0f - metallic);
+
+  float3 brdf = kD * diffuse * M_1_PI_F + native_divide(d * kS * g, max(4.0f * nvl, 1e-3f));
+  float3 radiance = native_divide(LIGHT_INTENSITY, max(light_distance * light_distance, 1.0f));
+
+  return brdf * radiance * n_dot_l;
 }
 
 #endif // TEXTURE_CL

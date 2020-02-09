@@ -117,30 +117,38 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     );
 
     // Look up materials
-    float3 ambient =
-      read_material(materials, meta, texture_coord, meta.ambient_index, DEFAULT_AMBIENT);
     float3 diffuse =
       read_material(materials, meta, texture_coord, meta.diffuse_index, DEFAULT_DIFFUSE);
-    float3 specular =
-      read_material(materials, meta, texture_coord, meta.specular_index, DEFAULT_SPECULAR);
+    float metallic =
+      read_material(materials, meta, texture_coord, meta.metallic_index, DEFAULT_METALLIC).x;
+    float roughness =
+      read_material(materials, meta, texture_coord, meta.roughness_index, DEFAULT_ROUGHNESS).x;
+    float ambient_occlusion =
+      read_material(materials, meta, texture_coord,
+                    meta.ambient_occlusion_index, DEFAULT_AMBIENT_OCCLUSION).x;
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
     // Add ambient color even if pixel is in shadow
-    float3 intrs_color = ambient;
+    float3 intrs_color = diffuse * ambient_occlusion * 0.03f;
+
+    // Calculate lighting params
+    float3 light_dir = fast_normalize(LIGHT_POSITION - intrs.point);
+    float3 view_dir = fast_normalize(ec.eye_pos - intrs.point);
+    float3 half_dir = fast_normalize(light_dir + view_dir);
+    float light_distance = fast_distance(LIGHT_POSITION, intrs.point);
+    float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
 
     // Cast a shadow ray to the light
-    float3 light_dir = fast_normalize(LIGHT_POS - intrs.point);
-    float light_distance = fast_distance(LIGHT_POS, intrs.point);
     Ray shadow_ray = create_ray(intrs.point, light_dir, RAY_EPSILON);
-
     Intersection light_intrs = NO_INTERSECTION;
     // Ensure objects blocking light are not behind the light
     light_intrs.length = light_distance;
 
     // Shade the pixel if ray is not blocked
     if (!trace(triangles, bvh, shadow_ray, &light_intrs, true)) {
-      intrs_color += shade(light_dir, ray.direction, normal, diffuse, specular, SHININESS);
+      intrs_color += shade(light_dir, view_dir, half_dir, light_distance,
+                           normal, diffuse, kS, metallic, roughness);
     }
 
     /*
@@ -149,7 +157,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
      * So we use an additional "reflectance" value to unroll the recursion
      */
     color += reflectance * intrs_color;
-    reflectance *= specular;
+    reflectance *= kS;
 
     // Reflect ray off of intersection point
     ray_pos = intrs.point;

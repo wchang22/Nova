@@ -1,9 +1,8 @@
 [model]
 path = "aircraft/aircraft.obj"
 # path = "dragon/dragon.obj"
-# path = "cyborg/cyborg.obj"
-# path = "nanosuit/nanosuit.obj"
 # path = "fireplace_room/fireplace_room.obj"
+# path = "gun/gun.obj"
 
 [camera]
 # Aircraft
@@ -14,35 +13,29 @@ forward = [1.0, -0.5, -1.0]
 # position = [-1.0, 0.0, 0.0]
 # forward = [1.0, 0.0, 0.0]
 
-# Cyborg
-# position = [0.0, 4.5, 5.0]
-# forward = [0.0, -0.5, -1.0]
-
-# Nanosuit
-# position = [0.0, 18.0, 20.0]
-# forward = [0.0, -0.5, -1.0]
-
 # Fireplace
 # position = [4.0, 2.0, -0.2]
 # forward = [-1.0, -0.4, -1.0]
+
+# Gun
+# position = [0.5, 0.2, -1.5]
+# forward = [-0.75, -0.25, 1.0]
 
 up = [0.0, 1.0, 0.0]
 fovy = 45.0
 
 [light]
 position = [-4.0, 2.8, 7.0]
+intensity = [500.0, 500.0, 500.0]
 
-# Nanosuit
-# position = [0.0, 20.0, 20.0]
-
-# Fireplace
-# position = [3.0, 2.87, -0.5]
+# Gun
+# position = [3.0, 1.0, 4.5]
 
 [ray_recursion]
 depth = 5
 
 [shading_defaults]
-shininess = 32
-ambient = 0.1
-diffuse = 0.4
-specular = 0.4
+diffuse = 1.0
+metallic = 0.5
+roughness = 0.1
+ambient_occlusion = 1.0

@@ -67,9 +67,10 @@ void IntersectableManager::build_buffers(const cl::Context& context,
       { {meta.texture_coord1.x, meta.texture_coord1.y} },
       { {meta.texture_coord2.x, meta.texture_coord2.y} },
       { {meta.texture_coord3.x, meta.texture_coord3.y} },
-      meta.ambient_index,
       meta.diffuse_index,
-      meta.specular_index,
+      meta.metallic_index,
+      meta.roughness_index,
+      meta.ambient_occlusion_index,
       meta.normal_index,
     });
   }

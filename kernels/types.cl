@@ -50,9 +50,10 @@ typedef struct {
   float2 texture_coord1;
   float2 texture_coord2;
   float2 texture_coord3;
-  int ambient_index;
   int diffuse_index;
-  int specular_index;
+  int metallic_index;
+  int roughness_index;
+  int ambient_occlusion_index;
   int normal_index;
 } TriangleMeta;
 
