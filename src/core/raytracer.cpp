@@ -25,23 +25,27 @@ Raytracer::Raytracer(uint32_t width, uint32_t height)
     program(context, file_utils::read_file(KERNEL_PATH)),
     image(context, CL_MEM_WRITE_ONLY, cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height)
 {
-  const auto [default_ambient, default_diffuse, default_specular, default_shininess]
+  const auto [ default_diffuse, default_metallic, default_roughness, default_ambient_occlusion ]
     = scene_parser.get_shading_default_settings();
-  const vec3 light_position = scene_parser.get_light_position();
+  const auto [ light_position, light_intensity ] = scene_parser.get_light_settings();
   const unsigned int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
 
   try {
     std::stringstream build_args;
-    build_args << " -cl-fast-relaxed-math -cl-mad-enable";
-    build_args << " -I" << KERNELS_PATH;
-    build_args << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS;
-    build_args << " -DDEFAULT_AMBIENT=" << default_ambient;
-    build_args << " -DDEFAULT_DIFFUSE=" << default_diffuse;
-    build_args << " -DDEFAULT_SPECULAR=" << default_specular;
-    build_args << " -DDEFAULT_SHININESS=" << default_shininess;
-    build_args << " -DLIGHT_POS=" << "(float3)("
-               << light_position.x << "," << light_position.y << "," << light_position.z << ")";
-    build_args << " -DRAY_RECURSION_DEPTH=" << ray_recursion_depth;
+    build_args
+      << " -cl-fast-relaxed-math -cl-mad-enable"
+      << " -I" << KERNELS_PATH
+      << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS
+      << " -DDEFAULT_DIFFUSE=" << "(float3)("
+        << default_diffuse.x << "," << default_diffuse.y << "," << default_diffuse.z << ")"
+      << " -DDEFAULT_METALLIC=" << default_metallic
+      << " -DDEFAULT_ROUGHNESS=" << default_roughness
+      << " -DDEFAULT_AMBIENT_OCCLUSION=" << default_ambient_occlusion
+      << " -DLIGHT_POSITION=" << "(float3)("
+        << light_position.x << "," << light_position.y << "," << light_position.z << ")"
+      << " -DLIGHT_INTENSITY=" << "(float3)("
+        << light_intensity.x << "," << light_intensity.y << "," << light_intensity.z << ")"
+      << " -DRAY_RECURSION_DEPTH=" << ray_recursion_depth;
     program.build(build_args.str().c_str());
   } catch (...) {
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));

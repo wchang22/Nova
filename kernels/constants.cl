@@ -5,20 +5,23 @@
 #ifndef TRIANGLES_PER_LEAF_BITS
   #define TRIANGLES_PER_LEAF_BITS 6
 #endif
-#ifndef LIGHT_POS
-  #define LIGHT_POS (float3)(-4, 2.8, 7)
+#ifndef LIGHT_POSITION
+  #define LIGHT_POSITION (float3)(-4.0, 2.8, 7.0)
 #endif
-#ifndef SHININESS
-  #define SHININESS 32
-#endif
-#ifndef DEFAULT_AMBIENT
-  #define DEFAULT_AMBIENT 0.1
+#ifndef LIGHT_INTENSITY
+  #define LIGHT_INTENSITY (float3)(500.0)
 #endif
 #ifndef DEFAULT_DIFFUSE
-  #define DEFAULT_DIFFUSE 0.4
+  #define DEFAULT_DIFFUSE (float3)(1.0, 1.0, 1.0)
 #endif
-#ifndef DEFAULT_SPECULAR
-  #define DEFAULT_SPECULAR 0.4
+#ifndef DEFAULT_METALLIC
+  #define DEFAULT_METALLIC 0.5
+#endif
+#ifndef DEFAULT_ROUGHNESS
+  #define DEFAULT_ROUGHNESS 0.1
+#endif
+#ifndef DEFAULT_AMBIENT_OCCLUSION
+  #define DEFAULT_AMBIENT_OCCLUSION 0.1
 #endif
 #ifndef RAY_RECURSION_DEPTH
   #define RAY_RECURSION_DEPTH 5

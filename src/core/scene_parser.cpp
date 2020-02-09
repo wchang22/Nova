@@ -21,22 +21,28 @@ CameraSettings SceneParser::get_camera_settings() const {
   };
 }
 
-vec3 SceneParser::get_light_position() const {
+LightSettings SceneParser::get_light_settings() const {
   const auto position = toml::find<std::array<float, 3>>(parsed_data, "light", "position");
-  return { position[0], position[1], position[2] };
+  const auto intensity = toml::find<std::array<float, 3>>(parsed_data, "light", "intensity");
+
+  return {
+    { position[0], position[1], position[2] },
+    { intensity[0], intensity[1], intensity[2] },
+  };
 }
 
 ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
-  const auto ambient = toml::find<float>(parsed_data, "shading_defaults", "ambient");
-  const auto diffuse = toml::find<float>(parsed_data, "shading_defaults", "diffuse");
-  const auto specular = toml::find<float>(parsed_data, "shading_defaults", "specular");
-  const auto shininess = toml::find<int>(parsed_data, "shading_defaults", "shininess");
+  const auto diffuse = toml::find<std::array<float, 3>>(parsed_data, "shading_defaults", "diffuse");
+  const auto metallic = toml::find<float>(parsed_data, "shading_defaults", "metallic");
+  const auto roughness = toml::find<float>(parsed_data, "shading_defaults", "roughness");
+  const auto ambient_occlusion =
+    toml::find<float>(parsed_data, "shading_defaults", "ambient_occlusion");
 
   return {
-    ambient,
-    diffuse,
-    specular,
-    shininess
+    { diffuse[0], diffuse[1], diffuse[2] },
+    metallic,
+    roughness,
+    ambient_occlusion
   };
 }
 

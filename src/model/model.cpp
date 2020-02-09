@@ -64,9 +64,10 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
   }
 
   aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-  int ambient_index = load_materials(material, aiTextureType_AMBIENT);
   int diffuse_index = load_materials(material, aiTextureType_DIFFUSE);
-  int specular_index = load_materials(material, aiTextureType_SPECULAR);
+  int metallic_index = load_materials(material, aiTextureType_METALNESS);
+  int roughness_index = load_materials(material, aiTextureType_DIFFUSE_ROUGHNESS);
+  int ambient_occlusion_index = load_materials(material, aiTextureType_AMBIENT_OCCLUSION);
   int normal_index = load_materials(material, aiTextureType_NORMALS);
   // Some formats load normal maps into HEIGHT
   if (normal_index == -1) {
@@ -137,7 +138,7 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     intersectables.add_triangle(
       { v1, v2, v3 },
       { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
-        ambient_index, diffuse_index, specular_index, normal_index }
+        diffuse_index, metallic_index, roughness_index, ambient_occlusion_index, normal_index }
     );
   }
 }

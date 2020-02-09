@@ -53,9 +53,10 @@ struct TriangleMeta {
   vec2 texture_coord1;
   vec2 texture_coord2;
   vec2 texture_coord3;
-  int ambient_index;
   int diffuse_index;
-  int specular_index;
+  int metallic_index;
+  int roughness_index;
+  int ambient_occlusion_index;
   int normal_index;
 };
 
@@ -72,9 +73,10 @@ struct TriangleMetaData {
   cl_float2 texture_coord1;
   cl_float2 texture_coord2;
   cl_float2 texture_coord3;
-  cl_int ambient_index;
   cl_int diffuse_index;
-  cl_int specular_index;
+  cl_int metallic_index;
+  cl_int roughness_index;
+  cl_int ambient_occlusion_index;
   cl_int normal_index;
 };
 
