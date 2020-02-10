@@ -5,7 +5,6 @@ project(nova)
 
 find_package(OpenCL REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(assimp REQUIRED)
 
 # Library includes
 set(LIBS_NAME includes)
@@ -21,7 +20,12 @@ set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic")
 
 # Link and build
-set(PROJECT_LIBS ${LIBS_NAME} ${OpenCL_LIBRARIES} ${ASSIMP_LIBRARIES} OpenMP::OpenMP_CXX stdc++fs)
+set(PROJECT_LIBS ${LIBS_NAME}
+    assimp
+    ${OpenCL_LIBRARIES}
+    OpenMP::OpenMP_CXX
+    stdc++fs
+)
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
@@ -73,3 +77,16 @@ message("PROFILE ----------------------------------------- ${PROFILE}")
 message("OpenCL Version ---------------------------------- ${OpenCL_VERSION_STRING}")
 
 add_subdirectory(tests)
+
+# Assimp
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE BOOL OFF)
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT CACHE BOOL OFF)
+set(ASSIMP_NO_EXPORT ON)
+set(ASSIMP_BUILD_ASSIMP_TOOLS CACHE BOOL OFF)
+set(ASSIMP_BUILD_TESTS CACHE BOOL OFF)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON)
+set(ASSIMP_BUILD_3DS_IMPORTER ON)
+set(ASSIMP_BUILD_BLEND_IMPORTER ON)
+set(ASSIMP_BUILD_FBX_IMPORTER ON)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON)
+add_subdirectory(assimp)

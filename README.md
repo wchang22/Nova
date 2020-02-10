@@ -13,11 +13,10 @@
 * CMake
 * OpenCL
 * OpenMP
-* Assimp
 
 ## Build and Run
 ```bash
-git clone https://github.com/wchang22/Nova.git
+git clone --recurse-submodules https://github.com/wchang22/Nova.git
 cd Nova && mkdir build && cd build
 cmake .. && make
 ./nova
