@@ -17,18 +17,15 @@ bool intersects_triangle(Ray ray, Intersection* intrs, int tri_index, Triangle t
     return false;
   }
 
-  float u = woop_ray.origin.x + t * woop_ray.direction.x;
-  if (u < 0.0f) {
-    return false;
-  }
+  float2 uv = woop_ray.origin.xy + t * woop_ray.direction.xy;
+  float3 barycentric = (float3)(1.0f - uv.x - uv.y, uv);
 
-  float v = woop_ray.origin.y + t * woop_ray.direction.y;
-  if (v < 0.0f || u + v > 1.0f) {
+  if (any(isless(barycentric, 0.0f))) {
     return false;
   }
 
   intrs->length = t;
-  intrs->barycentric = (float3)(1.0f - u - v, u, v);
+  intrs->barycentric = barycentric;
   intrs->tri_index = tri_index;
   return true;
 }
