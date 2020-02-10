@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0015 NEW)
 
-project(clraytracer)
+project(nova)
 
 find_package(OpenCL REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(assimp REQUIRED)
 
 # Library includes
-set(LIBS_NAME cllib)
+set(LIBS_NAME includes)
 file(GLOB_RECURSE LIBS_SOURCES include/*)
-add_library(${LIBS_NAME} ${LIBS_SOURCES})
+add_library(${LIBS_NAME} STATIC ${LIBS_SOURCES})
 target_include_directories(${LIBS_NAME} PRIVATE include)
 target_compile_definitions(${LIBS_NAME} PRIVATE -DGLM_FORCE_INTRINSICS -DGLM_FORCE_SILENT_WARNINGS)
 target_compile_options(${LIBS_NAME} PRIVATE -march=native)
