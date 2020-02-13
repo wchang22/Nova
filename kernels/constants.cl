@@ -33,6 +33,8 @@ constant uint TRIANGLE_NUM_SHIFT = 32 - TRIANGLES_PER_LEAF_BITS;
 constant uint TRIANGLE_OFFSET_MASK =
   (0xFFFFFFFF << TRIANGLES_PER_LEAF_BITS) >> TRIANGLES_PER_LEAF_BITS;
 
-constant float RAY_EPSILON = 1e-2; // Prevent self-shadowing
+constant float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
+// Min epsilon to produce significant change in 8 bit colour channels
+constant float COLOR_EPSILON = 0.5f / 255.0f; 
 
 #endif // CONSTANTS_CL

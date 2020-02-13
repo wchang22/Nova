@@ -159,6 +159,11 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     color += reflectance * intrs_color;
     reflectance *= kS;
 
+    // Stop if reflectance is too low to produce a color change
+    if (all(isless(reflectance, COLOR_EPSILON))) {
+      break;
+    }
+
     // Reflect ray off of intersection point
     ray_pos = intrs.point;
     ray_dir = reflect(ray_dir, normal);
