@@ -72,8 +72,7 @@ void Raytracer::raytrace() {
 
     PROFILE_SECTION_START("Enqueue kernel");
     kernel_utils::set_args(kernel, image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims);
-    queue.enqueueNDRangeKernel(kernel,
-                               cl::NDRange(0, 0), cl::NDRange(width, height), LOCAL_SIZE);
+    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(width, height), cl::NullRange);
     queue.finish();
     PROFILE_SECTION_END();
 

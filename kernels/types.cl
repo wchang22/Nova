@@ -7,22 +7,24 @@
 typedef struct {
   float3 origin;
   float3 direction;
+  float3 inv_direction;
+  float3 nio;
 } Ray;
 
 Ray create_ray(float3 point, float3 direction, float epsilon) {
-  return (Ray) { point + direction * epsilon, direction };
+  float3 origin = point + direction * epsilon;
+  float3 inv_direction = native_recip(direction);
+  float3 nio = -origin * inv_direction;
+  return (Ray) { origin, direction, inv_direction, nio };
 }
 
 typedef struct {
-  float3 point;
   float3 barycentric;
   float length;
   int tri_index;
 } Intersection;
 
-constant Intersection NO_INTERSECTION = {
-  (float3) 0, (float3) 0, FLT_MAX, -1
-};
+constant Intersection NO_INTERSECTION = { 0.0f, FLT_MAX, -1 };
 
 typedef struct {
   float2 coord_scale;

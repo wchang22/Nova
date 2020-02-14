@@ -9,8 +9,7 @@ float3 reflect(float3 I, float3 N) {
 }
 
 float3 uint3_to_float3(float3 u) {
-  // Multiplying by 1 / x can help avoid produce an fdiv instruction
-  return u * (1.0f / 255.0f);
+  return native_divide(u, 255.0f);
 }
 
 float3 triangle_interpolate3(float3 barycentric_coords, float3 a, float3 b, float3 c) {

@@ -93,8 +93,8 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
                                                  ec.eye_coord_frame.z);
   float3 ray_pos = ec.eye_pos;
 
-  float3 color = 0;
-  float3 reflectance = 1;
+  float3 color = 0.0f;
+  float3 reflectance = 1.0f;
 
   for (int depth = 0; depth < RAY_RECURSION_DEPTH; depth++) {
     Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
@@ -109,7 +109,7 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     TriangleMeta meta = tri_meta[intrs.tri_index];
 
     // Calculate intersection point
-    intrs.point = ray.origin + ray.direction * intrs.length;
+    float3 intrs_point = ray.origin + ray.direction * intrs.length;
 
     // Interpolate texture coords from vertex data
     float2 texture_coord = triangle_interpolate2(
@@ -133,14 +133,14 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     float3 intrs_color = diffuse * ambient_occlusion * 0.03f;
 
     // Calculate lighting params
-    float3 light_dir = fast_normalize(LIGHT_POSITION - intrs.point);
-    float3 view_dir = fast_normalize(ec.eye_pos - intrs.point);
+    float3 light_dir = fast_normalize(LIGHT_POSITION - intrs_point);
+    float3 view_dir = fast_normalize(ec.eye_pos - intrs_point);
     float3 half_dir = fast_normalize(light_dir + view_dir);
-    float light_distance = fast_distance(LIGHT_POSITION, intrs.point);
+    float light_distance = fast_distance(LIGHT_POSITION, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
 
     // Cast a shadow ray to the light
-    Ray shadow_ray = create_ray(intrs.point, light_dir, RAY_EPSILON);
+    Ray shadow_ray = create_ray(intrs_point, light_dir, RAY_EPSILON);
     Intersection light_intrs = NO_INTERSECTION;
     // Ensure objects blocking light are not behind the light
     light_intrs.length = light_distance;
@@ -165,9 +165,9 @@ void raytrace(write_only image2d_t image_out, EyeCoords ec,
     }
 
     // Reflect ray off of intersection point
-    ray_pos = intrs.point;
+    ray_pos = intrs_point;
     ray_dir = reflect(ray_dir, normal);
   }
 
-  write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1) * 255));
+  write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
 }

@@ -17,7 +17,7 @@ float3 read_material(read_only image2d_array_t materials, TriangleMeta meta,
   }
 
   float3 texture = convert_float3(
-    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0)).xyz
+    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz
   );
 
   return uint3_to_float3(texture);
@@ -70,7 +70,7 @@ float distribution_ggx(float n_dot_h, float roughness) {
 
 float geometry_smith(float n_dot_v, float n_dot_l, float nvl, float roughness) {
   float r = roughness + 1.0f;
-  float k = r * r / 8.0f;
+  float k = native_divide(r * r, 8.0f);
   float m = 1.0f - k;
 
   return native_divide(nvl, (n_dot_v * m + k) * (n_dot_l * m + k));

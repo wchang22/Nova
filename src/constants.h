@@ -31,7 +31,6 @@
 
 // Raytracer constants
 constexpr cl_device_type DEVICE_TYPE = CL_DEVICE_TYPE_GPU;
-const cl::NDRange LOCAL_SIZE(16, 16);
 constexpr char KERNEL_PATH[] = KERNELS_PATH"raytrace.cl";
 constexpr char SCENE_PATH[] = SRC_PATH"scene.toml";
 
