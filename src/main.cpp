@@ -5,7 +5,7 @@
 
 int main() {
   try {
-    Raytracer rt(1280, 720);
+    Raytracer rt(1280, 720, "raytrace");
     rt.raytrace();
   } catch (const std::runtime_error& e) {
     std::cerr << e.what() << std::endl;

@@ -3,10 +3,7 @@
 #include "util/exception/exception.h"
 #include "constants.h"
 
-#include <glm/gtx/string_cast.hpp>
-
-IntersectableManager::IntersectableManager(const std::string& model_name)
-  : model_name(model_name) {}
+IntersectableManager::IntersectableManager(const std::string& name) : name(name) {}
 
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
   if (triangles.size() >= MAX_TRIANGLES) {
@@ -17,11 +14,17 @@ void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta&
   triangle_map[tri] = meta;
 }
 
+void IntersectableManager::add_model(const Model& model) {
+  for (const auto& [tri, meta] : model.get_triangles()) {
+    add_triangle(tri, meta);
+  }
+}
+
 void IntersectableManager::build_buffers(const cl::Context& context,
                                          cl::Buffer& triangle_buf,
                                          cl::Buffer& tri_meta_buf,
                                          cl::Buffer& bvh_buf) {
-  BVH bvh(model_name, triangles);
+  BVH bvh(name, triangles);
   bvh_buf = bvh.build_bvh_buffer(context);
 
   // BVH modifies the order of triangles, so we need to look up the meta data

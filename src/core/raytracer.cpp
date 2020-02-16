@@ -1,6 +1,5 @@
 #include <stb_image.h>
 #include <sstream>
-#include <filesystem>
 
 #include "raytracer.h"
 #include "util/file/fileutils.h"
@@ -11,24 +10,29 @@
 #include "util/opencl/clutils.h"
 #include "constants.h"
 
-Raytracer::Raytracer(uint32_t width, uint32_t height)
+Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
+    name(name),
     camera_settings(scene_parser.get_camera_settings()),
     camera(camera_settings.position, camera_settings.forward, camera_settings.up,
            width, height, camera_settings.fovy),
-    model_name(std::filesystem::path(scene_parser.get_model_path()).stem().string()),
-    intersectables(model_name),
-    model(scene_parser.get_model_path().c_str(), intersectables, material_loader),
-    context(DEVICE_TYPE),
-    device(context.getInfo<CL_CONTEXT_DEVICES>().front()),
-    queue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE),
-    program(context, file_utils::read_file(KERNEL_PATH)),
-    image(context, CL_MEM_WRITE_ONLY, cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height)
+    intersectable_manager(name),
+    context(DEVICE_TYPE)
 {
+  const auto model_paths = scene_parser.get_model_paths();
+  for (const auto& model_path : model_paths) {
+    Model model(model_path, material_loader);
+    intersectable_manager.add_model(model);
+  }
+
   const auto [ default_diffuse, default_metallic, default_roughness, default_ambient_occlusion ]
     = scene_parser.get_shading_default_settings();
   const auto [ light_position, light_intensity ] = scene_parser.get_light_settings();
   const unsigned int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
+
+  cl::Device device(context.getInfo<CL_CONTEXT_DEVICES>().front());
+  queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+  cl::Program program(context, file_utils::read_file(KERNEL_PATH));
 
   try {
     std::stringstream build_args;
@@ -58,11 +62,13 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
+  cl::Image2D image(context, CL_MEM_WRITE_ONLY,
+                    cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height);
   std::vector<uint8_t> image_buf(width * height * STBI_rgb_alpha);
   cl::Buffer triangle_buf, tri_meta_buf, bvh_buf;
 
   auto ec = camera.get_eye_coords();
-  intersectables.build_buffers(context, triangle_buf, tri_meta_buf, bvh_buf);
+  intersectable_manager.build_buffers(context, triangle_buf, tri_meta_buf, bvh_buf);
   cl::Image2DArray material_ims = material_loader.build_images(context);
   PROFILE_SECTION_END();
 
@@ -86,7 +92,6 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
-  std::string image_out_name = model_name + ".jpg";
-  image_utils::write_image(image_out_name.c_str(), { image_buf, width, height });
+  image_utils::write_image((name + ".jpg").c_str(), { image_buf, width, height });
   PROFILE_SECTION_END();
 }

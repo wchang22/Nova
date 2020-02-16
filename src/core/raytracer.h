@@ -19,25 +19,21 @@
 
 class Raytracer {
 public:
-  Raytracer(uint32_t width, uint32_t height);
+  Raytracer(uint32_t width, uint32_t height, const std::string& name);
 
   void raytrace();
 
 private:
-  SceneParser scene_parser;
   uint32_t width, height;
+  std::string name;
+  SceneParser scene_parser;
   CameraSettings camera_settings;
   Camera camera;
-  std::string model_name;
-  IntersectableManager intersectables;
+  IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
-  Model model;
 
   cl::Context context;
-  cl::Device device;
   cl::CommandQueue queue;
-  cl::Program program;
-  cl::Image2D image;
   cl::Kernel kernel;
 };
 

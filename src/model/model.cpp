@@ -1,20 +1,15 @@
 #include "model.h"
 #include "util/exception/exception.h"
 
+#include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <cassert>
 
-Model::Model(const char* path,
-             IntersectableManager& intersectables,
-             MaterialLoader& material_loader)
-  : intersectables(intersectables),
-    material_loader(material_loader)
-{
-  load_model(path);
-}
+using namespace glm;
 
-void Model::load_model(const std::string& path)
+Model::Model(const std::string& path, MaterialLoader& material_loader)
+  : material_loader(material_loader)
 {
   Assimp::Importer importer;
   const aiScene* scene = importer.ReadFile(path.c_str(),
@@ -135,11 +130,11 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
       fixed_bit3 *= -1.0f;
     }
 
-    intersectables.add_triangle(
+    triangles.emplace_back<std::pair<Triangle, TriangleMeta>>({
       { v1, v2, v3 },
       { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
         diffuse_index, metallic_index, roughness_index, ambient_occlusion_index, normal_index }
-    );
+    });
   }
 }
 
@@ -154,4 +149,8 @@ int Model::load_materials(aiMaterial* material, aiTextureType type) {
   aiString path;
   material->GetTexture(type, 0, &path);
   return material_loader.load_material((directory + path.C_Str()).c_str());
+}
+
+const std::vector<std::pair<Triangle, TriangleMeta>>& Model::get_triangles() const {
+  return triangles;
 }

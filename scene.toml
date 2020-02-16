@@ -1,8 +1,8 @@
 [model]
-path = "aircraft/aircraft.obj"
-# path = "dragon/dragon.obj"
-# path = "fireplace_room/fireplace_room.obj"
-# path = "gun/gun.obj"
+paths = ["aircraft/aircraft.obj"]
+# paths = ["dragon/dragon.obj"]
+# paths = ["fireplace_room/fireplace_room.obj"]
+# paths = ["gun/gun.obj"]
 
 [camera]
 # Aircraft

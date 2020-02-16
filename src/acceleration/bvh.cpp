@@ -9,14 +9,14 @@
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
-BVH::BVH(const std::string& model_name, std::vector<Triangle>& triangles)
-  : model_name(model_name), triangles(triangles)
+BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
+  : name(name), triangles(triangles)
 {
 }
 
 cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
-  std::string bvh_file_name = model_name + ".bvh";
-  std::string tri_file_name = model_name + ".tri";
+  std::string bvh_file_name = name + ".bvh";
+  std::string tri_file_name = name + ".tri";
   std::fstream bvh_file(bvh_file_name);
   std::fstream tri_file(tri_file_name);
 
