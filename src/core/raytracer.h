@@ -1,21 +1,11 @@
 #ifndef RAYTRACER_H
 #define RAYTRACER_H
 
-#ifdef OPENCL_2
-  #include <CL/cl2.hpp>
-#else
-  #ifdef __APPLE__
-    #include <OpenCL/cl.hpp>
-  #else
-    #include <CL/cl.hpp>
-  #endif
-#endif
-
 #include "scene_parser.h"
 #include "camera/camera.h"
 #include "intersectables/intersectable_manager.h"
-#include "model/model.h"
 #include "material/material_loader.h"
+#include "backend/accelerator.h"
 
 class Raytracer {
 public:
@@ -31,10 +21,7 @@ private:
   Camera camera;
   IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
-
-  cl::Context context;
-  cl::CommandQueue queue;
-  cl::Kernel kernel;
+  Accelerator accelerator;
 };
 
 #endif // RAYTRACER_H

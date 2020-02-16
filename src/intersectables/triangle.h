@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <fstream>
 
-#include "backend/backend.h"
+#include "backend/types.h"
 #include "intersectables/aabb.h"
 
 using namespace glm;
