@@ -1,4 +1,5 @@
 #include <glm/gtx/extended_min_max.hpp>
+#include <functional>
 
 #include "triangle.h"
 

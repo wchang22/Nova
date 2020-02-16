@@ -1,5 +1,5 @@
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef OPENCL_ERROR_H
+#define OPENCL_ERROR_H
 
 #ifdef OPENCL_2
   #include <CL/cl2.hpp>
@@ -88,4 +88,4 @@ const char* get_error_string(cl_int error)
   }
 }
 
-#endif // ERROR_H
+#endif // OPENCL_ERROR_H

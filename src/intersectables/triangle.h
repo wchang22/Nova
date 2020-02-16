@@ -1,18 +1,10 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-#ifdef OPENCL_2
-  #include <CL/cl2.hpp>
-#else
-  #ifdef __APPLE__
-    #include <OpenCL/cl.hpp>
-  #else
-    #include <CL/cl.hpp>
-  #endif
-#endif
-
 #include <glm/glm.hpp>
+#include <fstream>
 
+#include "backend/backend.h"
 #include "intersectables/aabb.h"
 
 using namespace glm;
@@ -35,9 +27,9 @@ std::ostream& operator<<(std::ostream& out, const Triangle& tri);
 
 // Woop 4x3 affine transform matrix
 struct TriangleData {
-  cl_float4 transform_x;
-  cl_float4 transform_y;
-  cl_float4 transform_z;
+  float4 transform_x;
+  float4 transform_y;
+  float4 transform_z;
 };
 
 struct TriangleMeta {
@@ -61,23 +53,23 @@ struct TriangleMeta {
 };
 
 struct TriangleMetaData {
-  cl_float3 normal1;
-  cl_float3 normal2;
-  cl_float3 normal3;
-  cl_float3 tangent1;
-  cl_float3 tangent2;
-  cl_float3 tangent3;
-  cl_float3 bitangent1;
-  cl_float3 bitangent2;
-  cl_float3 bitangent3;
-  cl_float2 texture_coord1;
-  cl_float2 texture_coord2;
-  cl_float2 texture_coord3;
-  cl_int diffuse_index;
-  cl_int metallic_index;
-  cl_int roughness_index;
-  cl_int ambient_occlusion_index;
-  cl_int normal_index;
+  float3 normal1;
+  float3 normal2;
+  float3 normal3;
+  float3 tangent1;
+  float3 tangent2;
+  float3 tangent3;
+  float3 bitangent1;
+  float3 bitangent2;
+  float3 bitangent3;
+  float2 texture_coord1;
+  float2 texture_coord2;
+  float2 texture_coord3;
+  int32_t diffuse_index;
+  int32_t metallic_index;
+  int32_t roughness_index;
+  int32_t ambient_occlusion_index;
+  int32_t normal_index;
 };
 
 #endif // TRIANGLE_H

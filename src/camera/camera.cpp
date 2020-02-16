@@ -13,7 +13,7 @@ Camera::Camera(const vec3& position, const vec3& forward,
 {
 }
 
-Camera::EyeCoords Camera::get_eye_coords() const {
+EyeCoords Camera::get_eye_coords() const {
   vec2 half_fov(vec2(fovy * width / height, fovy) / 2.0f);
   vec2 coord_dims(vec2(width, height) / 2.0f);
   vec2 coord_scale(tan(radians(half_fov)) / coord_dims);

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "core/raytracer.h"
-#include "util/error.h"
+#include "backend/opencl/utils/error.h"
 
 int main() {
   try {

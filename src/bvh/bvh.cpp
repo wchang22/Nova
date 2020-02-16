@@ -237,7 +237,7 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
 
 std::istream& operator>>(std::istream& in, FlatBVHNode& node) {
   in >> std::hex;
-  cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+  float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
     for (int i = 0; i < 4; i++) {
@@ -252,7 +252,7 @@ std::istream& operator>>(std::istream& in, FlatBVHNode& node) {
 
 std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
   out << std::hex;
-  const cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+  const float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
     for (int i = 0; i < 4; i++) {

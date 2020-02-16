@@ -6,7 +6,7 @@
 
 #include "model/model.h"
 #include "intersectables/triangle.h"
-#include "acceleration/bvh.h"
+#include "bvh/bvh.h"
 
 struct IntersectableData {
   std::vector<TriangleData> triangle_data;

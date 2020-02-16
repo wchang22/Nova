@@ -1,5 +1,5 @@
-#ifndef KERNEL_H
-#define KERNEL_H
+#ifndef OPENCL_KERNEL_H
+#define OPENCL_KERNEL_H
 
 #ifdef OPENCL_2
   #include <CL/cl2.hpp>
@@ -29,4 +29,4 @@ namespace kernel_utils {
   }
 }
 
-#endif // KERNEL_H
+#endif // OPENCL_KERNEL_H

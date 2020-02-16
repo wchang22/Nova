@@ -6,8 +6,8 @@
 #include "util/exception/exception.h"
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
-#include "util/kernel/kernelutils.h"
-#include "util/opencl/clutils.h"
+#include "backend/opencl/utils/kernel.h"
+#include "backend/opencl/utils/compatibility.h"
 #include "constants.h"
 
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
@@ -17,7 +17,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     camera(camera_settings.position, camera_settings.forward, camera_settings.up,
            width, height, camera_settings.fovy),
     intersectable_manager(name),
-    context(DEVICE_TYPE)
+    context(CL_DEVICE_TYPE_GPU)
 {
   const auto model_paths = scene_parser.get_model_paths();
   for (const auto& model_path : model_paths) {
@@ -66,7 +66,7 @@ void Raytracer::raytrace() {
                     cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height);
   std::vector<uint8_t> image_buf(width * height * STBI_rgb_alpha);
 
-  auto ec = camera.get_eye_coords();
+  EyeCoords ec = camera.get_eye_coords();
 
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
   
@@ -109,8 +109,8 @@ void Raytracer::raytrace() {
 
     PROFILE_SECTION_START("Read image");
     queue.enqueueReadImage(image, true,
-                           cl_utils::create_size_t<3>({ 0, 0, 0 }),
-                           cl_utils::create_size_t<3>({ width, height, 1 }),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, 1 }),
                            0, 0, image_buf.data());
     PROFILE_SECTION_END();
   }

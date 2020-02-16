@@ -1,5 +1,5 @@
 #include "intersectable_manager.h"
-#include "acceleration/bvh.h"
+#include "bvh/bvh.h"
 #include "util/exception/exception.h"
 #include "constants.h"
 

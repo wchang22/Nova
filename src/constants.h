@@ -19,18 +19,7 @@
 
 #define STRINGIFY(x) #x
 
-#ifdef OPENCL_2
-  #include <CL/cl2.hpp>
-#else
-  #ifdef __APPLE__
-    #include <OpenCL/cl.hpp>
-  #else
-    #include <CL/cl.hpp>
-  #endif
-#endif
-
 // Raytracer constants
-constexpr cl_device_type DEVICE_TYPE = CL_DEVICE_TYPE_GPU;
 constexpr char KERNEL_PATH[] = KERNELS_PATH"raytrace.cl";
 constexpr char SCENE_PATH[] = SRC_PATH"scene.toml";
 

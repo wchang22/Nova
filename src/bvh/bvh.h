@@ -9,6 +9,7 @@
 
 #include "intersectables/triangle.h"
 #include "intersectables/aabb.h"
+#include "backend/types.h"
 
 using namespace glm;
 
@@ -29,8 +30,8 @@ struct BVHNode {
 // depending on whether or not the node is an inner node or a leaf node
 // If the 4th element of bottom_num_right < 0, then the node is a leaf node
 struct FlatBVHNode {
-  cl_float4 top_offset_left;
-  cl_float4 bottom_num_right;
+  float4 top_offset_left;
+  float4 bottom_num_right;
 };
 
 std::istream& operator>>(std::istream& in, FlatBVHNode& node);
