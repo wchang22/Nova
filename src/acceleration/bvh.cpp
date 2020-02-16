@@ -1,4 +1,3 @@
-#include <glm/gtx/vec_swizzle.hpp>
 #include <cassert>
 #include <filesystem>
 
@@ -14,7 +13,7 @@ BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
 {
 }
 
-cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
+std::vector<FlatBVHNode> BVH::build() {
   std::string bvh_file_name = name + ".bvh";
   std::string tri_file_name = name + ".tri";
   std::fstream bvh_file(bvh_file_name);
@@ -60,10 +59,7 @@ cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
     tri_file >> triangles;
   }
 
-  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
-                 flat_bvh.size() * sizeof(decltype(flat_bvh)::value_type),
-                 flat_bvh.data());
-  return buf;
+  return flat_bvh;
 }
 
 std::unique_ptr<BVHNode> BVH::build_bvh() {

@@ -20,20 +20,17 @@ void IntersectableManager::add_model(const Model& model) {
   }
 }
 
-void IntersectableManager::build_buffers(const cl::Context& context,
-                                         cl::Buffer& triangle_buf,
-                                         cl::Buffer& tri_meta_buf,
-                                         cl::Buffer& bvh_buf) {
+IntersectableData IntersectableManager::build() {
   BVH bvh(name, triangles);
-  bvh_buf = bvh.build_bvh_buffer(context);
+  std::vector<FlatBVHNode> bvh_data = bvh.build();
 
   // BVH modifies the order of triangles, so we need to look up the meta data
   // Separate triangle normals from triangle data, as we do not need the normal during intersection,
   // and this reduces cache pressure
   std::vector<TriangleData> triangle_data;
-  std::vector<TriangleMetaData> meta_data;
+  std::vector<TriangleMetaData> triangle_meta_data;
   triangle_data.reserve(triangles.size());
-  meta_data.reserve(triangles.size());
+  triangle_meta_data.reserve(triangles.size());
 
   for (const auto& tri : triangles) {
     const auto& [v1, v2, v3] = tri;
@@ -57,7 +54,7 @@ void IntersectableManager::build_buffers(const cl::Context& context,
     });
 
     const auto& meta = triangle_map[tri];
-    meta_data.push_back({
+    triangle_meta_data.push_back({
       { {meta.normal1.x, meta.normal1.y, meta.normal1.z} },
       { {meta.normal2.x, meta.normal2.y, meta.normal2.z} },
       { {meta.normal3.x, meta.normal3.y, meta.normal3.z} },
@@ -78,10 +75,9 @@ void IntersectableManager::build_buffers(const cl::Context& context,
     });
   }
 
-  triangle_buf = cl::Buffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
-                     triangle_data.size() * sizeof(decltype(triangle_data)::value_type),
-                     triangle_data.data());
-  tri_meta_buf = cl::Buffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
-                     meta_data.size() * sizeof(decltype(meta_data)::value_type),
-                     meta_data.data());
+  return {
+    triangle_data,
+    triangle_meta_data,
+    bvh_data
+  };
 }

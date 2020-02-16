@@ -1,16 +1,6 @@
 #ifndef BVH_H
 #define BVH_H
 
-#ifdef OPENCL_2
-  #include <CL/cl2.hpp>
-#else
-  #ifdef __APPLE__
-    #include <OpenCL/cl.hpp>
-  #else
-    #include <CL/cl.hpp>
-  #endif
-#endif
-
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
@@ -51,7 +41,7 @@ public:
   BVH(const std::string& name, std::vector<Triangle>& triangles);
 
   // Note: Modifies `triangles`
-  cl::Buffer build_bvh_buffer(const cl::Context& context);
+  std::vector<FlatBVHNode> build();
 private:
   struct SplitParams {
     float cost;

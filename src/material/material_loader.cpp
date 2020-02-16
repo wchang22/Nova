@@ -2,7 +2,6 @@
 #include <stb_image.h>
 
 #include "material_loader.h"
-#include "util/exception/exception.h"
 
 MaterialLoader::MaterialLoader() {
   stbi_set_flip_vertically_on_load(true);
@@ -13,12 +12,9 @@ int MaterialLoader::load_material(const char* path) {
   return static_cast<int>(materials.size() - 1);
 }
 
-cl::Image2DArray MaterialLoader::build_images(const cl::Context& context) {
-  // If no materials loaded, just return a dummy image array (must have non-zero size)
+MaterialData MaterialLoader::build() const {
   if (materials.empty()) {
-    return cl::Image2DArray(context, CL_MEM_READ_ONLY,
-                            cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), 1,
-                            1, 1, 0, 0, nullptr);
+    return {};
   }
 
   // Find the average image width and height
@@ -47,8 +43,10 @@ cl::Image2DArray MaterialLoader::build_images(const cl::Context& context) {
                         std::make_move_iterator(resized_image.data.end()));
   }
 
-  cl::Image2DArray images(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
-                          cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), materials.size(),
-                          width, height, 0, 0, images_data.data());
-  return images;
+  return {
+    images_data,
+    width,
+    height,
+    materials.size()
+  };
 }

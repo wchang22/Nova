@@ -65,11 +65,36 @@ void Raytracer::raytrace() {
   cl::Image2D image(context, CL_MEM_WRITE_ONLY,
                     cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), width, height);
   std::vector<uint8_t> image_buf(width * height * STBI_rgb_alpha);
-  cl::Buffer triangle_buf, tri_meta_buf, bvh_buf;
 
   auto ec = camera.get_eye_coords();
-  intersectable_manager.build_buffers(context, triangle_buf, tri_meta_buf, bvh_buf);
-  cl::Image2DArray material_ims = material_loader.build_images(context);
+
+  auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
+  
+  cl::Buffer triangle_buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+                          triangle_data.size() * sizeof(decltype(triangle_data)::value_type),
+                          triangle_data.data());
+  cl::Buffer tri_meta_buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+                          triangle_meta_data.size() *
+                          sizeof(decltype(triangle_meta_data)::value_type),
+                          triangle_meta_data.data());
+  cl::Buffer bvh_buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+                     bvh_data.size() * sizeof(decltype(bvh_data)::value_type),
+                     bvh_data.data());
+
+  // If no materials loaded, create a non-zero sized dummy array
+  MaterialData material_data = material_loader.build();
+  cl::Image2DArray material_ims;
+  if (material_data.num_materials == 0) {
+    material_ims = cl::Image2DArray(context, CL_MEM_READ_ONLY,
+                                    cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8), 1, 1, 1,
+                                    0, 0, nullptr);
+  } else {
+    material_ims = cl::Image2DArray(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                    cl::ImageFormat(CL_RGBA, CL_UNSIGNED_INT8),
+                                    material_data.num_materials,
+                                    material_data.width, material_data.height,
+                                    0, 0, material_data.data.data());
+  }
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
