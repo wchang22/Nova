@@ -19,8 +19,9 @@
 
 #define STRINGIFY(x) #x
 
+#include <cstddef>
+
 // Raytracer constants
-constexpr char KERNEL_PATH[] = KERNELS_PATH"raytrace.cl";
 constexpr char SCENE_PATH[] = SRC_PATH"scene.toml";
 
 // BVH/Triangle constants

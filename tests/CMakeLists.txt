@@ -9,3 +9,8 @@ target_include_directories(${TEST_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   include
 )
+if (OpenCL_FOUND)
+    target_compile_definitions(${TEST_NAME} PRIVATE -DBACKEND_OPENCL)
+else()
+    target_compile_definitions(${TEST_NAME} PRIVATE -DBACKEND_CUDA)
+endif()

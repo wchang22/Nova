@@ -25,7 +25,24 @@ target_compile_definitions(${LIBS_NAME} PRIVATE -DGLM_FORCE_INTRINSICS -DGLM_FOR
 target_compile_options(${LIBS_NAME} PRIVATE -march=native)
 
 # Source files
-file(GLOB_RECURSE SOURCES src/*/*)
+file(GLOB_RECURSE SOURCES
+    src/backend/accelerator.h
+    src/backend/types.h
+    src/backend/utils.h
+    src/bvh/*
+    src/camera/*
+    src/core/*
+    src/intersectables/*
+    src/material/*
+    src/model/*
+    src/util/*
+    src/constants.h
+)
+if (OpenCL_FOUND)
+    file(GLOB_RECURSE BACKEND_SOURCES src/backend/opencl/*)
+endif()
+set(SOURCES ${SOURCES} ${BACKEND_SOURCES})
+
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic")
 
@@ -33,16 +50,18 @@ set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
 set(PROJECT_LIBS
     ${LIBS_NAME}
     assimp
+    ${OpenCL_LIBRARIES}
     OpenMP::OpenMP_CXX
     stdc++fs
 )
-if (OpenCL_FOUND)
-    set(PROJECT_LIBS ${PROJECT_LIBS} ${OpenCL_LIBRARIES})
-endif()
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
-target_include_directories(${PROJECT_NAME} PRIVATE src include)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    src
+    include
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+)
 
 # Options
 option(RELEASE "Build in release mode" ON)
