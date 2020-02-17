@@ -11,6 +11,8 @@
   #endif
 #endif
 
+using Error = cl::Error;
+
 const char* get_error_string(cl_int error)
 {
   switch(error) {

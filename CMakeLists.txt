@@ -40,6 +40,8 @@ file(GLOB_RECURSE SOURCES
 )
 if (OpenCL_FOUND)
     file(GLOB_RECURSE BACKEND_SOURCES src/backend/opencl/*)
+else()
+    file(GLOB_RECURSE BACKEND_SOURCES src/backend/cuda/*)
 endif()
 set(SOURCES ${SOURCES} ${BACKEND_SOURCES})
 

@@ -39,6 +39,4 @@ enum class ImageChannelType {
   FLOAT = CL_FLOAT,
 };
 
-using Error = cl::Error;
-
 #endif // OPENCL_TYPES_H
