@@ -218,8 +218,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     assert(!node->left && !node->right);
 
     // Denote that the node is a leaf node by negating
-    flat_nodes[flat_node_index].top_offset_left.s[3] = triangles.size();
-    flat_nodes[flat_node_index].bottom_num_right.s[3] = -static_cast<float>(node->triangles.size());
+    w(flat_nodes[flat_node_index].top_offset_left) = triangles.size();
+    w(flat_nodes[flat_node_index].bottom_num_right) = -static_cast<float>(node->triangles.size());
     triangles.insert(triangles.end(),
                      std::make_move_iterator(node->triangles.begin()),
                      std::make_move_iterator(node->triangles.end()));
@@ -228,8 +228,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     assert(node->left || node->right);
 
     // Recursively build left and right nodes and attach to parent
-    flat_nodes[flat_node_index].top_offset_left.s[3] = build_flat_bvh_vec(flat_nodes, node->left);
-    flat_nodes[flat_node_index].bottom_num_right.s[3] = build_flat_bvh_vec(flat_nodes, node->right);
+    w(flat_nodes[flat_node_index].top_offset_left) = build_flat_bvh_vec(flat_nodes, node->left);
+    w(flat_nodes[flat_node_index].bottom_num_right) = build_flat_bvh_vec(flat_nodes, node->right);
   }
 
   return flat_node_index;
@@ -240,12 +240,13 @@ std::istream& operator>>(std::istream& in, FlatBVHNode& node) {
   float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
-    for (int i = 0; i < 4; i++) {
-      uint32_t x;
-      float* f = reinterpret_cast<float*>(&x);
-      in >> x;
-      elems[e]->s[i] = *f;
-    }
+    uint32_t s[4];
+    float* f = reinterpret_cast<float*>(s);
+    in >> s[0] >> s[1] >> s[2] >> s[3];
+    x(*elems[e]) = f[0];
+    y(*elems[e]) = f[1];
+    z(*elems[e]) = f[2];
+    w(*elems[e]) = f[3];
   }
   return in;
 }
@@ -255,11 +256,13 @@ std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
   const float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
-    for (int i = 0; i < 4; i++) {
-      float f = elems[e]->s[i];
-      uint32_t* x = reinterpret_cast<uint32_t*>(&f);
-      out << *x << " ";
-    }
+    float f[4];
+    f[0] = x(*elems[e]);
+    f[1] = y(*elems[e]);
+    f[2] = z(*elems[e]);
+    f[3] = w(*elems[e]);
+    uint32_t* s = reinterpret_cast<uint32_t*>(&f);
+    out << s[0] << " " << s[1] << " " << s[2] << " " << s[3] << " ";
   }
   return out;
 }
