@@ -208,8 +208,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
 
   // Build flat node and insert into list
   FlatBVHNode flat_node {
-    { {node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0} },
-    { {node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0} }
+    { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
+    { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 }
   };
   flat_nodes.emplace_back(std::move(flat_node));
 
