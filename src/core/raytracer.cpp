@@ -33,11 +33,13 @@ void Raytracer::raytrace() {
   std::vector<uint8_t> image_buf;
 
   EyeCoords ec = camera.get_eye_coords();
+  Buffer<EyeCoords> ec_buf = accelerator.create_buffer(MemFlags::READ_ONLY, ec);
 
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
-  Buffer triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
-  Buffer tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
-  Buffer bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
+  Buffer<TriangleData> triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
+  Buffer<TriangleMetaData> tri_meta_buf =
+    accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
+  Buffer<FlatBVHNode> bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
 
   MaterialData material_data = material_loader.build();
   Image2DArray material_ims;
@@ -64,7 +66,7 @@ void Raytracer::raytrace() {
 
     PROFILE_SECTION_START("Enqueue kernel");
     accelerator.call_kernel("raytrace", std::make_tuple(width, height), {},
-                            image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims);
+                            image, ec_buf, triangle_buf, tri_meta_buf, bvh_buf, material_ims);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");

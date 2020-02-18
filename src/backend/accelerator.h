@@ -2,9 +2,9 @@
 #define BACKEND_ACCELERATOR_H
 
 #ifdef BACKEND_OPENCL
-  #include "backend/opencl/accelerator.h"
+  #include "backend/opencl/accelerator/accelerator.h"
 #elif defined(BACKEND_CUDA)
-  #include "backend/cuda/accelerator.h"
+  #include "backend/cuda/accelerator/accelerator.h"
 #endif
 
 #endif // BACKEND_ACCELERATOR_H

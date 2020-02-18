@@ -1,20 +1,6 @@
-#ifndef OPENCL_ERROR_H
-#define OPENCL_ERROR_H
+#include "error.h"
 
-#ifdef OPENCL_2
-  #include <CL/cl2.hpp>
-#else
-  #ifdef __APPLE__
-    #include <OpenCL/cl.hpp>
-  #else
-    #include <CL/cl.hpp>
-  #endif
-#endif
-
-using Error = cl::Error;
-
-const char* get_error_string(cl_int error)
-{
+const char* get_error_string(cl_int error) {
   switch(error) {
     // run-time and JIT compiler errors
     case 0: return "CL_SUCCESS";
@@ -89,5 +75,3 @@ const char* get_error_string(cl_int error)
     default: return "Unknown OpenCL error";
   }
 }
-
-#endif // OPENCL_ERROR_H

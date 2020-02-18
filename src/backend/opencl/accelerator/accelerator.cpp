@@ -70,10 +70,3 @@ Image2DArray Accelerator::create_image2D_array(MemFlags mem_flags, ImageChannelO
                           ),
                           array_size, width, height, 0, 0);
 }
-
-Buffer Accelerator::create_buffer(MemFlags mem_flags, size_t length) const {
-  if (length == 0) {
-    throw AcceleratorException("Cannot build an empty Buffer");
-  }
-  return cl::Buffer(context, static_cast<cl_mem_flags>(mem_flags), length);
-}

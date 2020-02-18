@@ -14,7 +14,7 @@
 #include <unordered_map>
 
 #include "core/scene_parser.h"
-#include "backend/opencl/types.h"
+#include "backend/opencl/types/types.h"
 #include "backend/opencl/utils/kernel.h"
 #include "backend/opencl/utils/compatibility.h"
 #include "util/exception/exception.h"
@@ -89,7 +89,13 @@ public:
   }
 
   template<typename T>
-  Buffer create_buffer(MemFlags mem_flags, std::vector<T>& data) const {
+  Buffer<T> create_buffer(MemFlags mem_flags, T& data) const {
+    return cl::Buffer(context, static_cast<cl_mem_flags>(mem_flags) | CL_MEM_COPY_HOST_PTR,
+                      sizeof(T), &data);
+  }
+
+  template<typename T>
+  Buffer<T> create_buffer(MemFlags mem_flags, std::vector<T>& data) const {
     if (data.empty()) {
       throw AcceleratorException("Cannot build an empty Buffer");
     }
@@ -97,7 +103,13 @@ public:
                       data.size() * sizeof(T), data.data());
   }
 
-  Buffer create_buffer(MemFlags mem_flags, size_t length) const;
+  template<typename T>
+  Buffer<T> create_buffer(MemFlags mem_flags, size_t length) const {
+    if (length == 0) {
+      throw AcceleratorException("Cannot build an empty Buffer");
+    }
+    return cl::Buffer(context, static_cast<cl_mem_flags>(mem_flags), length * sizeof(T));
+  }
 
 private:
   cl::Context context;
