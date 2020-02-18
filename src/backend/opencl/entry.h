@@ -3,6 +3,6 @@
 
 #include "constants.h"
 
-constexpr char KERNEL_PATH[] = KERNELS_PATH"opencl/raytrace.cl";
+constexpr char KERNEL_PATH[] = KERNELS_PATH_STR"opencl/raytrace.cl";
 
 #endif // OPENCL_ENTRY_H

@@ -21,7 +21,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     intersectable_manager.add_model(model);
   }
 
-  accelerator.add_kernel("raytrace");
+  ADD_KERNEL(accelerator, raytrace)
 }
 
 void Raytracer::raytrace() {
@@ -65,8 +65,8 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    accelerator.call_kernel("raytrace", std::make_tuple(width, height), {},
-                            image, ec_buf, triangle_buf, tri_meta_buf, bvh_buf, material_ims);
+    CALL_KERNEL(accelerator, raytrace, std::make_tuple(width, height, 1), {},
+                image, ec_buf, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");

@@ -15,6 +15,6 @@ const char* get_error_string(cudaError_t code) {
   return cudaGetErrorString(code);
 }
 
-#define CUDA_CHECK(result) if (result != cudaSuccess) { throw Error(code); }
+#define CUDA_CHECK(result) if (result != cudaSuccess) { throw Error(result); }
 
 #endif // CUDA_ERROR_H

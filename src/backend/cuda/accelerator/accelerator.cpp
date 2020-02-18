@@ -16,12 +16,8 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
     default_ambient_occlusion,
     { light_position.x, light_position.y, light_position.z },
     { light_intensity.x, light_intensity.y, light_intensity.z },
-    ray_recursion_depth;
+    ray_recursion_depth,
   };
-}
-
-void Accelerator::add_kernel(const std::string& kernel_name) {
-
 }
 
 Image2D Accelerator::create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,

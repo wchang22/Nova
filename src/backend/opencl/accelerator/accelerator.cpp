@@ -20,7 +20,7 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
     std::stringstream build_args;
     build_args
       << " -cl-fast-relaxed-math -cl-mad-enable"
-      << " -I" << KERNELS_PATH"opencl"
+      << " -I" << KERNELS_PATH_STR"opencl"
       << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS
       << " -DDEFAULT_DIFFUSE=" << "(float3)("
         << default_diffuse.x << "," << default_diffuse.y << "," << default_diffuse.z << ")"

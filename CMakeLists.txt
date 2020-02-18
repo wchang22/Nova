@@ -48,6 +48,15 @@ set(SOURCES ${SOURCES} ${BACKEND_SOURCES})
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic")
 
+# CUDA Kernels
+if (NOT OpenCL_FOUND)
+    set(CUDA_LIB_NAME cuda)
+    file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
+    add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
+    target_compile_features(${CUDA_LIB_NAME} PRIVATE cxx_std_17)
+    set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif()
+
 # Link and build
 set(PROJECT_LIBS
     ${LIBS_NAME}
@@ -57,12 +66,13 @@ set(PROJECT_LIBS
     stdc++fs
 )
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS} ${CUDA_LIB_NAME})
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
     include
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+    kernels/cuda
 )
 
 # Options
@@ -104,7 +114,9 @@ else()
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DSRC_PATH="${CMAKE_SOURCE_DIR}/")
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH="${CMAKE_SOURCE_DIR}/kernels/")
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels/)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    -DKERNELS_PATH_STR="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
 
 # Status

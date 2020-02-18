@@ -19,6 +19,10 @@
 #include "backend/opencl/utils/compatibility.h"
 #include "util/exception/exception.h"
 
+#define ADD_KERNEL(accel, kernel) accel.add_kernel(#kernel);
+#define CALL_KERNEL(accel, kernel, global_size, local_size, ...) \
+  accel.call_kernel(#kernel, global_size, local_size, __VA_ARGS__);
+
 class Accelerator {
 public:
   Accelerator(const SceneParser& scene_parser);

@@ -7,7 +7,12 @@
 
 #include "core/scene_parser.h"
 #include "backend/cuda/types/types.h"
+#include "backend/cuda/entry.h"
 #include "util/exception/exception.h"
+
+#define ADD_KERNEL(accel, kernel_name)
+#define CALL_KERNEL(accel, kernel, global_size, local_size, ...) \
+  kernel(global_size, local_size, __VA_ARGS__);
 
 struct KernelConstants {
   uint32_t triangle_per_leaf_bits;
@@ -23,13 +28,6 @@ struct KernelConstants {
 class Accelerator {
 public:
   Accelerator(const SceneParser& scene_parser);
-  void add_kernel(const std::string& kernel_name);
-
-  template<typename... GlobalDims, typename... LocalDims, typename... Args>
-  void call_kernel(const std::string& kernel_name, std::tuple<GlobalDims...> global_size, 
-                   std::tuple<LocalDims...> local_size, Args... args) {
-
-  }
   
   template<typename T>
   Image2D create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
@@ -83,7 +81,6 @@ public:
   }
 
 private:
-  std::unordered_map<std::string, cl::Kernel> kernel_map;
   KernelConstants kernel_constants;
 };
 

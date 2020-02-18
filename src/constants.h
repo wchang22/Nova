@@ -5,7 +5,10 @@
   #define SRC_PATH ""
 #endif
 #ifndef KERNELS_PATH
-  #define KERNELS_PATH ""
+  #define KERNELS_PATH
+#endif
+#ifndef KERNELS_PATH_STR
+  #define KERNELS_PATH_STR ""
 #endif
 #ifndef ASSETS_PATH
   #define ASSETS_PATH ""
