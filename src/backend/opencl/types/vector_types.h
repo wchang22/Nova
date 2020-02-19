@@ -14,6 +14,7 @@
 using float2 = cl_float2;
 using float3 = cl_float3;
 using float4 = cl_float4;
+using uchar4 = cl_uchar4;
 
 template <typename floatn>
 inline float& x(floatn& f) { return f.s[0]; }

@@ -83,9 +83,8 @@ public:
                                     ImageChannelType channel_type, size_t array_size, size_t width, size_t height) const;
 
   template<typename T>
-  std::vector<T> read_image(const Image2D& image, size_t width, size_t height,
-                            size_t num_channels) const {
-    std::vector<T> image_buf(width * height * num_channels);
+  std::vector<T> read_image(const Image2D& image, size_t width, size_t height) const {
+    std::vector<T> image_buf(width * height);
     queue.enqueueReadImage(image.data(), true,
                            compat_utils::create_size_t<3>({ 0, 0, 0 }),
                            compat_utils::create_size_t<3>({ width, height, 1 }),

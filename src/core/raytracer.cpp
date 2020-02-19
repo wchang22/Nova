@@ -30,7 +30,7 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_START("Build data");
   Image2D image = accelerator.create_image2D(MemFlags::WRITE_ONLY, ImageChannelOrder::RGBA,
                                              ImageChannelType::UINT8, width, height);
-  std::vector<uint8_t> image_buf;
+  std::vector<uchar4> image_buf;
 
   Wrapper<EyeCoords> ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
 
@@ -69,7 +69,7 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");
-    image_buf = accelerator.read_image<uint8_t>(image, width, height, STBI_rgb_alpha);
+    image_buf = accelerator.read_image<uchar4>(image, width, height);
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();

@@ -27,8 +27,8 @@ MaterialData MaterialLoader::build() const {
       return sum + im.height;
     }) / materials.size();
 
-  std::vector<uint8_t> images_data;
-  images_data.reserve(width * height * materials.size() * STBI_rgb_alpha);
+  std::vector<uchar4> images_data;
+  images_data.reserve(width * height * materials.size());
 
   // Resize all images so we can put them in a uniform array
   for (const auto& material : materials) {

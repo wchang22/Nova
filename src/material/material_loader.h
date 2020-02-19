@@ -4,7 +4,7 @@
 #include "util/image/imageutils.h"
 
 struct MaterialData {
-  std::vector<uint8_t> data;
+  std::vector<uchar4> data;
   uint32_t width;
   uint32_t height;
   size_t num_materials;
