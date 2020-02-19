@@ -6,6 +6,8 @@
 #include "model/model.h"
 #include "constants.h"
 
+REGISTER_KERNEL(kernel_raytrace)
+
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
     name(name),
@@ -21,7 +23,7 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     intersectable_manager.add_model(model);
   }
 
-  ADD_KERNEL(accelerator, raytrace)
+  ADD_KERNEL(accelerator, kernel_raytrace)
 }
 
 void Raytracer::raytrace() {
@@ -30,7 +32,7 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_START("Build data");
   Image2D<uchar4> image =
     accelerator.create_image2D<uchar4>(MemFlags::WRITE_ONLY, ImageChannelOrder::RGBA,
-                                      ImageChannelType::UINT8, AddressMode::CLAMP, FilterMode::NEAREST, false, width, height);
+                                       ImageChannelType::UINT8, AddressMode::CLAMP,  FilterMode::NEAREST, false, width, height);
   std::vector<uchar4> image_buf;
 
   Wrapper<EyeCoords> ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
@@ -42,18 +44,18 @@ void Raytracer::raytrace() {
   Buffer<FlatBVHNode> bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
 
   MaterialData material_data = material_loader.build();
-  Image2DArray material_ims;
+  Image2DArray<uchar4> material_ims;
   // Create a dummy array if size 0
   if (material_data.num_materials == 0) {
-    material_ims = accelerator.create_image2D_array(
-      MemFlags::READ_ONLY,
-      ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+    material_ims = accelerator.create_image2D_array<uchar4>(
+      MemFlags::READ_ONLY, ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+      AddressMode::WRAP, FilterMode::NEAREST, true,
       1, 1, 1
     );
   } else {
     material_ims = accelerator.create_image2D_array(
-      MemFlags::READ_ONLY,
-      ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+      MemFlags::READ_ONLY, ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+      AddressMode::WRAP, FilterMode::NEAREST, true,
       material_data.num_materials, material_data.width, material_data.height, material_data.data
     );
   }
@@ -65,7 +67,7 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    CALL_KERNEL(accelerator, raytrace, std::make_tuple(width, height, 1), {},
+    CALL_KERNEL(accelerator, kernel_raytrace, std::make_tuple(width, height, 1), {},
                 image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 

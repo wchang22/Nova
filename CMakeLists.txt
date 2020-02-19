@@ -38,6 +38,7 @@ file(GLOB_RECURSE SOURCES
     src/model/*
     src/util/*
     src/constants.h
+    src/kernel_types.h
 )
 if (OpenCL_FOUND)
     file(GLOB_RECURSE BACKEND_SOURCES src/backend/opencl/*)
@@ -54,7 +55,7 @@ if (NOT OpenCL_FOUND)
     set(CUDA_LIB_NAME cuda)
     file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
-    target_compile_features(${CUDA_LIB_NAME} PRIVATE cxx_std_14)
+    target_include_directories(${CUDA_LIB_NAME} PRIVATE src)
     set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 
@@ -73,7 +74,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src
     include
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-    kernels/cuda
+    kernels
 )
 
 # Options
@@ -115,7 +116,7 @@ else()
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DSRC_PATH="${CMAKE_SOURCE_DIR}/")
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels/)
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     -DKERNELS_PATH_STR="${CMAKE_SOURCE_DIR}/kernels/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")

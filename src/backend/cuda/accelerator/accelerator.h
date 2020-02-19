@@ -10,8 +10,14 @@
 #include "util/exception/exception.h"
 
 #define ADD_KERNEL(accel, kernel_name)
+#define REGISTER_KERNEL(kernel) \
+  template <typename... Args> \
+  void dispatch_##kernel(std::tuple<uint32_t, uint32_t, uint32_t> global_size, \
+                         std::tuple<uint32_t, uint32_t, uint32_t> local_size, Args&&... args) { \
+    kernel(global_size, local_size, std::forward<Args>(args).data()...); \
+  }
 #define CALL_KERNEL(accel, kernel, global_size, local_size, ...) \
-  kernel(global_size, local_size, __VA_ARGS__);
+  dispatch_##kernel(global_size, local_size, __VA_ARGS__);
 
 struct KernelConstants {
   uint32_t triangle_per_leaf_bits;
@@ -57,23 +63,40 @@ public:
   }
 
   template<typename T>
-  Image2DArray create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                    ImageChannelType channel_type, size_t array_size, size_t width, size_t height, std::vector<T>& data) const {
+  Image2DArray<T> create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
+                                       ImageChannelType channel_type, AddressMode address_mode,
+                                       FilterMode filter_mode, bool normalized_coords,
+                                       size_t array_size, size_t width, size_t height, 
+                                       std::vector<T>& data) const {
+    (void) mem_flags;
+    (void) channel_order;
+    (void) channel_type;
     if (data.empty() || array_size == 0 || width == 0 || height == 0) {
       throw AcceleratorException("Cannot build an empty Image2DArray");
     }
+    return Image2DArray(address_mode, filter_mode, normalized_coords,
+                        array_size, width, height, data.data());
   }
 
-  Image2DArray create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                    ImageChannelType channel_type, size_t array_size, size_t width, size_t height) const;
+  template<typename T>
+  Image2DArray<T> create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
+                                       ImageChannelType channel_type, AddressMode address_mode,
+                                       FilterMode filter_mode, bool normalized_coords,
+                                       size_t array_size, size_t width, size_t height) const {
+    (void) mem_flags;
+    (void) channel_order;
+    (void) channel_type;
+    if (array_size == 0 || width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DArray");
+    }
+    return Image2DArray<T>(address_mode, filter_mode, normalized_coords, array_size, width, height);
+  }
 
   template<typename T>
   std::vector<T> read_image(const Image2D<T>& image, size_t width, size_t height) const {
-    std::vector<T> image_buf(width * height);
-    int pitch_in_bytes = width * sizeof(T);
-    CUDA_CHECK(cudaMemcpy2D(image_buf.data(), pitch_in_bytes, image.ptr(),
-                            pitch_in_bytes, pitch_in_bytes, height, cudaMemcpyDeviceToHost))
-    return image_buf;
+    (void) width;
+    (void) height;
+    return image.read();
   }
 
   template<typename T>

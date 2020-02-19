@@ -80,12 +80,12 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
 }
 
 kernel
-void raytrace(write_only image2d_t image_out,
-              EyeCoords ec,
-              global Triangle* triangles,
-              global TriangleMeta* tri_meta,
-              global BVHNode* bvh,
-              read_only image2d_array_t materials) {
+void kernel_raytrace(write_only image2d_t image_out,
+                     EyeCoords ec,
+                     global Triangle* triangles,
+                     global TriangleMeta* tri_meta,
+                     global BVHNode* bvh,
+                     read_only image2d_array_t materials) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);

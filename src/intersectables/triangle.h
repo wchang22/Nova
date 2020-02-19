@@ -4,8 +4,8 @@
 #include <glm/glm.hpp>
 #include <fstream>
 
-#include "backend/types.h"
 #include "intersectables/aabb.h"
+#include "kernel_types.h"
 
 using namespace glm;
 
@@ -25,13 +25,6 @@ struct TriangleHash {
 std::istream& operator>>(std::istream& in, Triangle& tri);
 std::ostream& operator<<(std::ostream& out, const Triangle& tri);
 
-// Woop 4x3 affine transform matrix
-struct TriangleData {
-  float4 transform_x;
-  float4 transform_y;
-  float4 transform_z;
-};
-
 struct TriangleMeta {
   vec3 normal1;
   vec3 normal2;
@@ -50,26 +43,6 @@ struct TriangleMeta {
   int roughness_index;
   int ambient_occlusion_index;
   int normal_index;
-};
-
-struct TriangleMetaData {
-  float3 normal1;
-  float3 normal2;
-  float3 normal3;
-  float3 tangent1;
-  float3 tangent2;
-  float3 tangent3;
-  float3 bitangent1;
-  float3 bitangent2;
-  float3 bitangent3;
-  float2 texture_coord1;
-  float2 texture_coord2;
-  float2 texture_coord3;
-  int32_t diffuse_index;
-  int32_t metallic_index;
-  int32_t roughness_index;
-  int32_t ambient_occlusion_index;
-  int32_t normal_index;
 };
 
 #endif // TRIANGLE_H

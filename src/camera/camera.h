@@ -3,18 +3,9 @@
 
 #include <glm/glm.hpp>
 
-#include "backend/types.h"
+#include "kernel_types.h"
 
 using namespace glm;
-
-struct EyeCoords {
-  float2 coord_scale;
-  float2 coord_dims;
-  float3 eye_pos;
-  float3 eye_coord_frame0;
-  float3 eye_coord_frame1;
-  float3 eye_coord_frame2;
-};
 
 class Camera {
 public:

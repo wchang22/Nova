@@ -11,6 +11,7 @@
   #endif
 #endif
 
+template<typename T>
 class Image2DArray {
 public:
   Image2DArray() = default;

@@ -41,17 +41,3 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
 void Accelerator::add_kernel(const std::string& kernel_name) {
   kernel_map[kernel_name] = cl::Kernel(program, kernel_name.c_str());
 }
-
-Image2DArray Accelerator::create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                               ImageChannelType channel_type, size_t array_size, 
-                                               size_t width, size_t height) const {
-  if (array_size == 0 || width == 0 || height == 0) {
-    throw AcceleratorException("Cannot build an empty Image2DArray");
-  }
-  return Image2DArray(context, static_cast<cl_mem_flags>(mem_flags),
-                          cl::ImageFormat(
-                            static_cast<cl_channel_order>(channel_order),
-                            static_cast<cl_channel_type>(channel_type)
-                          ),
-                          array_size, width, height, 0, 0);
-}

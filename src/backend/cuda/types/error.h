@@ -11,9 +11,7 @@ struct Error : public std::runtime_error {
   cudaError_t error;
 };
 
-const char* get_error_string(cudaError_t code) {
-  return cudaGetErrorString(code);
-}
+const char* get_error_string(cudaError_t code);
 
 #define CUDA_CHECK(result) if (result != cudaSuccess) { throw Error(result); }
 
