@@ -2,23 +2,35 @@
 #define CUDA_FLAGS_H
 
 enum class MemFlags {
-  READ_ONLY = 0,
-  WRITE_ONLY = 1,
-  READ_WRITE = 2,
+  READ_ONLY,
+  WRITE_ONLY,
+  READ_WRITE,
 };
 
 enum class ImageChannelOrder {
-  RGB = 0,
-  RGBA = 1,
-  R = 2,
+  R,
+  RGB,
+  RGBA,
 };
 
 enum class ImageChannelType {
-  UINT8 = 0,
-  UINT32 = 1,
-  INT8 = 2,
-  INT32 = 3,
-  FLOAT = 4,
+  UINT8,
+  UINT32,
+  INT8,
+  INT32,
+  FLOAT,
+};
+
+enum class AddressMode {
+  WRAP = cudaAddressModeWrap,
+  CLAMP = cudaAddressModeClamp,
+  MIRROR = cudaAddressModeMirror,
+  BORDER = cudaAddressModeBorder,
+};
+
+enum class FilterMode {
+  NEAREST = cudaFilterModePoint,
+  LINEAR = cudaFilterModeLinear,
 };
 
 #endif // CUDA_FLAGS_H

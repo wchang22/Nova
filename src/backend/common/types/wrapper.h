@@ -1,5 +1,5 @@
-#ifndef OPENCL_WRAPPER_H
-#define OPENCL_WRAPPER_H
+#ifndef COMMON_WRAPPER_H
+#define COMMON_WRAPPER_H
 
 template <typename T>
 class Wrapper {
@@ -36,4 +36,4 @@ private:
   T value;
 };
 
-#endif // OPENCL_WRAPPER_H
+#endif // COMMON_WRAPPER_H

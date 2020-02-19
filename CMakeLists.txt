@@ -29,6 +29,7 @@ file(GLOB_RECURSE SOURCES
     src/backend/accelerator.h
     src/backend/types.h
     src/backend/utils.h
+    src/backend/common/*
     src/bvh/*
     src/camera/*
     src/core/*
@@ -53,7 +54,7 @@ if (NOT OpenCL_FOUND)
     set(CUDA_LIB_NAME cuda)
     file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
-    target_compile_features(${CUDA_LIB_NAME} PRIVATE cxx_std_17)
+    target_compile_features(${CUDA_LIB_NAME} PRIVATE cxx_std_14)
     set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 

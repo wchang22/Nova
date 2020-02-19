@@ -31,4 +31,16 @@ enum class ImageChannelType {
   FLOAT = CL_FLOAT
 };
 
+enum class AddressMode {
+  WRAP,
+  CLAMP,
+  MIRROR,
+  BORDER,
+};
+
+enum class FilterMode {
+  NEAREST,
+  LINEAR,
+};
+
 #endif // OPENCL_FLAGS_H

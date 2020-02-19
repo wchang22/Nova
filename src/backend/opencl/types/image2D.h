@@ -11,6 +11,7 @@
   #endif
 #endif
 
+template<typename T>
 class Image2D {
 public:
   Image2D() = default;

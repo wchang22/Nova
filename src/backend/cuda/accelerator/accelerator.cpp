@@ -20,14 +20,6 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
   };
 }
 
-Image2D Accelerator::create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                    ImageChannelType channel_type, size_t width, size_t height) 
-                                    const {
-  if (width == 0 || height == 0) {
-    throw AcceleratorException("Cannot build an empty Image2D");
-  }
-}
-
 Image2DArray Accelerator::create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
                                                ImageChannelType channel_type, size_t array_size, 
                                                size_t width, size_t height) const {

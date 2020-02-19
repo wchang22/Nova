@@ -42,21 +42,6 @@ void Accelerator::add_kernel(const std::string& kernel_name) {
   kernel_map[kernel_name] = cl::Kernel(program, kernel_name.c_str());
 }
 
-Image2D Accelerator::create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                    ImageChannelType channel_type, size_t width, size_t height) 
-                                    const {
-  if (width == 0 || height == 0) {
-    throw AcceleratorException("Cannot build an empty Image2D");
-  }
-  
-  return Image2D(context, static_cast<cl_mem_flags>(mem_flags),
-                      cl::ImageFormat(
-                        static_cast<cl_channel_order>(channel_order),
-                        static_cast<cl_channel_type>(channel_type)
-                      ),
-                      width, height);
-}
-
 Image2DArray Accelerator::create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
                                                ImageChannelType channel_type, size_t array_size, 
                                                size_t width, size_t height) const {
