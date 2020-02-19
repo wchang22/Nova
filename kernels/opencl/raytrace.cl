@@ -81,18 +81,18 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
 
 kernel
 void raytrace(write_only image2d_t image_out,
-              global EyeCoords* ec,
+              EyeCoords ec,
               global Triangle* triangles,
               global TriangleMeta* tri_meta,
               global BVHNode* bvh,
               read_only image2d_array_t materials) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
-  float2 alpha_beta = ec->coord_scale * (convert_float2(pixel_coords) - ec->coord_dims + 0.5f);
-  float3 ray_dir = fast_normalize(alpha_beta.x * ec->eye_coord_frame.x -
-                                  alpha_beta.y * ec->eye_coord_frame.y -
-                                                 ec->eye_coord_frame.z);
-  float3 ray_pos = ec->eye_pos;
+  float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
+  float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
+                                  alpha_beta.y * ec.eye_coord_frame.y -
+                                                 ec.eye_coord_frame.z);
+  float3 ray_pos = ec.eye_pos;
 
   float3 color = 0.0f;
   float3 reflectance = 1.0f;
@@ -135,7 +135,7 @@ void raytrace(write_only image2d_t image_out,
 
     // Calculate lighting params
     float3 light_dir = fast_normalize(LIGHT_POSITION - intrs_point);
-    float3 view_dir = fast_normalize(ec->eye_pos - intrs_point);
+    float3 view_dir = fast_normalize(ec.eye_pos - intrs_point);
     float3 half_dir = fast_normalize(light_dir + view_dir);
     float light_distance = fast_distance(LIGHT_POSITION, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);

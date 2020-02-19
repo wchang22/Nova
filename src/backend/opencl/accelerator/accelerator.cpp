@@ -49,7 +49,7 @@ Image2D Accelerator::create_image2D(MemFlags mem_flags, ImageChannelOrder channe
     throw AcceleratorException("Cannot build an empty Image2D");
   }
   
-  return cl::Image2D(context, static_cast<cl_mem_flags>(mem_flags),
+  return Image2D(context, static_cast<cl_mem_flags>(mem_flags),
                       cl::ImageFormat(
                         static_cast<cl_channel_order>(channel_order),
                         static_cast<cl_channel_type>(channel_type)
@@ -63,7 +63,7 @@ Image2DArray Accelerator::create_image2D_array(MemFlags mem_flags, ImageChannelO
   if (array_size == 0 || width == 0 || height == 0) {
     throw AcceleratorException("Cannot build an empty Image2DArray");
   }
-  return cl::Image2DArray(context, static_cast<cl_mem_flags>(mem_flags),
+  return Image2DArray(context, static_cast<cl_mem_flags>(mem_flags),
                           cl::ImageFormat(
                             static_cast<cl_channel_order>(channel_order),
                             static_cast<cl_channel_type>(channel_type)

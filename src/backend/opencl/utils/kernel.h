@@ -18,14 +18,14 @@ namespace kernel_utils {
   }
 
   template <typename Arg, typename... Args>
-  inline void set_args_helper(cl::Kernel& kernel, uint32_t i, Arg first, Args... rest) {
+  inline void set_args_helper(cl::Kernel& kernel, uint32_t i, Arg first, Args&&... rest) {
     kernel.setArg(i, first);
-    set_args_helper(kernel, i + 1, rest...);
+    set_args_helper(kernel, i + 1, std::forward<Args>(rest)...);
   }
 
   template <typename... Args>
-  void set_args(cl::Kernel& kernel, Args... args) {
-    set_args_helper(kernel, 0, args...);
+  void set_args(cl::Kernel& kernel, Args&&... args) {
+    set_args_helper(kernel, 0, std::forward<Args>(args)...);
   }
 }
 

@@ -1,0 +1,39 @@
+#ifndef OPENCL_WRAPPER_H
+#define OPENCL_WRAPPER_H
+
+template <typename T>
+class Wrapper {
+public:
+  Wrapper() = default;
+
+  template <typename... Args>
+  Wrapper(Args&&... args) : value(std::forward<Args>(args)...) {}
+
+  Wrapper(const Wrapper& other) : value(other.value) {}
+  Wrapper(Wrapper& other) : value(other.value) {}
+  
+  Wrapper& operator=(const Wrapper& other) {
+    value = other.value;
+    return *this;
+  }
+  Wrapper& operator=(Wrapper& other) { 
+    value = other.value;
+    return *this;
+  }
+
+  Wrapper(Wrapper&& other) : value(std::move(other.value)) {}
+  Wrapper& operator=(Wrapper&& other) {
+    std::swap(value, other.value);
+    return *this;
+  }
+
+  ~Wrapper() = default;
+
+  const T& data() const { return value; }
+  T& data() { return value; }
+
+private:
+  T value;
+};
+
+#endif // OPENCL_WRAPPER_H
