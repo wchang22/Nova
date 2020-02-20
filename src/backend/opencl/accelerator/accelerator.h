@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 
+#include "kernel_types.h"
 #include "core/scene_parser.h"
 #include "backend/common/types/types.h"
 #include "backend/opencl/types/types.h"
@@ -22,27 +23,26 @@
 
 #define ADD_KERNEL(accel, kernel) accel.add_kernel(#kernel);
 #define REGISTER_KERNEL(kernel)
-#define CALL_KERNEL(accel, kernel, global_size, local_size, ...) \
-  accel.call_kernel(#kernel, global_size, local_size, __VA_ARGS__);
+#define CALL_KERNEL(accel, kernel, global_size, ...) \
+  accel.call_kernel(#kernel, global_size, __VA_ARGS__);
 
 class Accelerator {
 public:
   Accelerator(const SceneParser& scene_parser);
   void add_kernel(const std::string& kernel_name);
 
-  template<typename... GlobalDims, typename... LocalDims, typename... Args>
-  void call_kernel(const std::string& kernel_name, std::tuple<GlobalDims...> global_size, 
-                   std::tuple<LocalDims...> local_size, Args&&... args) {
-    cl::Kernel& kernel = kernel_map.at(kernel_name);
+  template<typename... Args>
+  void call_kernel(const std::string& kernel_name, const Dims& global_dims, Args&&... args) {
+    const auto& kernel_it = kernel_map.find(kernel_name);
+    if (kernel_it == kernel_map.end()) {
+      throw KernelException("No kernel called " + kernel_name);
+    }
 
-    kernel_utils::set_args(kernel, std::forward<Args>(args).data()...);
-
-    std::apply([&](auto&&... global_range) { 
-      std::apply([&](auto&&... local_range) {
-        queue.enqueueNDRangeKernel(kernel, cl::NullRange,
-                                   cl::NDRange(global_range...), cl::NDRange(local_range...));
-      }, local_size);
-    }, global_size);
+    kernel_utils::set_args(kernel_it->second, std::forward<Args>(args).data()...);
+    std::apply([&](auto&&... global_size) { 
+      queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange, cl::NDRange(global_size...),
+                                 cl::NullRange);
+    }, global_dims);
     
     queue.finish();
   }

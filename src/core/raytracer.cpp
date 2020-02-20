@@ -67,7 +67,7 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    CALL_KERNEL(accelerator, kernel_raytrace, std::make_tuple(width, height, 1), {},
+    CALL_KERNEL(accelerator, kernel_raytrace, Dims(width, height, 1),
                 image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 

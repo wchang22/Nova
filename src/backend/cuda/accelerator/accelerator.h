@@ -3,6 +3,7 @@
 
 #include <cuda_runtime.h>
 
+#include "kernel_types.h"
 #include "core/scene_parser.h"
 #include "backend/common/types/types.h"
 #include "backend/cuda/types/types.h"
@@ -12,27 +13,18 @@
 #define ADD_KERNEL(accel, kernel_name)
 #define REGISTER_KERNEL(kernel) \
   template <typename... Args> \
-  void dispatch_##kernel(std::tuple<uint32_t, uint32_t, uint32_t> global_size, \
-                         std::tuple<uint32_t, uint32_t, uint32_t> local_size, Args&&... args) { \
-    kernel(global_size, local_size, std::forward<Args>(args).data()...); \
+  void dispatch_##kernel(const Dims& global_dims, const KernelConstants& kernel_constants, \
+                         Args&&... args) { \
+    kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...); \
   }
-#define CALL_KERNEL(accel, kernel, global_size, local_size, ...) \
-  dispatch_##kernel(global_size, local_size, __VA_ARGS__);
-
-struct KernelConstants {
-  uint32_t triangle_per_leaf_bits;
-  float3 default_diffuse;
-  float default_metallic;
-  float default_roughness;
-  float default_ambient_occlusion;
-  float3 light_position;
-  float3 light_intensity;
-  uint32_t ray_recursion_depth;
-};
+#define CALL_KERNEL(accel, kernel, global_dims, ...) \
+  dispatch_##kernel(global_dims, accel.get_kernel_constants(), __VA_ARGS__);
 
 class Accelerator {
 public:
   Accelerator(const SceneParser& scene_parser);
+
+  const KernelConstants& get_kernel_constants() const { return kernel_constants; }
   
   template<typename T>
   Image2D<T> create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
@@ -116,6 +108,7 @@ public:
 
   template<typename T>
   Buffer<T> create_buffer(MemFlags mem_flags, size_t length) const {
+    (void) mem_flags;
     if (length == 0) {
       throw AcceleratorException("Cannot build an empty Buffer");
     }

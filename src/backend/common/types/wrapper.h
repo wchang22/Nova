@@ -1,6 +1,8 @@
 #ifndef COMMON_WRAPPER_H
 #define COMMON_WRAPPER_H
 
+#include <utility>
+
 template <typename T>
 class Wrapper {
 public:

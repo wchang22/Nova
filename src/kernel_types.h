@@ -1,6 +1,8 @@
 #ifndef KERNEL_TYPES_H
 #define KERNEL_TYPES_H
 
+#include <tuple>
+
 #include "backend/types.h"
 
 struct EyeCoords {
@@ -48,5 +50,18 @@ struct TriangleMetaData {
   int32_t ambient_occlusion_index;
   int32_t normal_index;
 };
+
+struct KernelConstants {
+  uint32_t triangle_per_leaf_bits;
+  float3 default_diffuse;
+  float default_metallic;
+  float default_roughness;
+  float default_ambient_occlusion;
+  float3 light_position;
+  float3 light_intensity;
+  uint32_t ray_recursion_depth;
+};
+
+using Dims = std::tuple<uint32_t, uint32_t, uint32_t>;
 
 #endif // KERNEL_TYPES_H

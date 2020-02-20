@@ -1,6 +1,8 @@
 #ifndef CUDA_FLAGS_H
 #define CUDA_FLAGS_H
 
+#include <cuda_runtime.h>
+
 enum class MemFlags {
   READ_ONLY,
   WRITE_ONLY,
