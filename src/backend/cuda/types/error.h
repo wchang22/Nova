@@ -2,6 +2,7 @@
 #define CUDA_ERROR_H
 
 #include <stdexcept>
+#include <iostream>
 #include <cuda_runtime.h>
 
 struct Error : public std::runtime_error {
@@ -13,6 +14,10 @@ struct Error : public std::runtime_error {
 
 const char* get_error_string(cudaError_t code);
 
-#define CUDA_CHECK(result) if (result != cudaSuccess) { throw Error(result); }
+#define CUDA_CHECK(result) \
+  if (result != cudaSuccess) { \
+    std::cerr << __FILE__ << ": line " << __LINE__ << " "; \
+    throw Error(result); \
+  }
 
 #endif // CUDA_ERROR_H
