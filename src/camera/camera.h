@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-#include "kernel_types.h"
+#include "kernel_types/eye_coords.h"
 
 using namespace glm;
 

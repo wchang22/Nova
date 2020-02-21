@@ -13,7 +13,6 @@
 
 #include <unordered_map>
 
-#include "kernel_types.h"
 #include "core/scene_parser.h"
 #include "backend/common/types/types.h"
 #include "backend/opencl/types/types.h"
@@ -32,17 +31,16 @@ public:
   void add_kernel(const std::string& kernel_name);
 
   template<typename... Args>
-  void call_kernel(const std::string& kernel_name, const Dims& global_dims, Args&&... args) {
+  void call_kernel(const std::string& kernel_name, uint3 global_dims, Args&&... args) {
     const auto& kernel_it = kernel_map.find(kernel_name);
     if (kernel_it == kernel_map.end()) {
       throw KernelException("No kernel called " + kernel_name);
     }
 
     kernel_utils::set_args(kernel_it->second, std::forward<Args>(args).data()...);
-    std::apply([&](auto&&... global_size) { 
-      queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange, cl::NDRange(global_size...),
-                                 cl::NullRange);
-    }, global_dims);
+    queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange,
+                               cl::NDRange(global_dims.s[0], global_dims.s[1], global_dims.s[2]),
+                               cl::NullRange);
     
     queue.finish();
   }

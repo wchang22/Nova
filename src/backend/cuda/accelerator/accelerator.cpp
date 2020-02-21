@@ -6,7 +6,7 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
   const auto [ default_diffuse, default_metallic, default_roughness, default_ambient_occlusion ]
     = scene_parser.get_shading_default_settings();
   const auto [ light_position, light_intensity ] = scene_parser.get_light_settings();
-  const unsigned int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
+  const int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
 
   kernel_constants = {
     TRIANGLES_PER_LEAF_BITS,

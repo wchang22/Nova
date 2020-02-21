@@ -9,7 +9,7 @@
 
 #include "intersectables/triangle.h"
 #include "intersectables/aabb.h"
-#include "kernel_types.h"
+#include "kernel_types/bvh_node.h"
 
 using namespace glm;
 

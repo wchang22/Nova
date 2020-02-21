@@ -34,7 +34,7 @@ void Raytracer::raytrace() {
     ImageChannelOrder::RGBA, ImageChannelType::UINT8, width, height);
   std::vector<uchar4> image_buf;
 
-  Wrapper<EyeCoords> ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
+  auto ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
 
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
   auto triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
@@ -62,7 +62,8 @@ void Raytracer::raytrace() {
     PROFILE_SCOPE("Raytrace profile loop");
 
     PROFILE_SECTION_START("Enqueue kernel");
-    CALL_KERNEL(accelerator, kernel_raytrace, Dims(width, height, 1),
+    uint3 global_dims = { width, height, 1 };
+    CALL_KERNEL(accelerator, kernel_raytrace, global_dims,
                 image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 

@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "intersectables/aabb.h"
-#include "kernel_types.h"
+#include "kernel_types/triangle.h"
 
 using namespace glm;
 

@@ -34,6 +34,7 @@ file(GLOB_RECURSE SOURCES
     src/camera/*
     src/core/*
     src/intersectables/*
+    src/kernel_types/*
     src/material/*
     src/model/*
     src/util/*

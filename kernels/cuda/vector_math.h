@@ -20,8 +20,8 @@
  *    Thanks to Linh Hah for additions and fixes.
  */
 
-#ifndef VECTOR_MATH_H
-#define VECTOR_MATH_H
+#ifndef CUDA_KERNEL_VECTOR_MATH_H
+#define CUDA_KERNEL_VECTOR_MATH_H
 
 typedef unsigned int uint;
 typedef unsigned short ushort;

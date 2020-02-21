@@ -7,6 +7,7 @@
 #include "model/model.h"
 #include "intersectables/triangle.h"
 #include "bvh/bvh.h"
+#include "kernel_types/bvh_node.h"
 
 struct IntersectableData {
   std::vector<TriangleData> triangle_data;

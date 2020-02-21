@@ -51,6 +51,6 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   };
 }
 
-unsigned int SceneParser::get_ray_recursion_depth() const {
-  return toml::find<unsigned int>(parsed_data, "ray_recursion", "depth");
+int SceneParser::get_ray_recursion_depth() const {
+  return toml::find<int>(parsed_data, "ray_recursion", "depth");
 }

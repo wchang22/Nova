@@ -47,11 +47,11 @@ IntersectableData IntersectableManager::build() {
     transform[3] = vec4(v1, 1);
     transform = inverse(transform);
 
-    triangle_data.push_back({
+    triangle_data.push_back({{
       { transform[0][0], transform[1][0], transform[2][0], transform[3][0] },
       { transform[0][1], transform[1][1], transform[2][1], transform[3][1] },
       { transform[0][2], transform[1][2], transform[2][2], transform[3][2] }
-    });
+    }});
 
     const auto& meta = triangle_map[tri];
     triangle_meta_data.push_back({

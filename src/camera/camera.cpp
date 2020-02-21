@@ -26,6 +26,6 @@ EyeCoords Camera::get_eye_coords() const {
     { coord_scale.x, coord_scale.y },
     { coord_dims.x, coord_dims.y },
     { position.x, position.y, position.z },
-    { u.x, u.y, u.z }, { v.x, v.y, v.z }, { w.x, w.y, w.z }
+    { { u.x, u.y, u.z }, { v.x, v.y, v.z }, { w.x, w.y, w.z } },
   };
 }

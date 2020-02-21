@@ -35,7 +35,7 @@ typedef struct {
 
 // Woop 4x3 affine transform matrix
 typedef struct {
-  Mat4x3 transform;
+  Mat3x4 transform;
 } Triangle;
 
 // We look up the triangle metadata and material separately to reduce cache pressure

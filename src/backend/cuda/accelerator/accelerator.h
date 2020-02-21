@@ -3,7 +3,6 @@
 
 #include <cuda_runtime.h>
 
-#include "kernel_types.h"
 #include "core/scene_parser.h"
 #include "backend/common/types/types.h"
 #include "backend/cuda/types/types.h"
@@ -13,7 +12,7 @@
 #define ADD_KERNEL(accel, kernel_name)
 #define REGISTER_KERNEL(kernel) \
   template <typename... Args> \
-  void dispatch_##kernel(const Dims& global_dims, const KernelConstants& kernel_constants, \
+  void dispatch_##kernel(uint3 global_dims, const KernelConstants& kernel_constants, \
                          Args&&... args) { \
     kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...); \
     cudaDeviceSynchronize(); \
