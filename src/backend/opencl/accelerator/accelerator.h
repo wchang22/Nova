@@ -48,46 +48,40 @@ public:
   }
   
   template<typename T>
-  Image2D<T> create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
-                            ImageChannelType channel_type, AddressMode address_mode,
-                            FilterMode filter_mode, bool normalized_coords,
-                            size_t width, size_t height, std::vector<T>& data) const {
+  Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order, ImageChannelType channel_type,                                   AddressMode address_mode, FilterMode filter_mode,
+                                     bool normalized_coords, size_t width, size_t height, 
+                                     std::vector<T>& data) const {
     (void) address_mode;
     (void) filter_mode;
     (void) normalized_coords;
     if (data.empty() || width == 0 || height == 0) {
-      throw AcceleratorException("Cannot build an empty Image2D");
+      throw AcceleratorException("Cannot build an empty Image2DRead");
     }
-    return Image2D<T>(context, static_cast<cl_mem_flags>(mem_flags) | CL_MEM_COPY_HOST_PTR,
-                      cl::ImageFormat(
-                        static_cast<cl_channel_order>(channel_order),
-                        static_cast<cl_channel_type>(channel_type)
-                      ),
-                      width, height, 0, data.data());
+    return Image2DRead<T>(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                          cl::ImageFormat(
+                            static_cast<cl_channel_order>(channel_order),
+                            static_cast<cl_channel_type>(channel_type)
+                          ),
+                          width, height, 0, data.data());
   }
 
   template<typename T>
-  Image2D<T> create_image2D(MemFlags mem_flags, ImageChannelOrder channel_order,
-                            ImageChannelType channel_type, AddressMode address_mode,
-                            FilterMode filter_mode, bool normalized_coords,
-                            size_t width, size_t height) const {
-    (void) address_mode;
-    (void) filter_mode;
-    (void) normalized_coords;
+  Image2DWrite<T> create_image2D_write(ImageChannelOrder channel_order,
+                                       ImageChannelType channel_type,
+                                       size_t width, size_t height) const {
     if (width == 0 || height == 0) {
-      throw AcceleratorException("Cannot build an empty Image2D");
+      throw AcceleratorException("Cannot build an empty Image2DWrite");
     }
-    
-    return Image2D<T>(context, static_cast<cl_mem_flags>(mem_flags),
-                      cl::ImageFormat(
-                        static_cast<cl_channel_order>(channel_order),
-                        static_cast<cl_channel_type>(channel_type)
-                      ),
-                      width, height);
+    return Image2DWrite<T>(context, CL_MEM_WRITE_ONLY,
+                           cl::ImageFormat(
+                             static_cast<cl_channel_order>(channel_order),
+                             static_cast<cl_channel_type>(channel_type)
+                           ),
+                           width, height);
   }
 
   template<typename T>
-  Image2DArray<T> create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
+  Image2DArray<T> create_image2D_array(ImageChannelOrder channel_order,
                                        ImageChannelType channel_type, AddressMode address_mode,
                                        FilterMode filter_mode, bool normalized_coords,
                                        size_t array_size, size_t width, size_t height,
@@ -99,7 +93,7 @@ public:
       throw AcceleratorException("Cannot build an empty Image2DArray");
     }
 
-    return Image2DArray<T>(context, static_cast<cl_mem_flags>(mem_flags) | CL_MEM_COPY_HOST_PTR,
+    return Image2DArray<T>(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                            cl::ImageFormat(
                              static_cast<cl_channel_order>(channel_order),
                              static_cast<cl_channel_type>(channel_type)
@@ -108,26 +102,7 @@ public:
   }
 
   template<typename T>
-  Image2DArray<T> create_image2D_array(MemFlags mem_flags, ImageChannelOrder channel_order,
-                                       ImageChannelType channel_type, AddressMode address_mode,
-                                       FilterMode filter_mode, bool normalized_coords,
-                                       size_t array_size, size_t width, size_t height) const {
-    (void) address_mode;
-    (void) filter_mode;
-    (void) normalized_coords;
-    if (array_size == 0 || width == 0 || height == 0) {
-      throw AcceleratorException("Cannot build an empty Image2DArray");
-    }
-    return Image2DArray<T>(context, static_cast<cl_mem_flags>(mem_flags),
-                           cl::ImageFormat(
-                             static_cast<cl_channel_order>(channel_order),
-                             static_cast<cl_channel_type>(channel_type)
-                           ),
-                           array_size, width, height, 0, 0);
-  }
-
-  template<typename T>
-  std::vector<T> read_image(const Image2D<T>& image, size_t width, size_t height) const {
+  std::vector<T> read_image(const Image2DWrite<T>& image, size_t width, size_t height) const {
     std::vector<T> image_buf(width * height);
     queue.enqueueReadImage(image.data(), true,
                            compat_utils::create_size_t<3>({ 0, 0, 0 }),

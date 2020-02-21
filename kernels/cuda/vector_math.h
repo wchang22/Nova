@@ -20,8 +20,8 @@
  *    Thanks to Linh Hah for additions and fixes.
  */
 
-#ifndef HELPER_MATH_H
-#define HELPER_MATH_H
+#ifndef VECTOR_MATH_H
+#define VECTOR_MATH_H
 
 typedef unsigned int uint;
 typedef unsigned short ushort;

@@ -30,35 +30,30 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  Image2D<uchar4> image =
-    accelerator.create_image2D<uchar4>(MemFlags::WRITE_ONLY, ImageChannelOrder::RGBA,
-                                       ImageChannelType::UINT8, AddressMode::CLAMP,  FilterMode::NEAREST, false, width, height);
+  auto image = accelerator.create_image2D_write<uchar4>(
+    ImageChannelOrder::RGBA, ImageChannelType::UINT8, width, height);
   std::vector<uchar4> image_buf;
 
   Wrapper<EyeCoords> ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
 
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
-  Buffer<TriangleData> triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
-  Buffer<TriangleMetaData> tri_meta_buf =
-    accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
-  Buffer<FlatBVHNode> bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
+  auto triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
+  auto tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
+  auto bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
 
   MaterialData material_data = material_loader.build();
-  Image2DArray<uchar4> material_ims;
-  // Create a dummy array if size 0
+  // Create a dummy array
   if (material_data.num_materials == 0) {
-    material_ims = accelerator.create_image2D_array<uchar4>(
-      MemFlags::READ_ONLY, ImageChannelOrder::RGBA, ImageChannelType::UINT8,
-      AddressMode::WRAP, FilterMode::NEAREST, true,
-      1, 1, 1
-    );
-  } else {
-    material_ims = accelerator.create_image2D_array(
-      MemFlags::READ_ONLY, ImageChannelOrder::RGBA, ImageChannelType::UINT8,
-      AddressMode::WRAP, FilterMode::NEAREST, true,
-      material_data.num_materials, material_data.width, material_data.height, material_data.data
-    );
+    material_data.data.emplace_back();
   }
+  auto material_ims = accelerator.create_image2D_array(
+    ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+    AddressMode::WRAP, FilterMode::NEAREST, true,
+    std::max(material_data.num_materials, static_cast<size_t>(1)),
+    std::max(material_data.width, 1U),
+    std::max(material_data.height, 1U),
+    material_data.data
+  );
   
   PROFILE_SECTION_END();
 

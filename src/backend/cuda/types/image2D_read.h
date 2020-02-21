@@ -1,8 +1,7 @@
-#ifndef CUDA_IMAGE2D_ARRAY_H
-#define CUDA_IMAGE2D_ARRAY_H
+#ifndef CUDA_IMAGE2D_READ_H
+#define CUDA_IMAGE2D_READ_H
 
 #include <cuda_runtime.h>
-#include <utility>
 #include <cstring>
 #include <vector>
 
@@ -10,26 +9,15 @@
 #include "backend/cuda/types/flags.h"
 
 template<typename T>
-class Image2DArray {
+class Image2DRead {
 public:
-  Image2DArray() : tex(), buffer(nullptr) {}
-
-  Image2DArray(AddressMode address_mode, FilterMode filter_mode,
-               bool normalized_coords, size_t array_size, size_t width,
-               size_t height, std::vector<T>& data) {
+  Image2DRead(AddressMode address_mode, FilterMode filter_mode, bool normalized_coords,
+              size_t width, size_t height, const std::vector<T>& data) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
-    cudaExtent extent = make_cudaExtent(width, height, array_size);
-    CUDA_CHECK(cudaMalloc3DArray(&buffer, &channel_desc, extent, cudaArrayLayered))
+    CUDA_CHECK(cudaMallocArray(&buffer, &channel_desc, width, height))
 
-    cudaMemcpy3DParms copy_params;
-    memset(&copy_params, 0, sizeof(copy_params));
-    copy_params.srcPos = make_cudaPos(0, 0, 0);
-    copy_params.dstPos = make_cudaPos(0, 0, 0);
-    copy_params.srcPtr = make_cudaPitchedPtr(data.data(), width * sizeof(T), width, height);
-    copy_params.dstArray = buffer;
-    copy_params.extent = extent;
-    copy_params.kind = cudaMemcpyHostToDevice;
-    CUDA_CHECK(cudaMemcpy3D(&copy_params))
+    CUDA_CHECK(cudaMemcpy2DToArray(buffer, 0, 0, data.data(), width * sizeof(T),    
+                                   width * sizeof(T), height, cudaMemcpyHostToDevice))
 
     cudaResourceDesc res_desc;
     memset(&res_desc, 0, sizeof(res_desc));
@@ -47,7 +35,7 @@ public:
     CUDA_CHECK(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
   }
 
-  ~Image2DArray() {
+  ~Image2DRead() {
     cudaDestroyTextureObject(tex);
     cudaFreeArray(buffer);
   }
@@ -59,4 +47,4 @@ private:
   cudaArray_t buffer;
 };
 
-#endif // CUDA_IMAGE2D_ARRAY_H
+#endif // CUDA_IMAGE2D_READ_H
