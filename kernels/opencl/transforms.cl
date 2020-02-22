@@ -2,7 +2,6 @@
 #define TRANSFORMS_CL
 
 #include "types.cl"
-#include "matrix.cl"
 
 float3 reflect(float3 I, float3 N) {
   return I - 2.0f * dot(I, N) * N;

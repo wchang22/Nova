@@ -15,7 +15,8 @@
   void dispatch_##kernel(uint3 global_dims, const KernelConstants& kernel_constants, \
                          Args&&... args) { \
     kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...); \
-    cudaDeviceSynchronize(); \
+    CUDA_CHECK(cudaPeekAtLastError()) \
+    CUDA_CHECK(cudaDeviceSynchronize()); \
   }
 #define CALL_KERNEL(accel, kernel, global_dims, ...) \
   dispatch_##kernel(global_dims, accel.get_kernel_constants(), __VA_ARGS__);

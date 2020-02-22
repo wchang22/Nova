@@ -5,6 +5,8 @@
 
 struct KernelConstants {
   int triangle_per_leaf_bits;
+  unsigned triangle_num_shift;
+  unsigned triangle_offset_mask;
   float3 default_diffuse;
   float default_metallic;
   float default_roughness;

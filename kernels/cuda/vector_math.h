@@ -63,6 +63,10 @@ inline float rsqrtf(float x)
 // constructors
 ////////////////////////////////////////////////////////////////////////////////
 
+inline __host__ __device__ uchar4 make_uchar4(float4 a) {
+    return make_uchar4(a.x, a.y, a.z, a.w);
+}
+
 inline __host__ __device__ float2 make_float2(float s)
 {
     return make_float2(s, s);
@@ -121,6 +125,9 @@ inline __host__ __device__ float3 make_float3(float2 a)
 inline __host__ __device__ float3 make_float3(float2 a, float s)
 {
     return make_float3(a.x, a.y, s);
+}
+inline __host__ __device__ float3 make_float3(float a, float2 b) {
+    return make_float3(a, b.x, b.y);
 }
 inline __host__ __device__ float3 make_float3(float4 a)
 {
@@ -1275,7 +1282,7 @@ inline __host__ __device__ uint dot(uint4 a, uint4 b)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// length
+// length/distance
 ////////////////////////////////////////////////////////////////////////////////
 
 inline __host__ __device__ float length(float2 v)
@@ -1289,6 +1296,18 @@ inline __host__ __device__ float length(float3 v)
 inline __host__ __device__ float length(float4 v)
 {
     return sqrtf(dot(v, v));
+}
+inline __host__ __device__ float distance(float2 u, float2 v)
+{
+    return length(u - v);
+}
+inline __host__ __device__ float distance(float3 u, float3 v)
+{
+    return length(u - v);
+}
+inline __host__ __device__ float distance(float4 u, float4 v)
+{
+    return length(u - v);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1443,5 +1462,33 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x)
     float4 y = clamp((x - a) / (b - a), 0.0f, 1.0f);
     return (y*y*(make_float4(3.0f) - (make_float4(2.0f)*y)));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// mix
+////////////////////////////////////////////////////////////////////////////////
+
+inline __device__ __host__ float3 mix(float3 a, float3 b, float w)
+{
+    return (1.0 - w) * a + w * b;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// comparisons and conditionals
+////////////////////////////////////////////////////////////////////////////////
+
+inline __device__ __host__ uchar3 isless(float3 a, float b)
+{
+    return make_uchar3(a.x < b, a.y < b, a.z < b);
+}
+
+inline __device__ __host__ bool any(uchar3 a)
+{
+    return a.x || a.y || a.z;
+}
+inline __device__ __host__ bool all(uchar3 a)
+{
+    return a.x && a.y && a.z;
+}
+
 
 #endif

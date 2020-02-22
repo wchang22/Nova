@@ -10,6 +10,8 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
 
   kernel_constants = {
     TRIANGLES_PER_LEAF_BITS,
+    32 - TRIANGLES_PER_LEAF_BITS,
+    (0xFFFFFFFF << TRIANGLES_PER_LEAF_BITS) >> TRIANGLES_PER_LEAF_BITS,
     { default_diffuse.x, default_diffuse.y, default_diffuse.z },
     default_metallic,
     default_roughness,

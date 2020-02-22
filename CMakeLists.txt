@@ -57,6 +57,7 @@ if (NOT OpenCL_FOUND)
     file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
     target_include_directories(${CUDA_LIB_NAME} PRIVATE src)
+    target_compile_options(${CUDA_LIB_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math>)
     set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 
