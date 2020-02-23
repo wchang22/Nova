@@ -66,6 +66,9 @@ inline float rsqrtf(float x)
 inline __host__ __device__ uchar4 make_uchar4(float4 a) {
     return make_uchar4(a.x, a.y, a.z, a.w);
 }
+inline __host__ __device__ uchar3 make_uchar3(uchar4 a) {
+    return make_uchar3(a.x, a.y, a.z);
+}
 
 inline __host__ __device__ float2 make_float2(float s)
 {
@@ -138,6 +141,10 @@ inline __host__ __device__ float3 make_float3(int3 a)
     return make_float3(float(a.x), float(a.y), float(a.z));
 }
 inline __host__ __device__ float3 make_float3(uint3 a)
+{
+    return make_float3(float(a.x), float(a.y), float(a.z));
+}
+inline __host__ __device__ float3 make_float3(uchar3 a)
 {
     return make_float3(float(a.x), float(a.y), float(a.z));
 }

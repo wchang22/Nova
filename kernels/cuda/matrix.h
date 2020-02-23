@@ -7,9 +7,9 @@
 __device__
 inline Mat3x3 make_mat3x3(const Mat3x4& mat) {
   return {
-    make_float3(mat.x.x, mat.x.y, mat.x.z),
-    make_float3(mat.y.x, mat.y.y, mat.y.z),
-    make_float3(mat.z.x, mat.z.y, mat.z.z),
+    make_float3(mat.x),
+    make_float3(mat.y),
+    make_float3(mat.z),
   };
 }
 
@@ -33,7 +33,7 @@ inline Mat3x3 transpose(const Mat3x3& mat) {
 
 __device__
 inline float3 operator*(const Mat3x4& mat, float3 vec) {
-  float4 vec4 = make_float4(vec.x, vec.y, vec.z, 1.0f);
+  float4 vec4 = make_float4(vec, 1.0f);
   return {
     dot(mat.x, vec4),
     dot(mat.y, vec4),

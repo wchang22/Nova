@@ -16,12 +16,9 @@ float3 read_material(cudaTextureObject_t materials, const TriangleMetaData& meta
     return default_material;
   }
 
-  float3 texture = make_float3(
-    tex2DLayered<float>(materials, texture_coord.x * sizeof(uchar4), texture_coord.y, index),
-    tex2DLayered<float>(materials, texture_coord.x * sizeof(uchar4) + 1, texture_coord.y, index),
-    tex2DLayered<float>(materials, texture_coord.x * sizeof(uchar4) + 2, texture_coord.y, index)
-  );
-  return uint3_to_float3(texture);
+  uchar3 texture = make_uchar3(
+    tex2DLayered<uchar4>(materials, texture_coord.x, texture_coord.y, index));
+  return uint3_to_float3(make_float3(texture));
 }
 
 __device__

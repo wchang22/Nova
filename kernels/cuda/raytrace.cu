@@ -8,7 +8,8 @@
 #include "backend/cuda/types/types.h"
 
 __device__
-bool trace(TriangleData* triangles, FlatBVHNode* bvh, Ray ray, Intersection* min_intrs, bool fast) {
+bool trace(TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray,
+           Intersection& min_intrs, bool fast) {
   /*
   * We maintain a double ended stack for space efficiency.
   * BVHNodes are pushed from the front to the back of the stack and
@@ -82,7 +83,7 @@ bool trace(TriangleData* triangles, FlatBVHNode* bvh, Ray ray, Intersection* min
     }
   } while (node_index);
 
-  return min_intrs->tri_index != -1;
+  return min_intrs.tri_index != -1;
 }
 
 __global__
@@ -107,10 +108,10 @@ void raytrace(cudaSurfaceObject_t image_out,
   for (int depth = 0; depth < constants.ray_recursion_depth; depth++) {
     Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
-    Intersection intrs = NO_INTERSECTION;
+    Intersection intrs = no_intersection();
 
     // Cast primary/reflection ray
-    if (!trace(triangles, bvh, ray, &intrs, false)) {
+    if (!trace(triangles, bvh, ray, intrs, false)) {
       break;
     }
 
@@ -149,12 +150,12 @@ void raytrace(cudaSurfaceObject_t image_out,
 
     // Cast a shadow ray to the light
     Ray shadow_ray = create_ray(intrs_point, light_dir, RAY_EPSILON);
-    Intersection light_intrs = NO_INTERSECTION;
+    Intersection light_intrs = no_intersection();
     // Ensure objects blocking light are not behind the light
     light_intrs.length = light_distance;
 
     // Shade the pixel if ray is not blocked
-    if (!trace(triangles, bvh, shadow_ray, &light_intrs, true)) {
+    if (!trace(triangles, bvh, shadow_ray, light_intrs, true)) {
       intrs_color += shade(light_dir, view_dir, half_dir, light_distance,
                           normal, diffuse, kS, metallic, roughness);
     }
@@ -177,6 +178,7 @@ void raytrace(cudaSurfaceObject_t image_out,
     ray_dir = reflect(ray_dir, normal);
   }
 
+  color = clamp(color, 0.0f, 1.0f);
   uchar4 image_color = make_uchar4(make_float4(color, 1.0f) * 255.0f);
   surf2Dwrite(image_color, image_out, pixel_coords.x * sizeof(uchar4), pixel_coords.y);
 }
@@ -189,8 +191,8 @@ void kernel_raytrace(uint3 global_dims,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
                      cudaTextureObject_t materials) {
-  dim3 num_blocks = global_dims;
-  dim3 block_size { 1, 1, 1 };
+  dim3 num_blocks { global_dims.x / 32, global_dims.y / 16, 1 };
+  dim3 block_size { 32, 16, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
   raytrace<<<num_blocks, block_size>>>(image_out, ec, triangles, tri_meta, bvh, materials);

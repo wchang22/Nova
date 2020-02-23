@@ -5,7 +5,7 @@
 // Use woop transformation to transform ray to unit triangle space
 // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
 __device__
-bool intersects_triangle(const Ray& ray, Intersection* intrs, int tri_index,
+bool intersects_triangle(const Ray& ray, Intersection& intrs, int tri_index,
                          const TriangleData& tri) {
   // Transform ray to unit triangle space
   Ray woop_ray = ray;
@@ -13,7 +13,7 @@ bool intersects_triangle(const Ray& ray, Intersection* intrs, int tri_index,
   woop_ray.direction = make_mat3x3(tri.transform) * ray.direction;
 
   float t = -woop_ray.origin.z / woop_ray.direction.z;
-  if (t < 0.0f || t >= intrs->length) {
+  if (t < 0.0f || t >= intrs.length) {
     return false;
   }
 
@@ -25,9 +25,9 @@ bool intersects_triangle(const Ray& ray, Intersection* intrs, int tri_index,
     return false;
   }
 
-  intrs->length = t;
-  intrs->barycentric = barycentric;
-  intrs->tri_index = tri_index;
+  intrs.length = t;
+  intrs.barycentric = barycentric;
+  intrs.tri_index = tri_index;
   return true;
 }
 

@@ -26,6 +26,8 @@ struct Intersection {
 };
 
 __device__
-const Intersection NO_INTERSECTION = { 0.0f, CUDART_NORM_HUGE_F, -1 };
+inline Intersection no_intersection() {
+  return { make_float3(0.0f), CUDART_NORM_HUGE_F, -1 };
+};
 
 #endif // CUDA_KERNEL_TYPES_H
