@@ -66,11 +66,12 @@ set(PROJECT_LIBS
     ${LIBS_NAME}
     assimp
     ${OpenCL_LIBRARIES}
+    ${CUDA_LIB_NAME}
     OpenMP::OpenMP_CXX
     stdc++fs
 )
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS} ${CUDA_LIB_NAME})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
 target_compile_options(${PROJECT_NAME} PRIVATE -std=c++17 -march=native)
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
@@ -98,30 +99,35 @@ endif()
 if (LOG)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DLOG)
 endif()
-
 if (PROFILE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DPROFILE)
 endif()
 
 # Defines
-if (OpenCL_FOUND)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        -DCL_HPP_ENABLE_EXCEPTIONS -D__CL_ENABLE_EXCEPTIONS -DBACKEND_OPENCL)
-    if (${OpenCL_VERSION_MAJOR} EQUAL 2)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=200)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_2)
+macro(set_backend_defines TARGET)
+    if (OpenCL_FOUND)
+        target_compile_definitions(${TARGET} PRIVATE
+            -DCL_HPP_ENABLE_EXCEPTIONS -D__CL_ENABLE_EXCEPTIONS -DBACKEND_OPENCL)
+        if (${OpenCL_VERSION_MAJOR} EQUAL 2)
+            target_compile_definitions(${TARGET} PRIVATE
+                -DCL_HPP_TARGET_OPENCL_VERSION=200
+                -DOPENCL_2
+            )
+        else()
+            target_compile_definitions(${TARGET} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=120)
+        endif()
     else()
-        target_compile_definitions(${PROJECT_NAME} PRIVATE -DCL_HPP_TARGET_OPENCL_VERSION=120)
+        target_compile_definitions(${TARGET} PRIVATE -DBACKEND_CUDA)
     endif()
-else()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE -DBACKEND_CUDA)
-endif()
+endmacro()
+set_backend_defines(${PROJECT_NAME})
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DSRC_PATH="${CMAKE_SOURCE_DIR}/")
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DKERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-    -DKERNELS_PATH_STR="${CMAKE_SOURCE_DIR}/kernels/")
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
+    -DSRC_PATH="${CMAKE_SOURCE_DIR}/"
+    -DKERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels
+    -DKERNELS_PATH_STR="${CMAKE_SOURCE_DIR}/kernels/"
+    -DASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/"
+)
 
 # Status
 message("Build Options -----------------------------------")
