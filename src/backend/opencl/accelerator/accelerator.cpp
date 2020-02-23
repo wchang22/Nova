@@ -21,7 +21,9 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
     build_args
       << " -cl-fast-relaxed-math -cl-mad-enable"
       << " -I" << KERNELS_PATH_STR"opencl"
-      << " -D" << STRINGIFY(TRIANGLES_PER_LEAF_BITS) << "=" << TRIANGLES_PER_LEAF_BITS
+      << " -DTRIANGLES_PER_LEAF_BITS=" << TRIANGLES_PER_LEAF_BITS
+      << " -DTRIANGLE_NUM_SHIFT=" << TRIANGLE_NUM_SHIFT
+      << " -DTRIANGLE_OFFSET_MASK=" << TRIANGLE_OFFSET_MASK
       << " -DDEFAULT_DIFFUSE=" << "(float3)("
         << default_diffuse.x << "," << default_diffuse.y << "," << default_diffuse.z << ")"
       << " -DDEFAULT_METALLIC=" << default_metallic

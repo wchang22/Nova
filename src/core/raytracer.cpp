@@ -1,5 +1,3 @@
-#include <stb_image.h>
-
 #include "raytracer.h"
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"

@@ -2,7 +2,6 @@
 #define CUDA_IMAGE2D_ARRAY_H
 
 #include <cuda_runtime.h>
-#include <utility>
 #include <cstring>
 #include <vector>
 

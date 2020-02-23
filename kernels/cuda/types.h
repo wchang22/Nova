@@ -1,9 +1,8 @@
 #ifndef CUDA_KERNEL_TYPES_H
 #define CUDA_KERNEL_TYPES_H
 
-#include <cfloat>
-
 #include "vector_math.h"
+#include "math_constants.h"
 
 struct Ray {
   float3 origin;
@@ -27,6 +26,6 @@ struct Intersection {
 };
 
 __device__
-const Intersection NO_INTERSECTION = { 0.0f, FLT_MAX, -1 };
+const Intersection NO_INTERSECTION = { 0.0f, CUDART_NORM_HUGE_F, -1 };
 
 #endif // CUDA_KERNEL_TYPES_H
