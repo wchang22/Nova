@@ -1,5 +1,5 @@
 <h1 align='center'>Nova</h1>
-<h3 align='center'>High performance GPU accelerated ray tracer using OpenCL</h3>
+<h3 align='center'>High performance GPU accelerated ray tracer using OpenCL/CUDA</h3>
 
 ## Examples
 <p align="center">
@@ -11,13 +11,14 @@
 
 ## Dependencies
 * CMake
-* OpenCL
+* OpenCL C++ or CUDA
 * OpenMP
 
 ## Build and Run
 ```bash
-git clone --recurse-submodules https://github.com/wchang22/Nova.git
-cd Nova && mkdir build && cd build
-cmake .. && make
-./nova
+$ git clone --recurse-submodules https://github.com/wchang22/Nova.git
+$ cd Nova && mkdir build && cd build
+$ cmake .. -DBACKEND=OpenCL # or cmake .. -DBACKEND=CUDA
+$ make
+$ ./nova
 ```
