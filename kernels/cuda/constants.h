@@ -3,7 +3,7 @@
 
 #include "kernel_types/kernel_constants.h"
 
-__device__ extern KernelConstants constants;
+__device__ __constant__ extern KernelConstants constants;
 
 #define STACK_SIZE 96
 

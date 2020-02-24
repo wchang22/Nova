@@ -191,8 +191,8 @@ void kernel_raytrace(uint3 global_dims,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
                      cudaTextureObject_t materials) {
-  dim3 num_blocks { global_dims.x / 32, global_dims.y / 16, 1 };
-  dim3 block_size { 32, 16, 1 };
+  dim3 block_size { 8, 8, 1 };
+  dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
   raytrace<<<num_blocks, block_size>>>(image_out, ec, triangles, tri_meta, bvh, materials);
