@@ -243,8 +243,8 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
-    float bin_start = node->aabb.bottom[axis];
-    float bin_end = node->aabb.top[axis];
+    const float bin_start = node->aabb.bottom[axis];
+    const float bin_end = node->aabb.top[axis];
 
     // Don't want triangles to be concentrated on axis
     if (abs(bin_end - bin_start) < 1e-4f) {
@@ -252,10 +252,10 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
     }
 
     // Reduce number of bins according to depth
-    size_t num_bins = MAX_BINS / (depth + 1);
-    size_t num_splits = num_bins - 1;
-    float bin_step = (bin_end - bin_start) / num_bins;
-    float inv_bin_step = 1.0f / bin_step;
+    const size_t num_bins = MAX_BINS / (depth + 1);
+    const size_t num_splits = num_bins - 1;
+    const float bin_step = (bin_end - bin_start) / num_bins;
+    const float inv_bin_step = 1.0f / bin_step;
 
     // Find best split (split with least total cost)
     #pragma omp declare reduction \
@@ -263,7 +263,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
       initializer(omp_priv=SplitParams::make_default())
 
     #pragma omp parallel for default(none) \
-      shared(node, axis, bin_start, bin_end, bin_step, num_bins, num_splits, root_sa) \
+      shared(node, axis) \
       reduction(param_min:best_params) \
       schedule(dynamic)
     for (size_t i = 0; i < num_splits; i++) {

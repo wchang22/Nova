@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <glm/gtx/string_cast.hpp>
 #include <numeric>
-#include <execution>
 #include <iostream>
 #include <cassert>
 
@@ -95,14 +94,14 @@ AABB Triangle::get_clipped_bounds(const AABB& clip) const {
 
   assert(output_vertices.size() >= 3);
 
-  vec3 top = std::reduce(std::execution::seq, output_vertices.begin(), output_vertices.end(),
-                         -VEC_MAX, [](const vec3& a, const vec3& b) {
-                           return max(a, b);
-                         });
-  vec3 bottom = std::reduce(std::execution::seq, output_vertices.begin(), output_vertices.end(),
-                            VEC_MAX, [](const vec3& a, const vec3& b) {
-                              return min(a, b);
-                            });
+  vec3 top = std::accumulate(output_vertices.begin(), output_vertices.end(),
+                             -VEC_MAX, [](const vec3& a, const vec3& b) {
+                               return max(a, b);
+                             });
+  vec3 bottom = std::accumulate(output_vertices.begin(), output_vertices.end(),
+                                VEC_MAX, [](const vec3& a, const vec3& b) {
+                                  return min(a, b);
+                                });
   top = clamp(top, clip.bottom, clip.top);
   bottom = clamp(bottom, clip.bottom, clip.top);
 
