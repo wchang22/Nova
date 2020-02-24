@@ -3,8 +3,13 @@
 
 SceneParser::SceneParser() : parsed_data(toml::parse(SCENE_PATH)) {}
 
-std::string SceneParser::get_model_path() const {
-  return ASSETS_PATH + toml::find<std::string>(parsed_data, "model", "path");
+std::vector<std::string> SceneParser::get_model_paths() const {
+  auto paths = toml::find<std::vector<std::string>>(parsed_data, "model", "paths");
+  for (auto& path : paths) {
+    path.insert(0, ASSETS_PATH);
+  }
+
+  return paths;
 }
 
 CameraSettings SceneParser::get_camera_settings() const {
@@ -46,6 +51,6 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   };
 }
 
-unsigned int SceneParser::get_ray_recursion_depth() const {
-  return toml::find<unsigned int>(parsed_data, "ray_recursion", "depth");
+int SceneParser::get_ray_recursion_depth() const {
+  return toml::find<int>(parsed_data, "ray_recursion", "depth");
 }

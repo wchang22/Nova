@@ -1,3 +1,6 @@
+#ifndef OPENCL_COMPATIBILITY_H
+#define OPENCL_COMPATIBILITY_H
+
 #ifdef OPENCL_2
   #include <CL/cl2.hpp>
 #else
@@ -8,7 +11,7 @@
   #endif
 #endif
 
-namespace cl_utils {
+namespace compat_utils {
   // Opencl 1.x and 2.x have different definitions for size_t arrays
   #ifdef OPENCL_2
     #define cl_size_t_array std::array<size_t, N>
@@ -25,3 +28,5 @@ namespace cl_utils {
     return s;
   }
 }
+
+#endif // OPENCL_COMPATIBILITY_H

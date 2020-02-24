@@ -13,11 +13,12 @@ namespace image_utils {
     uint8_t* image_data_ptr = stbi_load(path, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!image_data_ptr) {
-      throw std::invalid_argument("Invalid image " + std::string(path));
+      throw ImageException("Invalid image " + std::string(path));
     }
 
-    std::vector<uint8_t> image_data(image_data_ptr,
-                                    image_data_ptr + width * height * STBI_rgb_alpha);
+    uchar4* image_ptr = reinterpret_cast<uchar4*>(image_data_ptr);
+
+    std::vector<uchar4> image_data(image_ptr, image_ptr + width * height);
     stbi_image_free(image_data_ptr);
 
     return { image_data, static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
@@ -32,9 +33,11 @@ namespace image_utils {
   }
 
   image resize_image(const image& in, uint32_t width, uint32_t height) {
-    std::vector<uint8_t> resized_image_data(width * height * STBI_rgb_alpha);
-    int success = stbir_resize_uint8(in.data.data(), in.width, in.height, 0,
-                                     resized_image_data.data(), width, height, 0, STBI_rgb_alpha);
+    std::vector<uchar4> resized_image_data(width * height);
+    int success = stbir_resize_uint8(reinterpret_cast<const uint8_t*>(in.data.data()),
+                                     in.width, in.height, 0,
+                                     reinterpret_cast<uint8_t*>(resized_image_data.data()),
+                                     width, height, 0, STBI_rgb_alpha);
 
     if (!success) {
       throw ImageException("Failed to resize image");

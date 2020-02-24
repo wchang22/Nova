@@ -29,11 +29,11 @@ class SceneParser {
 public:
   SceneParser();
 
-  std::string get_model_path() const;
+  std::vector<std::string> get_model_paths() const;
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;
-  unsigned int get_ray_recursion_depth() const;
+  int get_ray_recursion_depth() const;
 
 private:
   toml::value parsed_data;

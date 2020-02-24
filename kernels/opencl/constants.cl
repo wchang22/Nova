@@ -5,6 +5,12 @@
 #ifndef TRIANGLES_PER_LEAF_BITS
   #define TRIANGLES_PER_LEAF_BITS 6
 #endif
+#ifndef TRIANGLE_NUM_SHIFT
+  #define TRIANGLE_NUM_SHIFT 26
+#endif
+#ifndef TRIANGLE_OFFSET_MASK
+  #define TRIANGLE_OFFSET_MASK 0x3FFFFFF
+#endif
 #ifndef LIGHT_POSITION
   #define LIGHT_POSITION (float3)(-4.0, 2.8, 7.0)
 #endif
@@ -28,10 +34,6 @@
 #endif
 
 #define STACK_SIZE 96
-
-constant uint TRIANGLE_NUM_SHIFT = 32 - TRIANGLES_PER_LEAF_BITS;
-constant uint TRIANGLE_OFFSET_MASK =
-  (0xFFFFFFFF << TRIANGLES_PER_LEAF_BITS) >> TRIANGLES_PER_LEAF_BITS;
 
 constant float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 // Min epsilon to produce significant change in 8 bit colour channels

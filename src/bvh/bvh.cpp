@@ -1,4 +1,3 @@
-#include <glm/gtx/vec_swizzle.hpp>
 #include <cassert>
 #include <filesystem>
 
@@ -9,14 +8,14 @@
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
-BVH::BVH(const std::string& model_name, std::vector<Triangle>& triangles)
-  : model_name(model_name), triangles(triangles)
+BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
+  : name(name), triangles(triangles)
 {
 }
 
-cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
-  std::string bvh_file_name = model_name + ".bvh";
-  std::string tri_file_name = model_name + ".tri";
+std::vector<FlatBVHNode> BVH::build() {
+  std::string bvh_file_name = name + ".bvh";
+  std::string tri_file_name = name + ".tri";
   std::fstream bvh_file(bvh_file_name);
   std::fstream tri_file(tri_file_name);
 
@@ -60,10 +59,7 @@ cl::Buffer BVH::build_bvh_buffer(const cl::Context& context) {
     tri_file >> triangles;
   }
 
-  cl::Buffer buf(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
-                 flat_bvh.size() * sizeof(decltype(flat_bvh)::value_type),
-                 flat_bvh.data());
-  return buf;
+  return flat_bvh;
 }
 
 std::unique_ptr<BVHNode> BVH::build_bvh() {
@@ -212,8 +208,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
 
   // Build flat node and insert into list
   FlatBVHNode flat_node {
-    { {node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0} },
-    { {node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0} }
+    { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
+    { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 }
   };
   flat_nodes.emplace_back(std::move(flat_node));
 
@@ -222,8 +218,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     assert(!node->left && !node->right);
 
     // Denote that the node is a leaf node by negating
-    flat_nodes[flat_node_index].top_offset_left.s[3] = triangles.size();
-    flat_nodes[flat_node_index].bottom_num_right.s[3] = -static_cast<float>(node->triangles.size());
+    w(flat_nodes[flat_node_index].top_offset_left) = triangles.size();
+    w(flat_nodes[flat_node_index].bottom_num_right) = -static_cast<float>(node->triangles.size());
     triangles.insert(triangles.end(),
                      std::make_move_iterator(node->triangles.begin()),
                      std::make_move_iterator(node->triangles.end()));
@@ -232,8 +228,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     assert(node->left || node->right);
 
     // Recursively build left and right nodes and attach to parent
-    flat_nodes[flat_node_index].top_offset_left.s[3] = build_flat_bvh_vec(flat_nodes, node->left);
-    flat_nodes[flat_node_index].bottom_num_right.s[3] = build_flat_bvh_vec(flat_nodes, node->right);
+    w(flat_nodes[flat_node_index].top_offset_left) = build_flat_bvh_vec(flat_nodes, node->left);
+    w(flat_nodes[flat_node_index].bottom_num_right) = build_flat_bvh_vec(flat_nodes, node->right);
   }
 
   return flat_node_index;
@@ -241,29 +237,32 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
 
 std::istream& operator>>(std::istream& in, FlatBVHNode& node) {
   in >> std::hex;
-  cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+  float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
-    for (int i = 0; i < 4; i++) {
-      uint32_t x;
-      float* f = reinterpret_cast<float*>(&x);
-      in >> x;
-      elems[e]->s[i] = *f;
-    }
+    uint32_t s[4];
+    float* f = reinterpret_cast<float*>(s);
+    in >> s[0] >> s[1] >> s[2] >> s[3];
+    x(*elems[e]) = f[0];
+    y(*elems[e]) = f[1];
+    z(*elems[e]) = f[2];
+    w(*elems[e]) = f[3];
   }
   return in;
 }
 
 std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
   out << std::hex;
-  const cl_float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
+  const float4* elems[] = { &node.top_offset_left, &node.bottom_num_right };
 
   for (int e = 0; e < 2; e++) {
-    for (int i = 0; i < 4; i++) {
-      float f = elems[e]->s[i];
-      uint32_t* x = reinterpret_cast<uint32_t*>(&f);
-      out << *x << " ";
-    }
+    float f[4];
+    f[0] = x(*elems[e]);
+    f[1] = y(*elems[e]);
+    f[2] = z(*elems[e]);
+    f[3] = w(*elems[e]);
+    uint32_t* s = reinterpret_cast<uint32_t*>(&f);
+    out << s[0] << " " << s[1] << " " << s[2] << " " << s[3] << " ";
   }
   return out;
 }
