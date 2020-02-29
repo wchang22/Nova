@@ -13,8 +13,6 @@
 
 using namespace glm;
 
-const vec3 VEC_MAX(std::numeric_limits<float>::max());
-
 struct BVHNode {
   AABB aabb;
   std::vector<Triangle> triangles;

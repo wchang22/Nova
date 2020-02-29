@@ -16,6 +16,8 @@ struct AABB {
   vec3 get_center() const;
   void grow(const AABB& other);
   void shrink(const AABB& other);
+  void grow(const vec3& other);
+  void shrink(const vec3& other);
   bool intersects(const AABB& other, int axis) const;
   bool intersects(const AABB& other) const;
   bool is_in(const AABB& other) const;
@@ -27,5 +29,8 @@ struct AABB {
 };
 
 std::ostream& operator<<(std::ostream& out, const AABB& aabb);
+
+const vec3 VEC_MAX(std::numeric_limits<float>::max());
+const AABB NO_INTERSECTION { -VEC_MAX, VEC_MAX };
 
 #endif // AABB_H

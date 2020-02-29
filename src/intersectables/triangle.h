@@ -15,7 +15,7 @@ struct Triangle {
   vec3 v3;
 
   AABB get_bounds() const;
-  AABB get_clipped_bounds(const AABB& clip) const;
+  void split_aabb(AABB& left, AABB& right, const AABB& aabb, int axis, float split) const;
   bool operator==(const Triangle& t) const;
 };
 

@@ -8,8 +8,6 @@
 
 #include "triangle.h"
 
-const vec3 VEC_MAX(std::numeric_limits<float>::max());
-
 // https://stackoverflow.com/questions/19195183/how-to-properly-hash-the-custom-struct
 template <class T>
 inline void hash_combine(size_t& s, const T & v)
@@ -38,74 +36,41 @@ AABB Triangle::get_bounds() const {
   return { top, bottom };
 }
 
-AABB Triangle::get_clipped_bounds(const AABB& clip) const {
-  AABB bounds = get_bounds();
+void Triangle::split_aabb(AABB& left, AABB& right, const AABB& aabb, int axis, float split) const {
+  constexpr auto lerp = [](const vec3& a, const vec3& b, float t) {
+    return a + t * (b - a);
+  };
 
-  if (!bounds.intersects(clip) && !clip.intersects(bounds)) {
-    return { -VEC_MAX, VEC_MAX };
-  }
-  if (bounds.is_in(clip)) {
-    return bounds;
-  }
-  if (clip.is_in(bounds)) {
-    return clip;
-  }
+  left = NO_INTERSECTION;
+  right = NO_INTERSECTION;
 
-  std::vector<vec3> output_vertices { v1, v2, v3 };
+  const vec3* vertices[] = { &v1, &v2, &v3 };
+  const vec3* v1 = vertices[2];
 
-  for (int axis = 0; axis < 3; axis++) {
-    auto find_intersection = [&](const vec3& a, const vec3& b, float plane) {
-      vec3 d = b - a;
-      assert(d[axis] != 0);
-      float t = (plane - a[axis]) / d[axis];
-      return a + t * d;
-    };
+  for (int i = 0; i < 3; i++) {
+    const vec3* v0 = v1;
+    v1 = vertices[i];
+    float v0p = (*v0)[axis];
+    float v1p = (*v1)[axis];
 
-    auto plane_clip = [&](float plane, bool (*is_inside)(float, float)) {
-      if (output_vertices.empty()) {
-        return;
-      }
+    if (v0p <= split) {
+      left.grow(*v0);
+    }
+    if (v0p >= split) {
+      right.grow(*v0);
+    }
 
-      std::vector<vec3> input_vertices;
-      std::swap(input_vertices, output_vertices);
-
-      vec3 prev_point = input_vertices.back();
-      for (const auto& curr_point : input_vertices) {
-        if (is_inside(curr_point[axis], plane)) {
-          if (!is_inside(prev_point[axis], plane)) {
-            output_vertices.push_back(find_intersection(prev_point, curr_point, plane));
-          }
-          output_vertices.push_back(curr_point);
-        } else if (is_inside(prev_point[axis], plane)) {
-          output_vertices.push_back(find_intersection(prev_point, curr_point, plane));
-        }
-
-        prev_point = curr_point;
-      }
-    };
-
-    plane_clip(clip.bottom[axis], [](float point, float plane) { return point >= plane; });
-    plane_clip(clip.top[axis], [](float point, float plane) { return point <= plane; });
+    if ((v0p < split && v1p > split) || (v0p > split && v1p < split)) {
+      vec3 t = lerp(*v0, *v1, std::clamp((split - v0p) / (v1p - v0p), 0.0f, 1.0f));
+      left.grow(t);
+      right.grow(t);
+    }
   }
 
-  if (output_vertices.empty()) {
-    return { -VEC_MAX, VEC_MAX };
-  }
-
-  assert(output_vertices.size() >= 3);
-
-  vec3 top = std::accumulate(output_vertices.begin(), output_vertices.end(),
-                             -VEC_MAX, [](const vec3& a, const vec3& b) {
-                               return max(a, b);
-                             });
-  vec3 bottom = std::accumulate(output_vertices.begin(), output_vertices.end(),
-                                VEC_MAX, [](const vec3& a, const vec3& b) {
-                                  return min(a, b);
-                                });
-  top = clamp(top, clip.bottom, clip.top);
-  bottom = clamp(bottom, clip.bottom, clip.top);
-
-  return { top, bottom };
+  left.top[axis] = split;
+  right.bottom[axis] = split;
+  left.shrink(aabb);
+  right.shrink(aabb);
 }
 
 bool Triangle::operator==(const Triangle& t) const {

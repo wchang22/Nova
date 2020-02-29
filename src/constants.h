@@ -26,7 +26,7 @@
 constexpr char SCENE_PATH[] = SRC_PATH"scene.toml";
 
 // BVH/Triangle constants
-constexpr size_t TRIANGLES_PER_LEAF_BITS = 6;
+constexpr size_t TRIANGLES_PER_LEAF_BITS = 12;
 constexpr size_t TRIANGLE_NUM_SHIFT = 32 - TRIANGLES_PER_LEAF_BITS;
 constexpr size_t TRIANGLE_OFFSET_MASK =
   (0xFFFFFFFF << TRIANGLES_PER_LEAF_BITS) >> TRIANGLES_PER_LEAF_BITS;

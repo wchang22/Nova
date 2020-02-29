@@ -26,6 +26,16 @@ void AABB::shrink(const AABB& other) {
   bottom = max(bottom, other.bottom);
 }
 
+void AABB::grow(const vec3& other) {
+  top = max(top, other);
+  bottom = min(bottom, other);
+}
+
+void AABB::shrink(const vec3& other) {
+  top = min(top, other);
+  bottom = max(bottom, other);
+}
+
 bool AABB::intersects(const AABB& other, int axis) const {
   return top[axis] >= other.bottom[axis] && bottom[axis] <= other.top[axis];
 }
