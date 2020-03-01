@@ -85,14 +85,13 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
     return;
   }
 
-  SplitParams best_params {
-    std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0
-  };
+  SplitParams best_params = SplitParams::make_default();
+  best_params.cost = node->get_cost();
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
-    float bin_start = node->aabb.bottom[axis];
-    float bin_end = node->aabb.top[axis];
+    const float bin_start = node->aabb.bottom[axis];
+    const float bin_end = node->aabb.top[axis];
 
     // Don't want triangles to be concentrated on axis
     if (abs(bin_end - bin_start) < 1e-4f) {
@@ -100,25 +99,24 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
     }
 
     // Reduce number of bins according to depth
-    float bin_step = (bin_end - bin_start) / (MAX_BINS / (depth + 1));
-    int num_bins = MAX_BINS / (depth + 1) - 1;
+    const int num_bins = MAX_BINS / (depth + 1);
+    const int num_splits = num_bins - 1;
+    const float bin_step = (bin_end - bin_start) / num_bins;
 
     // Find best split (split with least total cost)
     #pragma omp declare reduction \
-      (param_min:SplitParams:omp_out=omp_out.min(omp_in)) \
-      initializer(omp_priv={ \
-        std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0 \
-      })
+      (param_min:SplitParams:omp_out=omp_out.min(std::move(omp_in))) \
+      initializer(omp_priv=SplitParams::make_default())
 
     #pragma omp parallel for default(none) \
-      shared(node, axis, bin_start, bin_end, bin_step, num_bins) \
+      shared(node, axis) \
       reduction(param_min:best_params) \
       schedule(dynamic)
-    for (int i = 0; i < num_bins; i++) {
+    for (int i = 0; i < num_splits; i++) {
       float split = bin_start + (i + 1) * bin_step;
 
-      AABB left { -VEC_MAX, VEC_MAX };
-      AABB right { -VEC_MAX, VEC_MAX };
+      AABB left = AABB::make_no_intersection();
+      AABB right = AABB::make_no_intersection();
 
       uint32_t left_num_triangles = 0;
       uint32_t right_num_triangles = 0;
@@ -146,7 +144,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
       float right_cost = right.get_cost(right_num_triangles);
       float total_cost = left_cost + right_cost;
 
-      SplitParams params {
+      best_params = best_params.min({
         total_cost,
         split,
         axis,
@@ -154,8 +152,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
         right,
         left_num_triangles,
         right_num_triangles,
-      };
-      best_params = best_params.min(params);
+      });
     }
   }
 
@@ -167,8 +164,8 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
-  left->aabb = best_params.left;
-  right->aabb = best_params.right;
+  left->aabb = std::move(best_params.left);
+  right->aabb = std::move(best_params.right);
   left->triangles.reserve(best_params.left_num_triangles);
   right->triangles.reserve(best_params.right_num_triangles);
 

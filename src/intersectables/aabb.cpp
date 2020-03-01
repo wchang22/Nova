@@ -28,3 +28,8 @@ void AABB::shrink(const AABB& other) {
 bool AABB::operator==(const AABB& other) const {
   return top == other.top && bottom == other.bottom;
 }
+
+AABB AABB::make_no_intersection() {
+  static vec3 vec_max(std::numeric_limits<float>::max());
+  return { -vec_max, vec_max };
+}

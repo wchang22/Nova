@@ -13,15 +13,14 @@
 
 using namespace glm;
 
-const vec3 VEC_MAX(std::numeric_limits<float>::max());
-
 struct BVHNode {
   AABB aabb;
   std::vector<Triangle> triangles;
   std::unique_ptr<BVHNode> left;
   std::unique_ptr<BVHNode> right;
 
-  BVHNode() : aabb({ -VEC_MAX, VEC_MAX }) {}
+  BVHNode() : aabb(AABB::make_no_intersection()) {}
+  float get_cost() { return aabb.get_cost(triangles.size()); }
 };
 
 std::istream& operator>>(std::istream& in, FlatBVHNode& node);
@@ -43,8 +42,12 @@ private:
     size_t left_num_triangles;
     size_t right_num_triangles;
 
-    SplitParams min(SplitParams& other) {
-      return cost < other.cost ? *this : other;
+    static SplitParams make_default() {
+      return { std::numeric_limits<float>::max(), 0, -1, {}, {}, 0, 0 };
+    }
+
+    SplitParams min(SplitParams&& other) {
+      return cost < other.cost ? std::move(*this) : std::move(other);
     }
   };
 

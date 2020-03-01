@@ -16,6 +16,7 @@ struct AABB {
   void grow(const AABB& other);
   void shrink(const AABB& other);
   bool operator==(const AABB& other) const;
+  static AABB make_no_intersection();
 };
 
 #endif // AABB_H
