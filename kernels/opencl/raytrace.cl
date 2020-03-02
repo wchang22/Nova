@@ -135,7 +135,7 @@ void kernel_raytrace(write_only image2d_t image_out,
 
     // Calculate lighting params
     float3 light_dir = fast_normalize(LIGHT_POSITION - intrs_point);
-    float3 view_dir = fast_normalize(ec.eye_pos - intrs_point);
+    float3 view_dir = -ray.direction;
     float3 half_dir = fast_normalize(light_dir + view_dir);
     float light_distance = fast_distance(LIGHT_POSITION, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
