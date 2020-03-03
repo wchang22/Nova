@@ -2,9 +2,16 @@
 #include "util/image/imageutils.h"
 #include "util/profiling/profiling.h"
 #include "model/model.h"
+#include "kernel_types/ray.h"
+#include "kernel_types/intersection.h"
 #include "constants.h"
 
+#include <iostream>
+
 REGISTER_KERNEL(kernel_raytrace)
+REGISTER_KERNEL(kernel_intersect_rays)
+REGISTER_KERNEL(kernel_shade_pixels)
+REGISTER_KERNEL(kernel_fill_image)
 
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
@@ -21,7 +28,10 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     intersectable_manager.add_model(model);
   }
 
-  ADD_KERNEL(accelerator, kernel_raytrace)
+  ADD_KERNEL(accelerator, kernel_generate_rays)
+  ADD_KERNEL(accelerator, kernel_intersect_rays)
+  ADD_KERNEL(accelerator, kernel_shade_pixels)
+  ADD_KERNEL(accelerator, kernel_fill_image)
 }
 
 void Raytracer::raytrace() {
@@ -52,17 +62,69 @@ void Raytracer::raytrace() {
     std::max(material_data.height, 1U),
     material_data.data
   );
-  
+
+  uint32_t global_size = width * height;
+  auto image_width = accelerator.create_wrapper<uint32_t>(width);
+  auto ray_buf = accelerator.create_buffer<Ray>(MemFlags::READ_WRITE, global_size);
+  auto reflection_ray_buf = accelerator.create_buffer<Ray>(MemFlags::READ_WRITE, global_size);
+  auto intersection_buf = accelerator.create_buffer<Intersection>(MemFlags::READ_WRITE,
+                                                                  global_size);
+  auto color_buf = accelerator.create_buffer<float3>(MemFlags::READ_WRITE, global_size);
+  auto reflectance_buf = accelerator.create_buffer<float3>(MemFlags::READ_WRITE, global_size);
+  uint32_t global_count = 0;
+  auto global_count_buf = accelerator.create_buffer(MemFlags::WRITE_ONLY, global_count);
+
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
     PROFILE_SCOPE("Raytrace profile loop");
+    global_size = width * height;
 
-    PROFILE_SECTION_START("Enqueue kernel");
-    uint3 global_dims = { width, height, 1 };
-    CALL_KERNEL(accelerator, kernel_raytrace, global_dims,
-                image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+    PROFILE_SECTION_START("Generate rays");
+    CALL_KERNEL(accelerator, kernel_generate_rays, { width * height, 1, 1 }, { 256, 1, 1 },
+                ray_buf, color_buf, reflectance_buf, ec, image_width);
+    PROFILE_SECTION_END();
+
+    PROFILE_SECTION_START("Raytrace bounce loop");
+    for (uint32_t depth = 0; depth < 5; depth++) {
+      PROFILE_SCOPE("Raytrace bounce iteration");
+
+      PROFILE_SECTION_START("Intersect rays");
+      CALL_KERNEL(accelerator, kernel_intersect_rays, { global_size, 1, 1 }, { 32, 1, 1 },
+                  ray_buf, intersection_buf, global_count_buf, triangle_buf, bvh_buf);
+      PROFILE_SECTION_END();
+
+      PROFILE_SECTION_START("Read/write global count 1");
+      global_size = accelerator.read_buffer(global_count_buf);
+      accelerator.write_buffer(global_count_buf, 0U);
+      PROFILE_SECTION_END();
+      if (global_size == 0) {
+        break;
+      }
+
+      PROFILE_SECTION_START("Shade pixels");
+      CALL_KERNEL(accelerator, kernel_shade_pixels, { global_size, 1, 1 }, { 32, 1, 1 },
+                  ray_buf, color_buf, reflectance_buf, intersection_buf,
+                  reflection_ray_buf, global_count_buf,
+                  triangle_buf, bvh_buf, tri_meta_buf, material_ims);
+      PROFILE_SECTION_END();
+
+      PROFILE_SECTION_START("Read/write global count 2");
+      global_size = accelerator.read_buffer(global_count_buf);
+      accelerator.write_buffer(global_count_buf, 0U);
+      std::swap(reflection_ray_buf, ray_buf);
+      PROFILE_SECTION_END();
+
+      if (global_size == 0) {
+        break;
+      }
+    }
+    PROFILE_SECTION_END();
+
+    PROFILE_SECTION_START("Fill Image");
+    CALL_KERNEL(accelerator, kernel_fill_image, { width, height, 1 }, { 8, 4, 1 },
+                color_buf, image);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");

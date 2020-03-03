@@ -31,7 +31,7 @@ public:
   void add_kernel(const std::string& kernel_name);
 
   template<typename... Args>
-  void call_kernel(const std::string& kernel_name, uint3 global_dims, Args&&... args) {
+  void call_kernel(const std::string& kernel_name, uint3 global_dims, uint3 local_dims, Args&&... args) {
     const auto& kernel_it = kernel_map.find(kernel_name);
     if (kernel_it == kernel_map.end()) {
       throw KernelException("No kernel called " + kernel_name);
@@ -40,7 +40,7 @@ public:
     kernel_utils::set_args(kernel_it->second, std::forward<Args>(args).data()...);
     queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange,
                                cl::NDRange(global_dims.s[0], global_dims.s[1], global_dims.s[2]),
-                               cl::NullRange);
+                               cl::NDRange(local_dims.s[0], local_dims.s[1], local_dims.s[2]));
     
     queue.finish();
   }
@@ -130,6 +130,18 @@ public:
       throw AcceleratorException("Cannot build an empty Buffer");
     }
     return Buffer<T>(context, static_cast<cl_mem_flags>(mem_flags), length * sizeof(T));
+  }
+
+  template<typename T>
+  T read_buffer(const Buffer<T>& buf) const {
+    T t;
+    queue.enqueueReadBuffer(buf.data(), true, 0, sizeof(T), &t);
+    return t;
+  }
+
+  template<typename T>
+  void write_buffer(const Buffer<T>& buf, const T& t) const {
+    queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T), &t);
   }
 
   template<typename T, typename... Args>

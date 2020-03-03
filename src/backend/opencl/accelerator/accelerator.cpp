@@ -19,7 +19,7 @@ Accelerator::Accelerator(const SceneParser& scene_parser)
   try {
     std::stringstream build_args;
     build_args
-      << " -cl-fast-relaxed-math -cl-mad-enable"
+      << " -cl-fast-relaxed-math -cl-mad-enable -cl-std=CL2.0"
       << " -I" << KERNELS_PATH_STR"opencl"
       << " -DTRIANGLES_PER_LEAF_BITS=" << TRIANGLES_PER_LEAF_BITS
       << " -DTRIANGLE_NUM_SHIFT=" << TRIANGLE_NUM_SHIFT

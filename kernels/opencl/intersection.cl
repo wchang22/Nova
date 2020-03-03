@@ -32,9 +32,12 @@ bool intersects_triangle(Ray ray, Intersection* intrs, int tri_index, Triangle t
 
 // AABB fast intersection for BVH
 bool intersects_aabb(Ray ray, float3 top, float3 bottom) {
+  float3 inv_direction = native_recip(ray.direction);
+  float3 nio = -ray.origin * inv_direction;
+
   // Find slab bounds on AABB
-  float3 t1 = top * ray.inv_direction + ray.nio;
-  float3 t2 = bottom * ray.inv_direction + ray.nio;
+  float3 t1 = top * inv_direction + nio;
+  float3 t2 = bottom * inv_direction + nio;
   float3 tvmin = min(t1, t2);
   float3 tvmax = max(t1, t2);
 
