@@ -84,7 +84,7 @@ void kernel_generate_rays(
   // Stage outputs
   global PackedRay* rays, global float3* colors, global float3* reflectances,
   // Stage read-only
-  EyeCoords ec, uint image_width
+  EyeCoords ec, uint image_width, float initial_color, float initial_reflectance
 ) {
   int id = get_global_linear_id();
   int2 pixel_coords = { id % image_width, id / image_width };
@@ -96,8 +96,8 @@ void kernel_generate_rays(
   float3 ray_pos = ec.eye_pos;
 
   rays[id] = pack_ray(create_ray(ray_pos, ray_dir, id, RAY_EPSILON));
-  colors[id] = 0.0f;
-  reflectances[id] = 1.0f;
+  colors[id] = initial_color;
+  reflectances[id] = initial_reflectance;
 }
 
 kernel
