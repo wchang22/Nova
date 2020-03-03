@@ -140,8 +140,20 @@ public:
   }
 
   template<typename T>
+  std::vector<T> read_buffer(const Buffer<T>& buf, size_t length) const {
+    std::vector<T> t(length);
+    queue.enqueueReadBuffer(buf.data(), true, 0, sizeof(T) * length, t.data());
+    return t;
+  }
+
+  template<typename T>
   void write_buffer(const Buffer<T>& buf, const T& t) const {
     queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T), &t);
+  }
+
+  template<typename T>
+  void write_buffer(const Buffer<T>& buf, const std::vector<T>& t) const {
+    queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T) * t.size(), t.data());
   }
 
   template<typename T, typename... Args>
