@@ -3,10 +3,9 @@
 
 #include "backend/types.h"
 
-struct Ray {
-  float3 origin;
+typedef struct {
+  float4 origin_index;
   float3 direction;
-  uint32_t image_index;
-};
+} PackedRay;
 
 #endif // KERNEL_RAY_H

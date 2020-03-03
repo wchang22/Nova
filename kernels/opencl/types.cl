@@ -10,8 +10,28 @@ typedef struct {
   uint image_index;
 } Ray;
 
+typedef struct {
+  float4 origin_index;
+  float3 direction;
+} PackedRay;
+
 Ray create_ray(float3 point, float3 direction, uint image_index, float epsilon) {
   return (Ray) { point + direction * epsilon, direction, image_index };
+}
+
+PackedRay pack_ray(Ray ray) {
+  return (PackedRay) {
+    (float4)(ray.origin, ray.image_index),
+    ray.direction
+  };
+}
+
+Ray unpack_ray(PackedRay ray) {
+  return (Ray) {
+    ray.origin_index.xyz,
+    ray.direction,
+    ray.origin_index.w,
+  };
 }
 
 typedef struct {

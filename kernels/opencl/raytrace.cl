@@ -82,7 +82,7 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
 kernel
 void kernel_generate_rays(
   // Stage outputs
-  global Ray* rays, global float3* colors, global float3* reflectances,
+  global PackedRay* rays, global float3* colors, global float3* reflectances,
   // Stage read-only
   EyeCoords ec, uint image_width
 ) {
@@ -95,7 +95,7 @@ void kernel_generate_rays(
                                                  ec.eye_coord_frame.z);
   float3 ray_pos = ec.eye_pos;
 
-  rays[id] = create_ray(ray_pos, ray_dir, id, RAY_EPSILON);
+  rays[id] = pack_ray(create_ray(ray_pos, ray_dir, id, RAY_EPSILON));
   colors[id] = 0.0f;
   reflectances[id] = 1.0f;
 }
@@ -103,7 +103,7 @@ void kernel_generate_rays(
 kernel
 void kernel_intersect_rays(
   // Stage inputs
-  global Ray* rays,
+  global PackedRay* rays,
   // Stage outputs
   global Intersection* intersections, global uint* global_count,
   // Stage read-only
@@ -111,7 +111,7 @@ void kernel_intersect_rays(
 ) {
   int id = get_global_linear_id();
 
-  Ray ray = rays[id];
+  Ray ray = unpack_ray(rays[id]);
   Intersection intrs = create_intersection(id);
 
   if (trace(triangles, bvh, ray, &intrs, false)) {
@@ -123,10 +123,10 @@ void kernel_intersect_rays(
 kernel
 void kernel_shade_pixels(
   // Stage inputs
-  global Ray* rays, global float3* colors, global float3* reflectances,
+  global PackedRay* rays, global float3* colors, global float3* reflectances,
   global Intersection* intersections,
   // Stage outputs
-  global Ray* reflection_rays, global uint* global_count,
+  global PackedRay* reflection_rays, global uint* global_count,
   // Stage read-only
   global Triangle* triangles, global BVHNode* bvh,
   global TriangleMeta* tri_meta, read_only image2d_array_t materials
@@ -134,7 +134,7 @@ void kernel_shade_pixels(
   int id = get_global_linear_id();
 
   Intersection intrs = intersections[id];
-  Ray ray = rays[intrs.ray_index];
+  Ray ray = unpack_ray(rays[intrs.ray_index]);
   TriangleMeta meta = tri_meta[intrs.tri_index];
   float3 reflectance = reflectances[ray.image_index];
 
@@ -196,7 +196,8 @@ void kernel_shade_pixels(
     // Reflect ray off of intersection point
     float3 ray_pos = intrs_point;
     float3 ray_dir = reflect(ray.direction, normal);
-    reflection_rays[ray_id] = create_ray(intrs_point, ray_dir, ray.image_index, RAY_EPSILON);
+    reflection_rays[ray_id] =
+      pack_ray(create_ray(intrs_point, ray_dir, ray.image_index, RAY_EPSILON));
   }
 }
 

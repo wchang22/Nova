@@ -65,8 +65,8 @@ void Raytracer::raytrace() {
 
   uint32_t global_size = width * height;
   auto image_width = accelerator.create_wrapper<uint32_t>(width);
-  auto ray_buf = accelerator.create_buffer<Ray>(MemFlags::READ_WRITE, global_size);
-  auto reflection_ray_buf = accelerator.create_buffer<Ray>(MemFlags::READ_WRITE, global_size);
+  auto ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, global_size);
+  auto reflection_ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, global_size);
   auto intersection_buf = accelerator.create_buffer<Intersection>(MemFlags::READ_WRITE,
                                                                   global_size);
   auto color_buf = accelerator.create_buffer<float3>(MemFlags::READ_WRITE, global_size);
