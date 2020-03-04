@@ -11,7 +11,6 @@
 REGISTER_KERNEL(kernel_raytrace)
 REGISTER_KERNEL(kernel_intersect_rays)
 REGISTER_KERNEL(kernel_shade_pixels)
-REGISTER_KERNEL(kernel_fill_image)
 
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
@@ -31,17 +30,13 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   ADD_KERNEL(accelerator, kernel_generate_rays)
   ADD_KERNEL(accelerator, kernel_intersect_rays)
   ADD_KERNEL(accelerator, kernel_shade_pixels)
-  ADD_KERNEL(accelerator, kernel_fill_image)
 }
 
 void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  auto image = accelerator.create_image2D_write<uchar4>(
-    ImageChannelOrder::RGBA, ImageChannelType::UINT8, width, height);
-  std::vector<uchar4> image_buf;
-
+  std::vector<float3> image_buf;
   auto ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
 
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
@@ -125,18 +120,23 @@ void Raytracer::raytrace() {
     }
     PROFILE_SECTION_END();
 
-    PROFILE_SECTION_START("Fill Image");
-    CALL_KERNEL(accelerator, kernel_fill_image, { width, height, 1 }, { 8, 4, 1 },
-                color_buf, image);
-    PROFILE_SECTION_END();
-
     PROFILE_SECTION_START("Read image");
-    image_buf = accelerator.read_image(image, width, height);
+    image_buf = accelerator.read_buffer(color_buf, width * height);
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
-  image_utils::write_image((name + ".jpg").c_str(), { image_buf, width, height });
+  std::vector<uchar4> image_char_buf;
+  std::transform(image_buf.cbegin(), image_buf.cend(), std::back_inserter(image_char_buf),
+  [](const auto& pixel) {
+    return uchar4 {
+      static_cast<unsigned char>(std::min(x(pixel), 1.0f) * 255.0f),
+      static_cast<unsigned char>(std::min(y(pixel), 1.0f) * 255.0f),
+      static_cast<unsigned char>(std::min(z(pixel), 1.0f) * 255.0f),
+      255
+    };
+  });
+  image_utils::write_image((name + ".jpg").c_str(), { image_char_buf, width, height });
   PROFILE_SECTION_END();
 }

@@ -200,17 +200,3 @@ void kernel_shade_pixels(
       pack_ray(create_ray(intrs_point, ray_dir, ray.image_index, RAY_EPSILON));
   }
 }
-
-kernel
-void kernel_fill_image(
-  // Stage inputs
-  global float3* colors,
-  // Stage write-only
-  write_only image2d_t image_out
-) {
-  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
-  int id = get_global_linear_id();
-  float3 color = colors[id];
-
-  write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
-}
