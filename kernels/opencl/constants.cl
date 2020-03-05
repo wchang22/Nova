@@ -33,7 +33,7 @@
   #define RAY_RECURSION_DEPTH 5
 #endif
 
-#define STACK_SIZE 96
+#define STACK_SIZE 64
 
 constant float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 // Min epsilon to produce significant change in 8 bit colour channels
