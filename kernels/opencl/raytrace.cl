@@ -82,12 +82,12 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
 kernel
 void kernel_generate_rays(
   // Stage outputs
-  global PackedRay* rays, global float3* colors, global float3* reflectances,
+  global PackedRay* rays,
   // Stage read-only
-  EyeCoords ec, uint image_width, float initial_color, float initial_reflectance
+  EyeCoords ec
 ) {
   int id = get_global_linear_id();
-  int2 pixel_coords = { id % image_width, id / image_width };
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
@@ -96,8 +96,6 @@ void kernel_generate_rays(
   float3 ray_pos = ec.eye_pos;
 
   rays[id] = pack_ray(create_ray(ray_pos, ray_dir, id, RAY_EPSILON));
-  colors[id] = initial_color;
-  reflectances[id] = initial_reflectance;
 }
 
 kernel

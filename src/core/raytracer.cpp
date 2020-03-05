@@ -59,9 +59,6 @@ void Raytracer::raytrace() {
   );
 
   uint32_t global_size = width * height;
-  auto image_width = accelerator.create_wrapper<uint32_t>(width);
-  auto initial_color = accelerator.create_wrapper<float>(0.0f);
-  auto initial_reflectance = accelerator.create_wrapper<float>(1.0f);
   auto ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, global_size);
   auto reflection_ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, global_size);
   auto intersection_buf = accelerator.create_buffer<Intersection>(MemFlags::READ_WRITE,
@@ -79,9 +76,10 @@ void Raytracer::raytrace() {
     global_size = width * height;
 
     PROFILE_SECTION_START("Generate rays");
-    CALL_KERNEL(accelerator, kernel_generate_rays, { width * height, 1, 1 }, { 256, 1, 1 },
-                ray_buf, color_buf, reflectance_buf, ec,
-                image_width, initial_color, initial_reflectance);
+    accelerator.fill_buffer<float3>(color_buf, global_size, float3 { 0.0f, 0.0f, 0.0f });
+    accelerator.fill_buffer<float3>(reflectance_buf, global_size, float3 { 1.0f, 1.0f, 1.0f });
+    CALL_KERNEL(accelerator, kernel_generate_rays, { width, height, 1 }, { 8, 4, 1 },
+                ray_buf, ec);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Raytrace bounce loop");

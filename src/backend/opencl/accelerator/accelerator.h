@@ -156,9 +156,23 @@ public:
     queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T) * t.size(), t.data());
   }
 
+  template<typename T>
+  void fill_buffer(const Buffer<T>& buf, size_t length, const T& t) const {
+    queue.enqueueFillBuffer(buf.data(), t, 0, length * sizeof(T));
+  }
+
+  template<typename T>
+  void copy_buffer(const Buffer<T>& dst, const Buffer<T>& src, size_t length) const {
+    queue.enqueueCopyBuffer(src.data(), dst.data(), 0, 0, length * sizeof(T));
+  }
+
   template<typename T, typename... Args>
   Wrapper<T> create_wrapper(Args&&... args) const {
     return Wrapper<T>(std::forward<Args>(args)...);
+  }
+
+  void synchronize() const {
+    queue.finish();
   }
 
 private:
