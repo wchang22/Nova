@@ -87,6 +87,7 @@ void kernel_raytrace(write_only image2d_t image_out,
                      global BVHNode* bvh,
                      read_only image2d_array_t materials) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
@@ -171,4 +172,23 @@ void kernel_raytrace(write_only image2d_t image_out,
   }
 
   write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
+}
+
+constant sampler_t interp_sampler =
+  CLK_ADDRESS_CLAMP |
+  CLK_FILTER_NEAREST |
+  CLK_NORMALIZED_COORDS_FALSE;
+
+kernel
+void kernel_interpolate(read_only image2d_t image_in, write_only image2d_t image_out) {
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  pixel_coords.y = 2 * pixel_coords.y + ~(pixel_coords.x & 1);
+
+  uint4 top = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y - 1));
+  uint4 left = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x - 1, pixel_coords.y));
+  uint4 right = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x + 1, pixel_coords.y));
+  uint4 bottom = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y + 1));
+
+  uint4 color = (top + left + right + bottom) / 4;
+  write_imageui(image_out, pixel_coords, color);
 }

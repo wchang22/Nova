@@ -5,6 +5,7 @@
 #include "constants.h"
 
 REGISTER_KERNEL(kernel_raytrace)
+REGISTER_KERNEL(kernel_interpolate)
 
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
@@ -22,14 +23,19 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   }
 
   ADD_KERNEL(accelerator, kernel_raytrace)
+  ADD_KERNEL(accelerator, kernel_interpolate)
 }
 
 void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  auto image = accelerator.create_image2D_write<uchar4>(
+  auto image_write = accelerator.create_image2D_write<uchar4>(
     ImageChannelOrder::RGBA, ImageChannelType::UINT8, width, height);
+  auto image_read = accelerator.create_image2D_read<uchar4>(
+    ImageChannelOrder::RGBA, ImageChannelType::UINT8,
+    AddressMode::CLAMP, FilterMode::NEAREST, false,
+    width, height);
   std::vector<uchar4> image_buf;
 
   auto ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
@@ -59,14 +65,23 @@ void Raytracer::raytrace() {
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
     PROFILE_SCOPE("Raytrace profile loop");
 
-    PROFILE_SECTION_START("Enqueue kernel");
-    uint3 global_dims = { width, height, 1 };
+    PROFILE_SECTION_START("Raytrace kernel");
+    uint3 global_dims = { width, height / 2, 1 };
     CALL_KERNEL(accelerator, kernel_raytrace, global_dims,
-                image, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+                image_write, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+    PROFILE_SECTION_END();
+
+    PROFILE_SECTION_START("Copy image");
+    accelerator.copy_image2D(image_read, image_write, width, height);
+    PROFILE_SECTION_END();
+
+    PROFILE_SECTION_START("Interpolate kernel");
+    global_dims = { width, height / 2, 1 };
+    CALL_KERNEL(accelerator, kernel_interpolate, global_dims, image_read, image_write)
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");
-    image_buf = accelerator.read_image(image, width, height);
+    image_buf = accelerator.read_image(image_write, width, height);
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();

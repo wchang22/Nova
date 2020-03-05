@@ -46,7 +46,8 @@ public:
   }
   
   template<typename T>
-  Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order, ImageChannelType channel_type,                                   AddressMode address_mode, FilterMode filter_mode,
+  Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order,
+                                     ImageChannelType channel_type, AddressMode address_mode, FilterMode filter_mode,
                                      bool normalized_coords, size_t width, size_t height, 
                                      std::vector<T>& data) const {
     (void) address_mode;
@@ -61,6 +62,24 @@ public:
                             static_cast<cl_channel_type>(channel_type)
                           ),
                           width, height, 0, data.data());
+  }
+
+  template<typename T>
+  Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order,
+                                     ImageChannelType channel_type, AddressMode address_mode, FilterMode filter_mode,
+                                     bool normalized_coords, size_t width, size_t height) const {
+    (void) address_mode;
+    (void) filter_mode;
+    (void) normalized_coords;
+    if (width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DRead");
+    }
+    return Image2DRead<T>(context, CL_MEM_READ_ONLY,
+                          cl::ImageFormat(
+                            static_cast<cl_channel_order>(channel_order),
+                            static_cast<cl_channel_type>(channel_type)
+                          ),
+                          width, height, 0);
   }
 
   template<typename T>
@@ -107,6 +126,16 @@ public:
                            compat_utils::create_size_t<3>({ width, height, 1 }),
                            0, 0, image_buf.data());
     return image_buf;
+  }
+
+  template<typename T>
+  void copy_image2D(const Image2DRead<T>& dst, const Image2DWrite<T>& src,
+                    size_t width, size_t height) const {
+    queue.enqueueCopyImage(src.data(), dst.data(),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, 1 }));
+    queue.finish();
   }
 
   template<typename T>
