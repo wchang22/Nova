@@ -60,19 +60,22 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
       // Make sure tri_ptr and node_ptr do not collide
     } while (node_index && tri_ptr > node_ptr + 2);
 
-    while (tri_ptr < STACK_SIZE) {
-      // Pop list of triangles from stack back
-      uint packed_triangle_data = stack[tri_ptr++];
-
-      uint offset = packed_triangle_data & TRIANGLE_OFFSET_MASK;
-      uint num = packed_triangle_data >> TRIANGLE_NUM_SHIFT;
-
-      // If intersected, compute intersection for all triangles in the node
-      for (uint i = offset; i < offset + num; i++) {
-        if (intersects_triangle(ray, min_intrs, i, triangles[i]) && fast) {
-          return true;
-        }
+    // Compute intersection for triangles
+    uint tri_index = 0;
+    uint last_tri_index = 0;
+    while (tri_ptr < STACK_SIZE || tri_index < last_tri_index) {
+      if (tri_index == last_tri_index) {
+        // Pop list of triangles from stack back
+        uint packed_triangle_data = stack[tri_ptr++];
+        uint offset = packed_triangle_data & TRIANGLE_OFFSET_MASK;
+        uint num = packed_triangle_data >> TRIANGLE_NUM_SHIFT;
+        tri_index = offset;
+        last_tri_index = offset + num;
       }
+      if (intersects_triangle(ray, min_intrs, tri_index, triangles[tri_index]) && fast) {
+        return true;
+      }
+      tri_index++;
     }
   } while (node_index);
 
