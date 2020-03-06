@@ -76,8 +76,8 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
-    global_dims = { width, height / 2, 1 };
-    CALL_KERNEL(accelerator, kernel_interpolate, global_dims, image_read, image_write)
+    CALL_KERNEL(accelerator, kernel_interpolate, global_dims,
+                image_read, image_write, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Read image");
