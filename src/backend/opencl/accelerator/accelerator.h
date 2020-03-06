@@ -129,7 +129,7 @@ public:
   }
 
   template<typename T>
-  void copy_image2D(const Image2DRead<T>& dst, const Image2DWrite<T>& src,
+  void copy_image2D(Image2DRead<T>& dst, const Image2DWrite<T>& src,
                     size_t width, size_t height) const {
     queue.enqueueCopyImage(src.data(), dst.data(),
                            compat_utils::create_size_t<3>({ 0, 0, 0 }),

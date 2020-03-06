@@ -66,6 +66,9 @@ inline float rsqrtf(float x)
 inline __host__ __device__ uchar4 make_uchar4(float4 a) {
     return make_uchar4(a.x, a.y, a.z, a.w);
 }
+inline __host__ __device__ uchar4 make_uchar4(uint4 a) {
+    return make_uchar4(a.x, a.y, a.z, a.w);
+}
 inline __host__ __device__ uchar3 make_uchar3(uchar4 a) {
     return make_uchar3(a.x, a.y, a.z);
 }
@@ -247,6 +250,10 @@ inline __host__ __device__ uint4 make_uint4(uint3 a, uint w)
     return make_uint4(a.x, a.y, a.z, w);
 }
 inline __host__ __device__ uint4 make_uint4(int4 a)
+{
+    return make_uint4(uint(a.x), uint(a.y), uint(a.z), uint(a.w));
+}
+inline __host__ __device__ uint4 make_uint4(uchar4 a)
 {
     return make_uint4(uint(a.x), uint(a.y), uint(a.z), uint(a.w));
 }
@@ -1042,6 +1049,11 @@ inline __host__ __device__ void operator/=(float4 &a, float b)
 inline __host__ __device__ float4 operator/(float b, float4 a)
 {
     return make_float4(b / a.x, b / a.y, b / a.z, b / a.w);
+}
+
+inline __host__ __device__ uint4 operator/(uint4 a, uint b)
+{
+    return make_uint4(a.x / b, a.y / b, a.z / b, a.w / b);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

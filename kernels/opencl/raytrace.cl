@@ -84,7 +84,7 @@ bool trace(
   return min_intrs->tri_index != -1;
 }
 
-float3 raytrace(
+float3 trace_ray(
   int2 pixel_coords,
   EyeCoords ec,
   global Triangle* triangles,
@@ -187,7 +187,7 @@ void kernel_raytrace(write_only image2d_t image_out,
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
-  float3 color = raytrace(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
 
   write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
 }
@@ -219,12 +219,12 @@ void kernel_interpolate(
   // Check color differences in the neighbours
   uint4 color_max = max(top, max(left, max(right, bottom)));
   uint4 color_min = min(top, min(left, min(right, bottom)));
-  float3 color_range = convert_float4(color_max - color_min).xyz / 255.0f;;
+  float3 color_range = convert_float4(color_max - color_min).xyz / 255.0f;
 
   uint4 color;
   // If difference is large, raytrace to find color
   if (length(color_range) > INTERP_THRESHOLD) {
-    float3 rt_color = raytrace(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+    float3 rt_color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
     color = convert_uint4((float4)(rt_color, 1.0f) * 255.0f);
   }
   // Otherwise, interpolate
