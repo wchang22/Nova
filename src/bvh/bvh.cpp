@@ -288,7 +288,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
 
       // Only compute spatial split if overlap is significant
       if (intersection_sa / root_sa > OVERLAP_TOLERANCE) {
-        std::vector<Bin> bins(num_bins, { NO_INTERSECTION, 0, 0 });
+        std::vector<Bin> bins(num_bins, { AABB::make_no_intersection(), 0, 0 });
 
         for (const auto& triangle : node->triangles) {
           AABB bounds = triangle.get_bounds();
@@ -332,8 +332,8 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth, const float 
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
-  left->aabb = best_params.left;
-  right->aabb = best_params.right;
+  left->aabb = std::move(best_params.left);
+  right->aabb = std::move(best_params.right);
   left->triangles.reserve(best_params.left_num_triangles);
   right->triangles.reserve(best_params.right_num_triangles);
 

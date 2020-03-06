@@ -3,8 +3,13 @@
 #include "constants.cl"
 #include "transforms.cl"
 
-bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersection* min_intrs,
-           bool fast) {
+bool trace(
+  global Triangle* triangles,
+  global BVHNode* bvh,
+  Ray ray,
+  Intersection* min_intrs,
+  bool fast
+) {
   /*
    * We maintain a double ended stack for space efficiency.
    * BVHNodes are pushed from the front to the back of the stack and
@@ -79,15 +84,14 @@ bool trace(global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersectio
   return min_intrs->tri_index != -1;
 }
 
-kernel
-void kernel_raytrace(write_only image2d_t image_out,
-                     EyeCoords ec,
-                     global Triangle* triangles,
-                     global TriangleMeta* tri_meta,
-                     global BVHNode* bvh,
-                     read_only image2d_array_t materials) {
-  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
-
+float3 trace_ray(
+  int2 pixel_coords,
+  EyeCoords ec,
+  global Triangle* triangles,
+  global TriangleMeta* tri_meta,
+  global BVHNode* bvh,
+  read_only image2d_array_t materials
+) {
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
                                   alpha_beta.y * ec.eye_coord_frame.y -
@@ -135,7 +139,7 @@ void kernel_raytrace(write_only image2d_t image_out,
 
     // Calculate lighting params
     float3 light_dir = fast_normalize(LIGHT_POSITION - intrs_point);
-    float3 view_dir = fast_normalize(ec.eye_pos - intrs_point);
+    float3 view_dir = -ray.direction;
     float3 half_dir = fast_normalize(light_dir + view_dir);
     float light_distance = fast_distance(LIGHT_POSITION, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
@@ -170,5 +174,63 @@ void kernel_raytrace(write_only image2d_t image_out,
     ray_dir = reflect(ray_dir, normal);
   }
 
+  return color;
+}
+
+kernel
+void kernel_raytrace(write_only image2d_t image_out,
+                     EyeCoords ec,
+                     global Triangle* triangles,
+                     global TriangleMeta* tri_meta,
+                     global BVHNode* bvh,
+                     read_only image2d_array_t materials) {
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
+
+  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+
   write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
+}
+
+constant sampler_t interp_sampler =
+  CLK_ADDRESS_CLAMP |
+  CLK_FILTER_NEAREST |
+  CLK_NORMALIZED_COORDS_FALSE;
+
+kernel
+void kernel_interpolate(
+  read_only image2d_t image_in,
+  write_only image2d_t image_out,
+  EyeCoords ec,
+  global Triangle* triangles,
+  global TriangleMeta* tri_meta,
+  global BVHNode* bvh,
+  read_only image2d_array_t materials
+) {
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
+
+  // Sample 4 neighbours
+  uint4 top = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y - 1));
+  uint4 left = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x - 1, pixel_coords.y));
+  uint4 right = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x + 1, pixel_coords.y));
+  uint4 bottom = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y + 1));
+
+  // Check color differences in the neighbours
+  uint4 color_max = max(top, max(left, max(right, bottom)));
+  uint4 color_min = min(top, min(left, min(right, bottom)));
+  float3 color_range = convert_float4(color_max - color_min).xyz / 255.0f;
+
+  uint4 color;
+  // If difference is large, raytrace to find color
+  if (length(color_range) > INTERP_THRESHOLD) {
+    float3 rt_color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+    color = convert_uint4((float4)(rt_color, 1.0f) * 255.0f);
+  }
+  // Otherwise, interpolate
+  else {
+    color = (top + left + right + bottom) / 4;
+  }
+  
+  write_imageui(image_out, pixel_coords, color);
 }

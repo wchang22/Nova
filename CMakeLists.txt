@@ -23,7 +23,7 @@ file(GLOB_RECURSE LIBS_SOURCES include/*)
 add_library(${LIBS_NAME} STATIC ${LIBS_SOURCES})
 target_include_directories(${LIBS_NAME} PRIVATE include)
 target_compile_definitions(${LIBS_NAME} PRIVATE GLM_FORCE_INTRINSICS GLM_FORCE_SILENT_WARNINGS)
-target_compile_options(${LIBS_NAME} PRIVATE -march=native)
+target_compile_options(${LIBS_NAME} PRIVATE -march=native -O3)
 
 # Source files
 file(GLOB_RECURSE SOURCES
@@ -77,7 +77,7 @@ set(PROJECT_LIBS
 )
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
-target_compile_options(${PROJECT_NAME} PRIVATE -march=native)
+target_compile_options(${PROJECT_NAME} PRIVATE -march=native -O3)
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
     include
@@ -91,12 +91,11 @@ option(LOG "Enable logging" OFF)
 option(PROFILE "Enable profiling" OFF)
 
 if (RELEASE)
-    target_compile_options(${PROJECT_NAME} PRIVATE -O3)
     target_compile_definitions(${PROJECT_NAME} PRIVATE NDEBUG)
     set(LOG OFF)
     set(PROFILE OFF)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -g -O3)
+    target_compile_options(${PROJECT_NAME} PRIVATE -g)
     set(LOG ON)
     set(PROFILE ON)
 endif()

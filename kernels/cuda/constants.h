@@ -2,6 +2,7 @@
 #define CUDA_KERNEL_CONSTANTS_H
 
 #include "kernel_types/kernel_constants.h"
+#include "math_constants.h"
 
 __device__ __constant__ extern KernelConstants constants;
 
@@ -9,6 +10,8 @@ __device__ __constant__ extern KernelConstants constants;
 
 const float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 // Min epsilon to produce significant change in 8 bit colour channels
-const float COLOR_EPSILON = 0.5f / 255.0f; 
+const float COLOR_EPSILON = 0.5f / 255.0f;
+// Min neighbour colour difference required to raytrace instead of interpolate
+const float INTERP_THRESHOLD = CUDART_SQRT_THREE_3_F;
 
 #endif // CUDA_KERNEL_CONSTANTS_H

@@ -26,6 +26,7 @@ struct AABB {
 
   bool operator==(const AABB& other) const;
   bool operator!=(const AABB& other) const;
+  static AABB make_no_intersection();
 };
 
 std::ostream& operator<<(std::ostream& out, const AABB& aabb);

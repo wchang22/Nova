@@ -74,3 +74,8 @@ std::ostream& operator<<(std::ostream& out, const AABB& aabb) {
   out << "{ " << to_string(aabb.top) << ", " << to_string(aabb.bottom) << " }";
   return out;
 }
+
+AABB AABB::make_no_intersection() {
+  static vec3 vec_max(std::numeric_limits<float>::max());
+  return { -vec_max, vec_max };
+}

@@ -19,7 +19,7 @@ struct BVHNode {
   std::unique_ptr<BVHNode> left;
   std::unique_ptr<BVHNode> right;
 
-  BVHNode() : aabb({ -VEC_MAX, VEC_MAX }) {}
+  BVHNode() : aabb(AABB::make_no_intersection()) {}
   float get_cost() const { return aabb.get_cost(triangles.size()); }
 };
 
