@@ -41,6 +41,18 @@ public:
   }
 
   template<typename T>
+  Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order, ImageChannelType channel_type,
+                                     AddressMode address_mode, FilterMode filter_mode,
+                                     bool normalized_coords, size_t width, size_t height) const {
+    (void) channel_order;
+    (void) channel_type;
+    if (width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DRead");
+    }
+    return Image2DRead<T>(address_mode, filter_mode, normalized_coords, width, height);
+  }
+
+  template<typename T>
   Image2DWrite<T> create_image2D_write(ImageChannelOrder channel_order,
                                        ImageChannelType channel_type,
                                        size_t width, size_t height) const {
@@ -72,6 +84,14 @@ public:
     (void) width;
     (void) height;
     return image.read();
+  }
+
+  template<typename T>
+  void copy_image2D(Image2DRead<T>& dst, const Image2DWrite<T>& src,
+                    size_t width, size_t height) const {
+    (void) width;
+    (void) height;
+    dst.copy_from(src);
   }
 
   template<typename T>
