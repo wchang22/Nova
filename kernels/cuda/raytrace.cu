@@ -8,8 +8,13 @@
 #include "backend/cuda/types/types.h"
 
 __device__
-bool trace(TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray,
-           Intersection& min_intrs, bool fast) {
+bool trace(
+  TriangleData* triangles,
+  FlatBVHNode* bvh,
+  const Ray& ray,
+  Intersection& min_intrs,
+  bool fast
+) {
   /*
   * We maintain a double ended stack for space efficiency.
   * BVHNodes are pushed from the front to the back of the stack and
@@ -86,16 +91,15 @@ bool trace(TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray,
   return min_intrs.tri_index != -1;
 }
 
-__global__
-void raytrace(cudaSurfaceObject_t image_out,
-              EyeCoords ec,
-              TriangleData* triangles,
-              TriangleMetaData* tri_meta,
-              FlatBVHNode* bvh,
-              cudaTextureObject_t materials) {
-  uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
-                         blockDim.y * blockIdx.y + threadIdx.y };
-  
+__device__
+float3 trace_ray(
+  uint2 pixel_coords,
+  EyeCoords ec,
+  TriangleData* triangles,
+  TriangleMetaData* tri_meta,
+  FlatBVHNode* bvh,
+  cudaTextureObject_t materials
+) { 
   float2 alpha_beta = ec.coord_scale * (make_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = normalize(alpha_beta.x * ec.eye_coord_frame.x -
                              alpha_beta.y * ec.eye_coord_frame.y -
@@ -179,21 +183,99 @@ void raytrace(cudaSurfaceObject_t image_out,
   }
 
   color = clamp(color, 0.0f, 1.0f);
+  return color;
+}
+
+__global__
+void raytrace(
+  cudaSurfaceObject_t image_out,
+  EyeCoords ec,
+  TriangleData* triangles,
+  TriangleMetaData* tri_meta,
+  FlatBVHNode* bvh,
+  cudaTextureObject_t materials
+) {
+  uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
+                         blockDim.y * blockIdx.y + threadIdx.y };
+  pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
+
+  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+
   uchar4 image_color = make_uchar4(make_float4(color, 1.0f) * 255.0f);
   surf2Dwrite(image_color, image_out, pixel_coords.x * sizeof(uchar4), pixel_coords.y);
 }
 
-void kernel_raytrace(uint3 global_dims,
-                     const KernelConstants& kernel_constants,
-                     cudaSurfaceObject_t image_out,
-                     EyeCoords ec,
-                     TriangleData* triangles,
-                     TriangleMetaData* tri_meta,
-                     FlatBVHNode* bvh,
-                     cudaTextureObject_t materials) {
+__global__
+void interpolate(
+  cudaTextureObject_t image_in,
+  cudaSurfaceObject_t image_out,
+  EyeCoords ec,
+  TriangleData* triangles,
+  TriangleMetaData* tri_meta,
+  FlatBVHNode* bvh,
+  cudaTextureObject_t materials
+) {
+  uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
+                         blockDim.y * blockIdx.y + threadIdx.y };
+  pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
+
+  // Sample 4 neighbours
+  uint4 top = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x, (int) pixel_coords.y - 1));
+  uint4 left = make_uint4(tex2D<uchar4>(image_in, (int) pixel_coords.x - 1, pixel_coords.y));
+  uint4 right = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x + 1, pixel_coords.y));
+  uint4 bottom = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x, pixel_coords.y + 1));
+
+  // Check color differences in the neighbours
+  uint4 color_max = max(top, max(left, max(right, bottom)));
+  uint4 color_min = min(top, min(left, min(right, bottom)));
+  float3 color_range = make_float3(make_uint3(color_max - color_min)) / 255.0f;
+
+  uchar4 color;
+  // If difference is large, raytrace to find color
+  if (length(color_range) > INTERP_THRESHOLD) {
+    float3 rt_color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+    color = make_uchar4(make_float4(rt_color, 1.0f) * 255.0f);
+  }
+  // Otherwise, interpolate
+  else {
+    color = make_uchar4((top + left + right + bottom) / 4U);
+  }
+  
+  surf2Dwrite(color, image_out, pixel_coords.x * sizeof(uchar4), pixel_coords.y);
+}
+
+void kernel_raytrace(
+  uint3 global_dims,
+  const KernelConstants& kernel_constants,
+  cudaSurfaceObject_t image_out,
+  EyeCoords ec,
+  TriangleData* triangles,
+  TriangleMetaData* tri_meta,
+  FlatBVHNode* bvh,
+  cudaTextureObject_t materials
+) {
   dim3 block_size { 8, 8, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
   raytrace<<<num_blocks, block_size>>>(image_out, ec, triangles, tri_meta, bvh, materials);
+}
+
+void kernel_interpolate(
+  uint3 global_dims,
+  const KernelConstants& kernel_constants,
+  cudaTextureObject_t image_in,
+  cudaSurfaceObject_t image_out,
+  EyeCoords ec,
+  TriangleData* triangles,
+  TriangleMetaData* tri_meta,
+  FlatBVHNode* bvh,
+  cudaTextureObject_t materials
+) {
+  dim3 block_size { 8, 8, 1 };
+  dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
+  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
+                                sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
+  interpolate<<<num_blocks, block_size>>>(image_in, image_out, ec, triangles,
+                                          tri_meta, bvh, materials);
 }
