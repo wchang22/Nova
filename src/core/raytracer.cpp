@@ -30,13 +30,9 @@ void Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   PROFILE_SECTION_START("Build data");
-  auto image_write = accelerator.create_image2D_write<uchar4>(
-    ImageChannelOrder::RGBA, ImageChannelType::UINT8, width, height);
-  auto image_read = accelerator.create_image2D_read<uchar4>(
-    ImageChannelOrder::RGBA, ImageChannelType::UINT8,
-    AddressMode::CLAMP, FilterMode::NEAREST, false,
-    width, height);
-
+  auto pixel_buf = accelerator.create_buffer<uchar4>(MemFlags::READ_WRITE, width * height);
+  accelerator.fill_buffer(pixel_buf, width * height, {});
+  auto pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
   auto ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
   auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
   auto triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
@@ -65,25 +61,23 @@ void Raytracer::raytrace() {
     PROFILE_SECTION_START("Raytrace kernel");
     uint3 global_dims = { width, height / 2, 1 };
     CALL_KERNEL(accelerator, kernel_raytrace, global_dims,
-                image_write, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
-    PROFILE_SECTION_END();
-
-    PROFILE_SECTION_START("Copy image");
-    accelerator.copy_image2D(image_read, image_write, width, height);
+                pixel_buf, pixel_dims_wrapper, ec,
+                triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
     CALL_KERNEL(accelerator, kernel_interpolate, global_dims,
-                image_read, image_write, ec, triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+                pixel_buf, pixel_dims_wrapper, ec,
+                triangle_buf, tri_meta_buf, bvh_buf, material_ims)
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Read image");
-  std::vector<uchar4> image_buf = accelerator.read_image(image_write, width, height);
+  std::vector<uchar4> pixels = accelerator.read_buffer(pixel_buf, width * height);
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write image");
-  image_utils::write_image((name + ".jpg").c_str(), { image_buf, width, height });
+  image_utils::write_image((name + ".jpg").c_str(), { pixels, width, height });
   PROFILE_SECTION_END();
 }

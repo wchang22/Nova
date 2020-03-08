@@ -19,4 +19,8 @@ float2 triangle_interpolate2(float3 barycentric_coords, float2 a, float2 b, floa
   return a * barycentric_coords.x + b * barycentric_coords.y + c * barycentric_coords.z;
 }
 
+int linear_index(int2 p, int width) {
+  return p.y * width + p.x;
+}
+
 #endif // TRANSFORMS_CL

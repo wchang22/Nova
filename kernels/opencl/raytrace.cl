@@ -174,33 +174,32 @@ float3 trace_ray(
     ray_dir = reflect(ray_dir, normal);
   }
 
-  return color;
+  return clamp(color, 0.0f, 1.0f);
 }
 
 kernel
-void kernel_raytrace(write_only image2d_t image_out,
-                     EyeCoords ec,
-                     global Triangle* triangles,
-                     global TriangleMeta* tri_meta,
-                     global BVHNode* bvh,
-                     read_only image2d_array_t materials) {
+void kernel_raytrace(
+  global uchar4* pixels,
+  uint2 pixel_dims,
+  EyeCoords ec,
+  global Triangle* triangles,
+  global TriangleMeta* tri_meta,
+  global BVHNode* bvh,
+  read_only image2d_array_t materials
+) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
 
-  write_imageui(image_out, pixel_coords, convert_uint4((float4)(color, 1.0f) * 255.0f));
+  int pixel_index = linear_index(pixel_coords, pixel_dims.x);
+  pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
 }
-
-constant sampler_t interp_sampler =
-  CLK_ADDRESS_CLAMP |
-  CLK_FILTER_NEAREST |
-  CLK_NORMALIZED_COORDS_FALSE;
 
 kernel
 void kernel_interpolate(
-  read_only image2d_t image_in,
-  write_only image2d_t image_out,
+  global uchar4* pixels,
+  uint2 pixel_dims,
   EyeCoords ec,
   global Triangle* triangles,
   global TriangleMeta* tri_meta,
@@ -211,26 +210,33 @@ void kernel_interpolate(
   pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
 
   // Sample 4 neighbours
-  uint4 top = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y - 1));
-  uint4 left = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x - 1, pixel_coords.y));
-  uint4 right = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x + 1, pixel_coords.y));
-  uint4 bottom = read_imageui(image_in, interp_sampler, (int2)(pixel_coords.x, pixel_coords.y + 1));
+  int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
+  uint4 neighbors[4];
+  for (uint i = 0; i < 4; i++) {
+    int2 offset = neighbor_offsets[i];
+    int index = linear_index((int2)(
+      clamp(pixel_coords.x + offset.x, 0, (int) pixel_dims.x - 1),
+      clamp(pixel_coords.y + offset.y, 0, (int) pixel_dims.y - 1)
+    ), pixel_dims.x);
+    neighbors[i] = convert_uint4(pixels[index]);
+  }
 
   // Check color differences in the neighbours
-  uint4 color_max = max(top, max(left, max(right, bottom)));
-  uint4 color_min = min(top, min(left, min(right, bottom)));
+  uint4 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
+  uint4 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
   float3 color_range = convert_float4(color_max - color_min).xyz / 255.0f;
 
-  uint4 color;
+  uchar4 color;
   // If difference is large, raytrace to find color
   if (length(color_range) > INTERP_THRESHOLD) {
     float3 rt_color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
-    color = convert_uint4((float4)(rt_color, 1.0f) * 255.0f);
+    color = convert_uchar4((float4)(rt_color, 1.0f) * 255.0f);
   }
   // Otherwise, interpolate
   else {
-    color = (top + left + right + bottom) / 4;
+    color = convert_uchar4((neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4);
   }
   
-  write_imageui(image_out, pixel_coords, color);
+  int pixel_index = linear_index(pixel_coords, pixel_dims.x);
+  pixels[pixel_index] = color;
 }

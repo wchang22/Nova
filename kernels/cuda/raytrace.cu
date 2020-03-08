@@ -182,13 +182,13 @@ float3 trace_ray(
     ray_dir = reflect(ray_dir, normal);
   }
 
-  color = clamp(color, 0.0f, 1.0f);
-  return color;
+  return clamp(color, 0.0f, 1.0f);
 }
 
 __global__
 void raytrace(
-  cudaSurfaceObject_t image_out,
+  uchar4* pixels,
+  uint2 pixel_dims,
   EyeCoords ec,
   TriangleData* triangles,
   TriangleMetaData* tri_meta,
@@ -201,14 +201,14 @@ void raytrace(
 
   float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
 
-  uchar4 image_color = make_uchar4(make_float4(color, 1.0f) * 255.0f);
-  surf2Dwrite(image_color, image_out, pixel_coords.x * sizeof(uchar4), pixel_coords.y);
+  int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
+  pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
 }
 
 __global__
 void interpolate(
-  cudaTextureObject_t image_in,
-  cudaSurfaceObject_t image_out,
+  uchar4* pixels,
+  uint2 pixel_dims,
   EyeCoords ec,
   TriangleData* triangles,
   TriangleMetaData* tri_meta,
@@ -220,14 +220,20 @@ void interpolate(
   pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
 
   // Sample 4 neighbours
-  uint4 top = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x, (int) pixel_coords.y - 1));
-  uint4 left = make_uint4(tex2D<uchar4>(image_in, (int) pixel_coords.x - 1, pixel_coords.y));
-  uint4 right = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x + 1, pixel_coords.y));
-  uint4 bottom = make_uint4(tex2D<uchar4>(image_in, pixel_coords.x, pixel_coords.y + 1));
+  int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
+  uint4 neighbors[4];
+  for (uint i = 0; i < 4; i++) {
+    int2 offset = neighbor_offsets[i];
+    int index = linear_index(make_int2(
+      clamp((int) pixel_coords.x + offset.x, 0, (int) pixel_dims.x - 1),
+      clamp((int) pixel_coords.y + offset.y, 0, (int) pixel_dims.y - 1)
+    ), pixel_dims.x);
+    neighbors[i] = make_uint4(pixels[index]);
+  }
 
   // Check color differences in the neighbours
-  uint4 color_max = max(top, max(left, max(right, bottom)));
-  uint4 color_min = min(top, min(left, min(right, bottom)));
+  uint4 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
+  uint4 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
   float3 color_range = make_float3(make_uint3(color_max - color_min)) / 255.0f;
 
   uchar4 color;
@@ -238,16 +244,18 @@ void interpolate(
   }
   // Otherwise, interpolate
   else {
-    color = make_uchar4((top + left + right + bottom) / 4U);
+    color = make_uchar4((neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4U);
   }
   
-  surf2Dwrite(color, image_out, pixel_coords.x * sizeof(uchar4), pixel_coords.y);
+  int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
+  pixels[pixel_index] = color;
 }
 
 void kernel_raytrace(
   uint3 global_dims,
   const KernelConstants& kernel_constants,
-  cudaSurfaceObject_t image_out,
+  uchar4* pixels,
+  uint2 pixel_dims,
   EyeCoords ec,
   TriangleData* triangles,
   TriangleMetaData* tri_meta,
@@ -258,14 +266,14 @@ void kernel_raytrace(
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
-  raytrace<<<num_blocks, block_size>>>(image_out, ec, triangles, tri_meta, bvh, materials);
+  raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh, materials);
 }
 
 void kernel_interpolate(
   uint3 global_dims,
   const KernelConstants& kernel_constants,
-  cudaTextureObject_t image_in,
-  cudaSurfaceObject_t image_out,
+  uchar4* pixels,
+  uint2 pixel_dims,
   EyeCoords ec,
   TriangleData* triangles,
   TriangleMetaData* tri_meta,
@@ -276,6 +284,6 @@ void kernel_interpolate(
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
-  interpolate<<<num_blocks, block_size>>>(image_in, image_out, ec, triangles,
+  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles,
                                           tri_meta, bvh, materials);
 }

@@ -18,4 +18,9 @@ inline float2 triangle_interpolate(float3 barycentric_coords, float2 a, float2 b
   return a * barycentric_coords.x + b * barycentric_coords.y + c * barycentric_coords.z;
 }
 
+__device__
+inline int linear_index(int2 p, int width) {
+  return p.y * width + p.x;
+}
+
 #endif // CUDA_KERNEL_TRANSFORMS_H

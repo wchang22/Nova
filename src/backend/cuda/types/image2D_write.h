@@ -33,10 +33,10 @@ public:
 
   cudaSurfaceObject_t& data() { return surf; };
 
-  std::vector<T> read() const {
-    std::vector<T> image_data(this->width * this->height);
-    CUDA_CHECK(cudaMemcpy2DFromArray(image_data.data(), this->width * sizeof(T), this->buffer, 0, 0,
-                                     this->width * sizeof(T), this->height, cudaMemcpyDeviceToHost))
+  std::vector<T> read(size_t width, size_t height) const {
+    std::vector<T> image_data(width * height);
+    CUDA_CHECK(cudaMemcpy2DFromArray(image_data.data(), width * sizeof(T), this->buffer, 0, 0,
+                                     width * sizeof(T), height, cudaMemcpyDeviceToHost))
     return image_data;
   }
 

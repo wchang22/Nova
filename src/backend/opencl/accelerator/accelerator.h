@@ -161,6 +161,19 @@ public:
     return Buffer<T>(context, static_cast<cl_mem_flags>(mem_flags), length * sizeof(T));
   }
 
+  template<typename T>
+  void fill_buffer(Buffer<T>& buf, size_t length, const T& t) const {
+    queue.enqueueFillBuffer(buf.data(), t, 0, sizeof(T) * length);
+    queue.finish();
+  }
+
+  template<typename T>
+  std::vector<T> read_buffer(const Buffer<T>& buf, size_t length) const {
+    std::vector<T> buf_vec(length);
+    queue.enqueueReadBuffer(buf.data(), true, 0, sizeof(T) * length, buf_vec.data());
+    return buf_vec;
+  }
+
   template<typename T, typename... Args>
   Wrapper<T> create_wrapper(Args&&... args) const {
     return Wrapper<T>(std::forward<Args>(args)...);

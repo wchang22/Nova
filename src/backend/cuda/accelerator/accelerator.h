@@ -81,9 +81,7 @@ public:
 
   template<typename T>
   std::vector<T> read_image(const Image2DWrite<T>& image, size_t width, size_t height) const {
-    (void) width;
-    (void) height;
-    return image.read();
+    return image.read(width, height);
   }
 
   template<typename T>
@@ -116,6 +114,16 @@ public:
       throw AcceleratorException("Cannot build an empty Buffer");
     }
     return Buffer<T>(length);
+  }
+
+  template<typename T>
+  void fill_buffer(Buffer<T>& buf, size_t length, const T& t) const {
+    buf.fill(length, t);
+  }
+
+  template<typename T>
+  std::vector<T> read_buffer(const Buffer<T>& buf, size_t length) const {
+    return buf.read(length);
   }
 
   template<typename T, typename... Args>
