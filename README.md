@@ -15,6 +15,7 @@
 * OpenMP
 
 ## Build and Run
+
 ```bash
 $ git clone --recurse-submodules https://github.com/wchang22/Nova.git
 $ cd Nova && mkdir build && cd build
@@ -22,3 +23,12 @@ $ cmake .. -DBACKEND=OpenCL # or cmake .. -DBACKEND=CUDA
 $ make
 $ ./nova
 ```
+
+## Docker (For OpenCL)
+
+```bash
+$ cd Nova
+$ docker build -t nova .
+$ docker run -it --rm -v $(pwd):/root/nova --device /dev/dri:/dev/dri nova
+```
+
