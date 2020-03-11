@@ -213,11 +213,8 @@ void kernel_interpolate(
   int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint4 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    int2 offset = neighbor_offsets[i];
-    int index = linear_index((int2)(
-      clamp(pixel_coords.x + offset.x, 0, (int) pixel_dims.x - 1),
-      clamp(pixel_coords.y + offset.y, 0, (int) pixel_dims.y - 1)
-    ), pixel_dims.x);
+    int index = linear_index(
+      clamp(pixel_coords + neighbor_offsets[i], 0, convert_int2(pixel_dims) - 1), pixel_dims.x);
     neighbors[i] = convert_uint4(pixels[index]);
   }
 
