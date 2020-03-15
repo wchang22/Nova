@@ -1,4 +1,3 @@
-#include <glm/gtx/extended_min_max.hpp>
 #include <functional>
 
 #include "triangle.h"
@@ -22,17 +21,6 @@ size_t TriangleHash::operator()(const Triangle& tri) const {
   }
 
   return hash;
-}
-
-AABB Triangle::get_bounds() const {
-  vec3 top = max(v1, v2, v3);
-  vec3 bottom = min(v1, v2, v3);
-
-  return { top, bottom };
-}
-
-bool Triangle::operator==(const Triangle& t) const {
-  return t.v1 == v1 && t.v2 == v2 && t.v3 == v3;
 }
 
 std::istream& operator>>(std::istream& in, Triangle& tri) {

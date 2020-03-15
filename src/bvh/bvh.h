@@ -35,7 +35,7 @@ public:
 private:
   struct SplitParams {
     float cost;
-    float split;
+    uint32_t split_index;
     int axis;
     AABB left;
     AABB right;
@@ -51,10 +51,22 @@ private:
     }
   };
 
+  struct Bin {
+    AABB bounds;
+    size_t num_triangles;
+  };
+
   std::unique_ptr<BVHNode> build_bvh();
+  void build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth);
+
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
-  void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);
   size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
+
+  SplitParams find_object_split(const std::unique_ptr<BVHNode>& node,
+                                int axis, const std::vector<Bin>& bins);
+  std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
+    split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
+               const std::vector<std::pair<AABB, uvec3>>& bound_centers);
 
   std::string name;
   std::vector<Triangle>& triangles;

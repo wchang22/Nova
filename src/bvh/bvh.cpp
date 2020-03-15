@@ -1,9 +1,11 @@
 #include <cassert>
 #include <filesystem>
+#include <algorithm>
 
 #include "bvh.h"
 #include "util/exception/exception.h"
 #include "util/serialization/serialization.h"
+#include "util/profiling/profiling.h"
 #include "constants.h"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
@@ -63,6 +65,7 @@ std::vector<FlatBVHNode> BVH::build() {
 }
 
 std::unique_ptr<BVHNode> BVH::build_bvh() {
+  PROFILE_SCOPE("Build BVH");
   auto root = std::make_unique<BVHNode>();
 
   root->triangles.reserve(triangles.size());
@@ -75,70 +78,43 @@ std::unique_ptr<BVHNode> BVH::build_bvh() {
   // Clear triangles, as they have all been moved out
   triangles.clear();
 
-  // Recursively build bvh
-  build_bvh_node(root, 0);
+  // Recursively build bvh in parallel
+  #pragma omp parallel
+  {
+    #pragma omp single
+    build_bvh_node(root, 0);
+    #pragma omp taskwait
+  }
   return root;
 }
 
-void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
-  if (node->triangles.size() <= MIN_TRIANGLES_PER_LEAF) {
-    return;
+BVH::SplitParams BVH::find_object_split(const std::unique_ptr<BVHNode>& node,
+                                        int axis, const std::vector<Bin>& bins) {
+  uint32_t num_bins = bins.size();
+  uint32_t num_splits = num_bins - 1;
+  uint32_t num_triangles = node->triangles.size();
+  SplitParams best_params = SplitParams::make_default();
+
+  // Build right split bounds incrementally from right to left
+  std::vector<AABB> right_bounds(num_bins);
+  right_bounds.back() = bins.back().bounds;
+  for (int32_t i = num_bins - 2; i >= 0; i--) {
+    right_bounds[i] = right_bounds[i + 1];
+    right_bounds[i].grow(bins[i].bounds);
   }
 
-  SplitParams best_params = SplitParams::make_default();
-  best_params.cost = node->get_cost();
+  // Build left split bounds incrementally from left to right, keeping track of best split
+  std::vector<AABB> left_bounds(num_bins);
+  left_bounds.front() = bins.front().bounds;
+  uint32_t left_num_triangles = bins.front().num_triangles;
 
-  // Find best axis to split
-  for (int axis = 0; axis < 3; axis++) {
-    const float bin_start = node->aabb.bottom[axis];
-    const float bin_end = node->aabb.top[axis];
+  for (uint32_t split_index = 0; split_index < num_splits; split_index++) {
+    uint32_t right_num_triangles = num_triangles - left_num_triangles;
+    const AABB& left = left_bounds[split_index];
 
-    // Don't want triangles to be concentrated on axis
-    if (abs(bin_end - bin_start) < 1e-4f) {
-      continue;
-    }
-
-    // Reduce number of bins according to depth
-    const int num_bins = MAX_BINS / (depth + 1);
-    const int num_splits = num_bins - 1;
-    const float bin_step = (bin_end - bin_start) / num_bins;
-
-    // Find best split (split with least total cost)
-    #pragma omp declare reduction \
-      (param_min:SplitParams:omp_out=omp_out.min(std::move(omp_in))) \
-      initializer(omp_priv=SplitParams::make_default())
-
-    #pragma omp parallel for default(none) \
-      shared(node, axis) \
-      reduction(param_min:best_params) \
-      schedule(dynamic)
-    for (int i = 0; i < num_splits; i++) {
-      float split = bin_start + (i + 1) * bin_step;
-
-      AABB left = AABB::make_no_intersection();
-      AABB right = AABB::make_no_intersection();
-
-      uint32_t left_num_triangles = 0;
-      uint32_t right_num_triangles = 0;
-
-      // Try putting each triangle in either the left or right node based on center
-      for (const auto& triangle : node->triangles) {
-        AABB bounds = triangle.get_bounds();
-        float center = bounds.get_center()[axis];
-
-        if (center < split) {
-          left.grow(bounds);
-          left_num_triangles++;
-        } else {
-          right.grow(bounds);
-          right_num_triangles++;
-        }
-      }
-
-      // Useless splits
-      if (left_num_triangles <= 1 || right_num_triangles <= 1) {
-        continue;
-      }
+    // Check not useless split
+    if (left_num_triangles > 2 && right_num_triangles > 2) {
+      const AABB& right = right_bounds[split_index];
 
       float left_cost = left.get_cost(left_num_triangles);
       float right_cost = right.get_cost(right_num_triangles);
@@ -146,7 +122,7 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
 
       best_params = best_params.min({
         total_cost,
-        split,
+        split_index,
         axis,
         left,
         right,
@@ -154,13 +130,19 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
         right_num_triangles,
       });
     }
+
+    // Build next left bound
+    left_bounds[split_index + 1] = left;
+    left_bounds[split_index + 1].grow(bins[split_index + 1].bounds);
+    left_num_triangles += bins[split_index + 1].num_triangles;
   }
 
-  // If no better split, this node is a leaf node
-  if (best_params.axis == -1) {
-    return;
-  }
+  return best_params;  
+}
 
+std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
+BVH::split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
+                const std::vector<std::pair<AABB, uvec3>>& bound_splits) {
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
@@ -169,10 +151,12 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
   left->triangles.reserve(best_params.left_num_triangles);
   right->triangles.reserve(best_params.right_num_triangles);
 
-  for (const auto& triangle : node->triangles) {
-    float center = triangle.get_bounds().get_center()[best_params.axis];
+  // Push triangle in left or right depending on center
+  for (size_t i = 0; i < node->triangles.size(); i++) {
+    const auto& triangle = node->triangles[i];
+    uint32_t split_index = bound_splits[i].second[best_params.axis];
 
-    if (center < best_params.split) {
+    if (split_index <= best_params.split_index) {
       left->triangles.emplace_back(std::move(triangle));
     } else {
       right->triangles.emplace_back(std::move(triangle));
@@ -181,9 +165,72 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
   // Clear triangles from parent
   node->triangles.clear();
 
+  return { std::move(left), std::move(right) };
+}
+
+void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
+  if (node->triangles.size() <= MIN_TRIANGLES_PER_LEAF) {
+    return;
+  }
+
+  SplitParams best_params = SplitParams::make_default();
+  best_params.cost = node->get_cost();
+
+  // Reduce number of bins according to depth
+  const uint32_t num_bins = static_cast<uint32_t>(MAX_BINS / (depth + 1));
+  if (num_bins <= 1) {
+    return;
+  }
+  const uint32_t num_splits = num_bins - 1;
+  const vec3 bin_start = node->aabb.bottom;
+  const vec3 bin_end = node->aabb.top;
+  const vec3 bin_step = (bin_end - bin_start) / static_cast<float>(num_bins);
+  const vec3 inv_bin_step = 1.0f / bin_step;
+
+  // Precompute triangle bounds and split indices
+  std::vector<std::pair<AABB, uvec3>> bound_splits;
+  std::transform(node->triangles.cbegin(), node->triangles.cend(),
+                  std::back_inserter(bound_splits), [&](const auto& tri) {
+    AABB bounds = tri.get_bounds();
+    vec3 center = bounds.get_center();
+    uvec3 split_index = min(static_cast<uvec3>((center - bin_start) * inv_bin_step), num_splits);
+    return std::make_pair(bounds, split_index);
+  });
+
+  // Find best axis to split
+  for (int axis = 0; axis < 3; axis++) {
+    // Don't want triangles to be concentrated on axis
+    if (abs(bin_end[axis] - bin_start[axis]) < 1e-4f) {
+      continue;
+    }
+
+    // Create bins of AABBs of triangles
+    std::vector<Bin> bins(num_bins, { AABB::make_no_intersection(), 0 });
+
+    // Loop through triangles and put them in bins
+    for (const auto& [bounds, split_index] : bound_splits) {
+      auto& [bin_bounds, num_triangles] = bins[split_index[axis]];
+      bin_bounds.grow(bounds);
+      num_triangles++;
+    }
+
+    // Find best object split in current axis
+    best_params = best_params.min(find_object_split(node, axis, bins));
+  }
+
+  // If no better split, this node is a leaf node
+  if (best_params.axis == -1) {
+    return;
+  }
+
+  auto [left, right] = split_node(node, std::move(best_params), bound_splits);
+
   // Recursively build left and right nodes
+  #pragma omp task default(none) shared(left)
   build_bvh_node(left, depth + 1);
+  #pragma omp task default(none) shared(right)
   build_bvh_node(right, depth + 1);
+  #pragma omp taskwait
 
   node->left = std::move(left);
   node->right = std::move(right);
@@ -222,7 +269,7 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
                      std::make_move_iterator(node->triangles.end()));
     node->triangles.clear();
   } else { // Inner node
-    assert(node->left || node->right);
+    assert(node->left && node->right);
 
     // Recursively build left and right nodes and attach to parent
     w(flat_nodes[flat_node_index].top_offset_left) = build_flat_bvh_vec(flat_nodes, node->left);

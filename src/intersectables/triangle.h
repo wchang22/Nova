@@ -2,6 +2,7 @@
 #define TRIANGLE_H
 
 #include <glm/glm.hpp>
+#include <glm/gtx/extended_min_max.hpp>
 #include <fstream>
 
 #include "intersectables/aabb.h"
@@ -14,8 +15,16 @@ struct Triangle {
   vec3 v2;
   vec3 v3;
 
-  AABB get_bounds() const;
-  bool operator==(const Triangle& t) const;
+  inline AABB get_bounds() const {
+    vec3 top = max(v1, v2, v3);
+    vec3 bottom = min(v1, v2, v3);
+
+    return { top, bottom };
+  }
+
+  inline bool operator==(const Triangle& t) const {
+    return t.v1 == v1 && t.v2 == v2 && t.v3 == v3;
+  }
 };
 
 struct TriangleHash {
