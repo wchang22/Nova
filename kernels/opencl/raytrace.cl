@@ -37,29 +37,17 @@ bool find_intersection(
       // Inner node, no triangles
       if (node.bottom_num_right.w >= 0) {
         // Traverse left and right children
-        uint left = node.top_offset_left.w;
-        uint right = node.bottom_num_right.w;
-
-        if (!left && !right) {
-          node_index = stack[node_ptr--];
-        } else {
-          node_index = left ? left : right;
-          if (left && right) {
-            stack[++node_ptr] = right;
-          }
-        }
+        node_index = node.top_offset_left.w;
+        stack[++node_ptr] = node.bottom_num_right.w;
       }
       // Leaf node, no children
       else {
         uint offset = node.top_offset_left.w;
         uint num = -node.bottom_num_right.w;
 
-        // Pack offset and num into a single uint to save memory
-        uint packed_triangle_data = (offset & TRIANGLE_OFFSET_MASK) | (num << TRIANGLE_NUM_SHIFT);
-
-        // Push list of triangles to stack back
-        stack[--tri_ptr] = packed_triangle_data;
-
+        // Pack offset and num into a single uint to save memory and push to stack back
+        stack[--tri_ptr] = (offset & TRIANGLE_OFFSET_MASK) | (num << TRIANGLE_NUM_SHIFT);
+        // Pop node off stack
         node_index = stack[node_ptr--];
       }
       // Make sure tri_ptr and node_ptr do not collide
