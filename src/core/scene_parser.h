@@ -4,25 +4,23 @@
 #include <toml.hpp>
 #include <glm/glm.hpp>
 
-using namespace glm;
-
 struct CameraSettings {
-  vec3 position;
-  vec3 forward;
-  vec3 up;
+  glm::vec3 position;
+  glm::vec3 forward;
+  glm::vec3 up;
   float fovy;
 };
 
 struct ShadingDefaultSettings {
-  vec3 diffuse;
+  glm::vec3 diffuse;
   float metallic;
   float roughness;
   float ambient_occlusion;
 };
 
 struct LightSettings {
-  vec3 position;
-  vec3 intensity;
+  glm::vec3 position;
+  glm::vec3 intensity;
 };
 
 class SceneParser {

@@ -142,7 +142,7 @@ BVH::SplitParams BVH::find_object_split(const std::unique_ptr<BVHNode>& node,
 
 std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
 BVH::split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
-                const std::vector<std::pair<AABB, uvec3>>& bound_splits) {
+                const std::vector<std::pair<AABB, glm::uvec3>>& bound_splits) {
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
   auto right = std::make_unique<BVHNode>();
@@ -182,18 +182,18 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
     return;
   }
   const uint32_t num_splits = num_bins - 1;
-  const vec3 bin_start = node->aabb.bottom;
-  const vec3 bin_end = node->aabb.top;
-  const vec3 bin_step = (bin_end - bin_start) / static_cast<float>(num_bins);
-  const vec3 inv_bin_step = 1.0f / bin_step;
+  const glm::vec3 bin_start = node->aabb.bottom;
+  const glm::vec3 bin_end = node->aabb.top;
+  const glm::vec3 bin_step = (bin_end - bin_start) / static_cast<float>(num_bins);
+  const glm::vec3 inv_bin_step = 1.0f / bin_step;
 
   // Precompute triangle bounds and split indices
-  std::vector<std::pair<AABB, uvec3>> bound_splits;
+  std::vector<std::pair<AABB, glm::uvec3>> bound_splits;
   std::transform(node->triangles.cbegin(), node->triangles.cend(),
                   std::back_inserter(bound_splits), [&](const auto& tri) {
     AABB bounds = tri.get_bounds();
-    vec3 center = bounds.get_center();
-    uvec3 split_index = min(static_cast<uvec3>((center - bin_start) * inv_bin_step), num_splits);
+    glm::vec3 center = bounds.get_center();
+    glm::uvec3 split_index = min(static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
     return std::make_pair(bounds, split_index);
   });
 

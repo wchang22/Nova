@@ -12,7 +12,7 @@ inline void hash_combine(size_t& s, const T & v)
 
 size_t TriangleHash::operator()(const Triangle& tri) const {
   size_t hash = 0;
-  const vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
+  const glm::vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
 
   for (int v = 0; v < 3; v++) {
     for (int i = 0; i < 3; i++) {
@@ -25,7 +25,7 @@ size_t TriangleHash::operator()(const Triangle& tri) const {
 
 std::istream& operator>>(std::istream& in, Triangle& tri) {
   in >> std::hex;
-  vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
+  glm::vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
 
   for (int v = 0; v < 3; v++) {
     for (int i = 0; i < 3; i++) {
@@ -40,7 +40,7 @@ std::istream& operator>>(std::istream& in, Triangle& tri) {
 
 std::ostream& operator<<(std::ostream& out, const Triangle& tri) {
   out << std::hex;
-  const vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
+  const glm::vec3* vertices[] = { &tri.v1, &tri.v2, &tri.v3 };
 
   for (int v = 0; v < 3; v++) {
     for (int i = 0; i < 3; i++) {

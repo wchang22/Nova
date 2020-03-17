@@ -34,18 +34,18 @@ IntersectableData IntersectableManager::build() {
 
   for (const auto& tri : triangles) {
     const auto& [v1, v2, v3] = tri;
-    vec3 e1 = v2 - v1;
-    vec3 e2 = v3 - v1;
-    vec3 normal = normalize(cross(e1, e2));
+    glm::vec3 e1 = v2 - v1;
+    glm::vec3 e2 = v3 - v1;
+    glm::vec3 normal = normalize(cross(e1, e2));
 
     // Create woop transformation matrix to transform ray to unit triangle space
     // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
-    mat4 transform;
-    transform[0] = vec4(e1, 0);
-    transform[1] = vec4(e2, 0);
-    transform[2] = vec4(normal - v1, 0);
-    transform[3] = vec4(v1, 1);
-    transform = inverse(transform);
+    glm::mat4 transform;
+    transform[0] = glm::vec4(e1, 0);
+    transform[1] = glm::vec4(e2, 0);
+    transform[2] = glm::vec4(normal - v1, 0);
+    transform[3] = glm::vec4(v1, 1);
+    transform = glm::inverse(transform);
 
     triangle_data.push_back({{
       { transform[0][0], transform[1][0], transform[2][0], transform[3][0] },

@@ -6,8 +6,6 @@
 #include <assimp/postprocess.h>
 #include <cassert>
 
-using namespace glm;
-
 Model::Model(const std::string& path, MaterialLoader& material_loader)
   : material_loader(material_loader)
 {
@@ -46,8 +44,8 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
   bool has_textures = mesh->mTextureCoords[0];
   bool has_tangents = mesh->mTangents;
 
-  std::vector<vec3> vertices, normals, tangents, bitangents;
-  std::vector<vec2> textures;
+  std::vector<glm::vec3> vertices, normals, tangents, bitangents;
+  std::vector<glm::vec2> textures;
   vertices.reserve(mesh->mNumVertices);
   normals.reserve(mesh->mNumVertices);
   if (has_textures) {
@@ -91,9 +89,9 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     aiFace face = mesh->mFaces[i];
     assert(face.mNumIndices == 3);
 
-    vec3& v1 = vertices[face.mIndices[0]];
-    vec3& v2 = vertices[face.mIndices[1]];
-    vec3& v3 = vertices[face.mIndices[2]];
+    glm::vec3& v1 = vertices[face.mIndices[0]];
+    glm::vec3& v2 = vertices[face.mIndices[1]];
+    glm::vec3& v3 = vertices[face.mIndices[2]];
 
     float lengths[] = { distance(v1, v2), distance(v2, v3), distance(v1, v3) };
     std::sort(lengths, lengths + 3);
@@ -103,23 +101,23 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
       continue;
     }
 
-    vec3 n1 = normalize(normals[face.mIndices[0]]);
-    vec3 n2 = normalize(normals[face.mIndices[1]]);
-    vec3 n3 = normalize(normals[face.mIndices[2]]);
-    vec3 tan1 = has_tangents ? tangents[face.mIndices[0]] : vec3(0);
-    vec3 tan2 = has_tangents ? tangents[face.mIndices[1]] : vec3(0);
-    vec3 tan3 = has_tangents ? tangents[face.mIndices[2]] : vec3(0);
-    vec3 bit1 = has_tangents ? bitangents[face.mIndices[0]] : vec3(0);
-    vec3 bit2 = has_tangents ? bitangents[face.mIndices[1]] : vec3(0);
-    vec3 bit3 = has_tangents ? bitangents[face.mIndices[2]] : vec3(0);
-    vec2 t1 = has_textures ? textures[face.mIndices[0]] : vec2(0);
-    vec2 t2 = has_textures ? textures[face.mIndices[1]] : vec2(0);
-    vec2 t3 = has_textures ? textures[face.mIndices[2]] : vec2(0);
+    glm::vec3 n1 = normalize(normals[face.mIndices[0]]);
+    glm::vec3 n2 = normalize(normals[face.mIndices[1]]);
+    glm::vec3 n3 = normalize(normals[face.mIndices[2]]);
+    glm::vec3 tan1 = has_tangents ? tangents[face.mIndices[0]] : glm::vec3(0);
+    glm::vec3 tan2 = has_tangents ? tangents[face.mIndices[1]] : glm::vec3(0);
+    glm::vec3 tan3 = has_tangents ? tangents[face.mIndices[2]] : glm::vec3(0);
+    glm::vec3 bit1 = has_tangents ? bitangents[face.mIndices[0]] : glm::vec3(0);
+    glm::vec3 bit2 = has_tangents ? bitangents[face.mIndices[1]] : glm::vec3(0);
+    glm::vec3 bit3 = has_tangents ? bitangents[face.mIndices[2]] : glm::vec3(0);
+    glm::vec2 t1 = has_textures ? textures[face.mIndices[0]] : glm::vec2(0);
+    glm::vec2 t2 = has_textures ? textures[face.mIndices[1]] : glm::vec2(0);
+    glm::vec2 t3 = has_textures ? textures[face.mIndices[2]] : glm::vec2(0);
 
     // Fixes models with symmetric uv coordinates
-    vec3 fixed_bit1 = cross(n1, tan1);
-    vec3 fixed_bit2 = cross(n2, tan2);
-    vec3 fixed_bit3 = cross(n3, tan3);
+    glm::vec3 fixed_bit1 = cross(n1, tan1);
+    glm::vec3 fixed_bit2 = cross(n2, tan2);
+    glm::vec3 fixed_bit3 = cross(n3, tan3);
     if (dot(fixed_bit1, bit1) < 0.0) {
       fixed_bit1 *= -1.0f;
     }

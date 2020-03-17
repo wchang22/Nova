@@ -11,8 +11,6 @@
 #include "intersectables/aabb.h"
 #include "kernel_types/bvh_node.h"
 
-using namespace glm;
-
 struct BVHNode {
   AABB aabb;
   std::vector<Triangle> triangles;
@@ -66,7 +64,7 @@ private:
                                 int axis, const std::vector<Bin>& bins);
   std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
     split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
-               const std::vector<std::pair<AABB, uvec3>>& bound_centers);
+               const std::vector<std::pair<AABB, glm::uvec3>>& bound_centers);
 
   std::string name;
   std::vector<Triangle>& triangles;

@@ -4,15 +4,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/vec_swizzle.hpp>
 
-using namespace glm;
-
 // Axis-aligned bounding box
 struct AABB {
-  vec3 top;
-  vec3 bottom;
+  glm::vec3 top;
+  glm::vec3 bottom;
 
   inline float get_surface_area() const {
-    vec3 dims = top - bottom;
+    glm::vec3 dims = top - bottom;
     return dot(xyz(dims), yzx(dims)) * 2;
   }
 
@@ -20,7 +18,7 @@ struct AABB {
     return get_surface_area() * num_triangles;
   }
 
-  inline vec3 get_center() const {
+  inline glm::vec3 get_center() const {
     return (top + bottom) / 2.0f;
   }
 
@@ -39,7 +37,7 @@ struct AABB {
   }
 
   inline static AABB make_no_intersection() {
-    static vec3 vec_max(std::numeric_limits<float>::max());
+    static glm::vec3 vec_max(std::numeric_limits<float>::max());
     return { -vec_max, vec_max };
   }
 };

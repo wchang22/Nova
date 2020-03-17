@@ -5,8 +5,6 @@
 #include <string>
 #include <glm/glm.hpp>
 
-using namespace glm;
-
 class BuildArgs {
 public:
   void add_flag(const std::string& flag) {
@@ -22,7 +20,7 @@ public:
     build_args << "-D" << key << "=" << value << " ";
   }
 
-  void add_define(const std::string& key, const vec3& value) {
+  void add_define(const std::string& key, const glm::vec3& value) {
     build_args << "-D" << key
                << "=(float3)(" << value.x << "," << value.y << "," << value.z << ") ";
   }
