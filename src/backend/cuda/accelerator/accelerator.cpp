@@ -1,5 +1,5 @@
-#include "accelerator.h"
-#include "constants.h"
+#include "accelerator.hpp"
+#include "constants.hpp"
 
 Accelerator::Accelerator(const SceneParser& scene_parser)
 {

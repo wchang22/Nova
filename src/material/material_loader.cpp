@@ -1,7 +1,7 @@
 #include <numeric>
 #include <stb_image.h>
 
-#include "material_loader.h"
+#include "material_loader.hpp"
 
 MaterialLoader::MaterialLoader() {
   stbi_set_flip_vertically_on_load(true);

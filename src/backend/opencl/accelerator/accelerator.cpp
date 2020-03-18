@@ -1,9 +1,9 @@
-#include "accelerator.h"
-#include "util/file/fileutils.h"
-#include "util/exception/exception.h"
-#include "backend/opencl/utils/build_args.h"
-#include "backend/opencl/entry.h"
-#include "constants.h"
+#include "accelerator.hpp"
+#include "util/file/fileutils.hpp"
+#include "util/exception/exception.hpp"
+#include "backend/opencl/utils/build_args.hpp"
+#include "backend/opencl/entry.hpp"
+#include "constants.hpp"
 
 Accelerator::Accelerator(const SceneParser& scene_parser)
   : context(CL_DEVICE_TYPE_GPU)

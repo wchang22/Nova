@@ -1,5 +1,5 @@
-#include "model.h"
-#include "util/exception/exception.h"
+#include "model.hpp"
+#include "util/exception/exception.hpp"
 
 #include <glm/glm.hpp>
 #include <assimp/Importer.hpp>

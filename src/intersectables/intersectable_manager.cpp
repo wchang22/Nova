@@ -1,7 +1,7 @@
-#include "intersectable_manager.h"
-#include "bvh/bvh.h"
-#include "util/exception/exception.h"
-#include "constants.h"
+#include "intersectable_manager.hpp"
+#include "bvh/bvh.hpp"
+#include "util/exception/exception.hpp"
+#include "constants.hpp"
 
 IntersectableManager::IntersectableManager(const std::string& name) : name(name) {}
 

@@ -1,4 +1,4 @@
-#include "exception.h"
+#include "exception.hpp"
 
 GENERATE_EXCEPTION_IMPL(FileException)
 GENERATE_EXCEPTION_IMPL(LoggingException)

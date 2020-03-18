@@ -1,8 +1,8 @@
-#include "raytracer.h"
-#include "util/image/imageutils.h"
-#include "util/profiling/profiling.h"
-#include "model/model.h"
-#include "constants.h"
+#include "raytracer.hpp"
+#include "util/image/imageutils.hpp"
+#include "util/profiling/profiling.hpp"
+#include "model/model.hpp"
+#include "constants.hpp"
 
 REGISTER_KERNEL(kernel_raytrace)
 REGISTER_KERNEL(kernel_interpolate)

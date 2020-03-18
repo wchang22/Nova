@@ -1,5 +1,5 @@
-#include "timetree.h"
-#include "util/logging/logging.h"
+#include "timetree.hpp"
+#include "util/logging/logging.hpp"
 
 #include <sstream>
 #include <numeric>

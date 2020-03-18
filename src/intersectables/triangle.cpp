@@ -1,6 +1,6 @@
 #include <functional>
 
-#include "triangle.h"
+#include "triangle.hpp"
 
 // https://stackoverflow.com/questions/19195183/how-to-properly-hash-the-custom-struct
 template <class T>

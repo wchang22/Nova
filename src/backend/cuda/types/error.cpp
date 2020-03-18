@@ -1,4 +1,4 @@
-#include "error.h"
+#include "error.hpp"
 
 Error::Error(cudaError_t error)
   : std::runtime_error(cudaGetErrorName(error)),

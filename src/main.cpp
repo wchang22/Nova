@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "core/raytracer.h"
-#include "backend/types.h"
+#include "core/raytracer.hpp"
+#include "backend/types.hpp"
 
 int main() {
   try {

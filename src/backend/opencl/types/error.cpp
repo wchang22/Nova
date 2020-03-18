@@ -1,4 +1,4 @@
-#include "error.h"
+#include "error.hpp"
 
 const char* get_error_string(cl_int error) {
   switch(error) {

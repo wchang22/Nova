@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "intersectables/aabb.h"
+#include "intersectables/aabb.hpp"
 
 TEST_CASE("AABB surface area", "[aabb]") {
   AABB aabb1 {

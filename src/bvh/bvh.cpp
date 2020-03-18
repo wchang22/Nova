@@ -2,11 +2,11 @@
 #include <filesystem>
 #include <algorithm>
 
-#include "bvh.h"
-#include "util/exception/exception.h"
-#include "util/serialization/serialization.h"
-#include "util/profiling/profiling.h"
-#include "constants.h"
+#include "bvh.hpp"
+#include "util/exception/exception.hpp"
+#include "util/serialization/serialization.hpp"
+#include "util/profiling/profiling.hpp"
+#include "constants.hpp"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 

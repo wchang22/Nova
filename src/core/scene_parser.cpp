@@ -1,5 +1,5 @@
-#include "scene_parser.h"
-#include "constants.h"
+#include "scene_parser.hpp"
+#include "constants.hpp"
 
 SceneParser::SceneParser() : parsed_data(toml::parse(SCENE_PATH)) {}
 

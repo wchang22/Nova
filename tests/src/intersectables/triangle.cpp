@@ -1,7 +1,7 @@
 #include <catch.hpp>
 #include <sstream>
 
-#include "intersectables/triangle.h"
+#include "intersectables/triangle.hpp"
 
 TEST_CASE("Triangle bounds", "[triangle]") {
   Triangle t1 { 

@@ -1,6 +1,6 @@
-#include "logging.h"
+#include "logging.hpp"
 
-#include "util/exception/exception.h"
+#include "util/exception/exception.hpp"
 
 #include <filesystem>
 

@@ -1,5 +1,5 @@
-#include "imageutils.h"
-#include "util/exception/exception.h"
+#include "imageutils.hpp"
+#include "util/exception/exception.hpp"
 
 #include <stdexcept>
 

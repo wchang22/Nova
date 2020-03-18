@@ -1,11 +1,11 @@
-#include "raytrace.h"
-#include "constants.h"
+#include "raytrace.hpp"
+#include "constants.hpp"
 #include "vector_math.h"
-#include "intersection.h"
-#include "texture.h"
-#include "transforms.h"
-#include "types.h"
-#include "backend/cuda/types/types.h"
+#include "intersection.hpp"
+#include "texture.hpp"
+#include "transforms.hpp"
+#include "types.hpp"
+#include "backend/cuda/types/types.hpp"
 
 __device__
 bool find_intersection(

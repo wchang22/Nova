@@ -1,5 +1,5 @@
-#include "timescope.h"
-#include "util/profiling/timetree.h"
+#include "timescope.hpp"
+#include "util/profiling/timetree.hpp"
 
 namespace Profiling {
   using namespace std::chrono;
