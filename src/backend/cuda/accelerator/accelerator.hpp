@@ -5,6 +5,7 @@
 
 #include "core/scene_parser.hpp"
 #include "backend/common/types/types.hpp"
+#include "backend/common/utils/utils.hpp"
 #include "backend/cuda/types/types.hpp"
 #include "backend/cuda/entry.hpp"
 #include "util/exception/exception.hpp"
@@ -20,7 +21,8 @@ public:
   }
 
   template<typename Kernel, typename... Args>
-  void call_kernel(const Kernel& kernel, uint3 global_dims, uint3 local_dims, Args&&... args) {
+  void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
+    align_dims(global_dims, local_dims);
     kernel(global_dims, local_dims, kernel_constants, std::forward<Args>(args).data()...);
     CUDA_CHECK(cudaPeekAtLastError())
     CUDA_CHECK(cudaDeviceSynchronize())

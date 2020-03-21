@@ -15,6 +15,7 @@
 
 #include "core/scene_parser.hpp"
 #include "backend/common/types/types.hpp"
+#include "backend/common/utils/utils.hpp"
 #include "backend/opencl/types/types.hpp"
 #include "backend/opencl/utils/kernel.hpp"
 #include "backend/opencl/utils/compatibility.hpp"
@@ -27,17 +28,8 @@ public:
   Accelerator(const SceneParser& scene_parser);
   void add_kernel(const std::string& kernel_name);
 
-  void align_dims(uint3& global_dims, const uint3& local_dims) {
-    for (uint32_t i = 0; i < 3; i++) {
-      uint32_t r = global_dims.s[i] % local_dims.s[i];
-      if (r != 0) {
-        global_dims.s[i] += local_dims.s[i] - r;
-      }
-    }
-  }
-
   template<typename... Args>
-  void call_kernel(const std::string& kernel_name, uint3 global_dims, uint3 local_dims, 
+  void call_kernel(const std::string& kernel_name, uint2 global_dims, uint2 local_dims, 
                    Args&&... args) {
     const auto& kernel_it = kernel_map.find(kernel_name);
     if (kernel_it == kernel_map.end()) {
@@ -48,8 +40,8 @@ public:
 
     kernel_utils::set_args(kernel_it->second, std::forward<Args>(args).data()...);
     queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange,
-                               cl::NDRange(global_dims.s[0], global_dims.s[1], global_dims.s[2]),
-                               cl::NDRange(local_dims.s[0], local_dims.s[1], local_dims.s[2]));
+                               cl::NDRange(global_dims.s[0], global_dims.s[1], 1),
+                               cl::NDRange(local_dims.s[0], local_dims.s[1], 1));
     queue.finish();
   }
   

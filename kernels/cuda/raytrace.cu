@@ -267,8 +267,8 @@ void fill_remaining(
 }
 
 void kernel_raytrace(
-  uint3 global_dims,
-  uint3 local_dims,
+  uint2 global_dims,
+  uint2 local_dims,
   const KernelConstants& kernel_constants,
   uchar4* pixels,
   uint2 pixel_dims,
@@ -278,7 +278,7 @@ void kernel_raytrace(
   FlatBVHNode* bvh,
   cudaTextureObject_t materials
 ) {
-  dim3 block_size { local_dims.x, local_dims.y, local_dims.z };
+  dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
@@ -286,8 +286,8 @@ void kernel_raytrace(
 }
 
 void kernel_interpolate(
-  uint3 global_dims,
-  uint3 local_dims,
+  uint2 global_dims,
+  uint2 local_dims,
   const KernelConstants& kernel_constants,
   uchar4* pixels,
   uint2 pixel_dims,
@@ -299,7 +299,7 @@ void kernel_interpolate(
   uint* rem_pixels_counter,
   uint2* rem_coords
 ) {
-  dim3 block_size { local_dims.x, local_dims.y, local_dims.z };
+  dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
@@ -308,8 +308,8 @@ void kernel_interpolate(
 }
 
 void kernel_fill_remaining(
-  uint3 global_dims,
-  uint3 local_dims,
+  uint2 global_dims,
+  uint2 local_dims,
   const KernelConstants& kernel_constants,
   uchar4* pixels,
   uint2 pixel_dims,
@@ -321,7 +321,7 @@ void kernel_fill_remaining(
   uint* rem_pixels_counter,
   uint2* rem_coords
 ) {
-  dim3 block_size { local_dims.x, local_dims.y, local_dims.z };
+  dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
                                 sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));

@@ -6,8 +6,8 @@
 #include "kernel_types/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
 
-void kernel_raytrace(uint3 global_dims,
-                     uint3 local_dims,
+void kernel_raytrace(uint2 global_dims,
+                     uint2 local_dims,
                      const KernelConstants& kernel_constants,
                      uchar4* pixels,
                      uint2 pixel_dims,
@@ -17,8 +17,8 @@ void kernel_raytrace(uint3 global_dims,
                      FlatBVHNode* bvh,
                      cudaTextureObject_t materials);
 
-void kernel_interpolate(uint3 global_dims,
-                        uint3 local_dims,
+void kernel_interpolate(uint2 global_dims,
+                        uint2 local_dims,
                         const KernelConstants& kernel_constants,
                         uchar4* pixels,
                         uint2 pixel_dims,
@@ -30,8 +30,8 @@ void kernel_interpolate(uint3 global_dims,
                         uint* rem_pixels_counter,
                         uint2* rem_coords);
 
-void kernel_fill_remaining(uint3 global_dims,
-                           uint3 local_dims,
+void kernel_fill_remaining(uint2 global_dims,
+                           uint2 local_dims,
                            const KernelConstants& kernel_constants,
                            uchar4* pixels,
                            uint2 pixel_dims,

@@ -61,8 +61,8 @@ void Raytracer::raytrace() {
     accelerator.write_buffer(rem_pixels_buf, 0U);
     {
       PROFILE_SECTION_START("Raytrace kernel");
-      uint3 global_dims { width, height / 2, 1 };
-      uint3 local_dims { 8, 4, 1 };
+      uint2 global_dims { width, height / 2 };
+      uint2 local_dims { 8, 4 };
       accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
                               pixel_buf, pixel_dims_wrapper, ec,
                               triangle_buf, tri_meta_buf, bvh_buf, material_ims);
@@ -78,8 +78,8 @@ void Raytracer::raytrace() {
     {
       PROFILE_SECTION_START("Fill remaining kernel");
       uint32_t counter = accelerator.read_buffer(rem_pixels_buf);
-      uint3 global_dims { counter, 1, 1 };
-      uint3 local_dims { 32, 1, 1 };
+      uint2 global_dims { counter, 1 };
+      uint2 local_dims { 32, 1 };
       accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
                               pixel_buf, pixel_dims_wrapper, ec,
                               triangle_buf, tri_meta_buf, bvh_buf, material_ims,
