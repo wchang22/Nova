@@ -36,7 +36,7 @@ void Raytracer::raytrace() {
   auto triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
   auto tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
   auto bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
-  auto rem_coords_buf = accelerator.create_buffer<int2>(MemFlags::READ_WRITE, width * height / 2);
+  auto rem_coords_buf = accelerator.create_buffer<uint2>(MemFlags::READ_WRITE, width * height / 2);
   auto rem_pixels_buf = accelerator.create_buffer<uint32_t>(MemFlags::READ_WRITE, 0U);
 
   MaterialData material_data = material_loader.build();

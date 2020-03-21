@@ -28,10 +28,24 @@ public:
     CUDA_CHECK(cudaMemcpy(buffer, buf.data(), length * sizeof(T), cudaMemcpyHostToDevice))
   }
 
+  void write(const std::vector<T>& v) {
+    CUDA_CHECK(cudaMemcpy(buffer, v.data(), v.size() * sizeof(T), cudaMemcpyHostToDevice))
+  }
+
+  void write(const T& t) {
+    CUDA_CHECK(cudaMemcpy(buffer, &t, sizeof(T), cudaMemcpyHostToDevice))
+  }
+
   std::vector<T> read(size_t length) const {
     std::vector<T> buf(length);
     CUDA_CHECK(cudaMemcpy(buf.data(), buffer, length * sizeof(T), cudaMemcpyDeviceToHost))
     return buf;
+  }
+
+  T read() const {
+    T t;
+    CUDA_CHECK(cudaMemcpy(&t, buffer, sizeof(T), cudaMemcpyDeviceToHost))
+    return t;
   }
 
   T*& data() { return buffer; };
