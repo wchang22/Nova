@@ -73,7 +73,7 @@ bool find_intersection(
 }
 
 float3 trace_ray(
-  int2 pixel_coords,
+  uint2 pixel_coords,
   EyeCoords ec,
   global Triangle* triangles,
   global TriangleMeta* tri_meta,
@@ -175,12 +175,15 @@ void kernel_raytrace(
   global BVHNode* bvh,
   read_only image2d_array_t materials
 ) {
-  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
+    return;
+  }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
 
-  int pixel_index = linear_index(pixel_coords, pixel_dims.x);
+  int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
 }
 
@@ -192,17 +195,22 @@ void kernel_interpolate(
   global Triangle* triangles,
   global TriangleMeta* tri_meta,
   global BVHNode* bvh,
-  read_only image2d_array_t materials
+  read_only image2d_array_t materials,
+  global uint* rem_pixels_counter,
+  global uint2* rem_coords
 ) {
-  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
+    return;
+  }
   pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
 
   // Sample 4 neighbours
-  int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
+  const int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint4 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    int index = linear_index(
-      clamp(pixel_coords + neighbor_offsets[i], 0, convert_int2(pixel_dims) - 1), pixel_dims.x);
+    int index = linear_index(clamp(convert_int2(pixel_coords) + neighbor_offsets[i],
+                             0, convert_int2(pixel_dims) - 1), pixel_dims.x);
     neighbors[i] = convert_uint4(pixels[index]);
   }
 
@@ -211,17 +219,38 @@ void kernel_interpolate(
   uint4 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
   float3 color_range = convert_float4(color_max - color_min).xyz / 255.0f;
 
-  uchar4 color;
-  // If difference is large, raytrace to find color
+  // If difference is large, store coords to raytrace later
   if (length(color_range) > INTERP_THRESHOLD) {
-    float3 rt_color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
-    color = convert_uchar4((float4)(rt_color, 1.0f) * 255.0f);
+    rem_coords[atomic_inc(rem_pixels_counter)] = pixel_coords;
   }
   // Otherwise, interpolate
   else {
-    color = convert_uchar4((neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4);
+    int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
+    uchar4 color = convert_uchar4((neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4);
+    pixels[pixel_index] = color;
   }
-  
-  int pixel_index = linear_index(pixel_coords, pixel_dims.x);
-  pixels[pixel_index] = color;
+}
+
+kernel
+void kernel_fill_remaining(
+  global uchar4* pixels,
+  uint2 pixel_dims,
+  EyeCoords ec,
+  global Triangle* triangles,
+  global TriangleMeta* tri_meta,
+  global BVHNode* bvh,
+  read_only image2d_array_t materials,
+  global uint* rem_pixels_counter,
+  global uint2* rem_coords
+) {
+  uint id = get_global_id(0);
+  if (id >= *rem_pixels_counter) {
+    return;
+  }
+  uint2 pixel_coords = rem_coords[id];
+
+  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+
+  int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
+  pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
 }

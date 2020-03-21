@@ -15,6 +15,7 @@
 
 #include "core/scene_parser.hpp"
 #include "backend/common/types/types.hpp"
+#include "backend/common/utils/utils.hpp"
 #include "backend/opencl/types/types.hpp"
 #include "backend/opencl/utils/kernel.hpp"
 #include "backend/opencl/utils/compatibility.hpp"
@@ -28,17 +29,19 @@ public:
   void add_kernel(const std::string& kernel_name);
 
   template<typename... Args>
-  void call_kernel(const std::string& kernel_name, uint3 global_dims, Args&&... args) {
+  void call_kernel(const std::string& kernel_name, uint2 global_dims, uint2 local_dims, 
+                   Args&&... args) {
     const auto& kernel_it = kernel_map.find(kernel_name);
     if (kernel_it == kernel_map.end()) {
       throw KernelException("No kernel called " + kernel_name);
     }
 
+    align_dims(global_dims, local_dims);
+
     kernel_utils::set_args(kernel_it->second, std::forward<Args>(args).data()...);
     queue.enqueueNDRangeKernel(kernel_it->second, cl::NullRange,
-                               cl::NDRange(global_dims.s[0], global_dims.s[1], global_dims.s[2]),
-                               cl::NullRange);
-    
+                               cl::NDRange(global_dims.s[0], global_dims.s[1], 1),
+                               cl::NDRange(local_dims.s[0], local_dims.s[1], 1));
     queue.finish();
   }
   
@@ -116,7 +119,7 @@ public:
   }
 
   template<typename T>
-  std::vector<T> read_image(const Image2DWrite<T>& image, size_t width, size_t height) const {
+  std::vector<T> read_image2D(const Image2DWrite<T>& image, size_t width, size_t height) const {
     std::vector<T> image_buf(width * height);
     queue.enqueueReadImage(image.data(), true,
                            compat_utils::create_size_t<3>({ 0, 0, 0 }),
@@ -133,12 +136,6 @@ public:
                            compat_utils::create_size_t<3>({ 0, 0, 0 }),
                            compat_utils::create_size_t<3>({ width, height, 1 }));
     queue.finish();
-  }
-
-  template<typename T>
-  Buffer<T> create_buffer(MemFlags mem_flags, T& data) const {
-    return Buffer<T>(context, static_cast<cl_mem_flags>(mem_flags) | CL_MEM_COPY_HOST_PTR,
-                     sizeof(T), &data);
   }
 
   template<typename T>
@@ -159,9 +156,25 @@ public:
   }
 
   template<typename T>
+  Buffer<T> create_buffer(MemFlags mem_flags, T data) const {
+    return Buffer<T>(context, static_cast<cl_mem_flags>(mem_flags) | CL_MEM_COPY_HOST_PTR,
+                     sizeof(T), &data);
+  }
+
+  template<typename T>
   void fill_buffer(Buffer<T>& buf, size_t length, const T& t) const {
     queue.enqueueFillBuffer(buf.data(), t, 0, sizeof(T) * length);
     queue.finish();
+  }
+
+  template<typename T>
+  void write_buffer(Buffer<T>& buf, const std::vector<T>& v) const {
+    queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T) * v.size(), v.data());
+  }
+
+  template<typename T>
+  void write_buffer(Buffer<T>& buf, const T& t) const {
+    queue.enqueueWriteBuffer(buf.data(), true, 0, sizeof(T), &t);
   }
 
   template<typename T>
@@ -169,6 +182,13 @@ public:
     std::vector<T> buf_vec(length);
     queue.enqueueReadBuffer(buf.data(), true, 0, sizeof(T) * length, buf_vec.data());
     return buf_vec;
+  }
+
+  template<typename T>
+  T read_buffer(const Buffer<T>& buf) const {
+    T t;
+    queue.enqueueReadBuffer(buf.data(), true, 0, sizeof(T), &t);
+    return t;
   }
 
   template<typename T, typename... Args>

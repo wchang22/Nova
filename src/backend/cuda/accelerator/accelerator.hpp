@@ -5,6 +5,7 @@
 
 #include "core/scene_parser.hpp"
 #include "backend/common/types/types.hpp"
+#include "backend/common/utils/utils.hpp"
 #include "backend/cuda/types/types.hpp"
 #include "backend/cuda/entry.hpp"
 #include "util/exception/exception.hpp"
@@ -20,8 +21,9 @@ public:
   }
 
   template<typename Kernel, typename... Args>
-  void call_kernel(const Kernel& kernel, uint3 global_dims, Args&&... args) {
-    kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...);
+  void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
+    align_dims(global_dims, local_dims);
+    kernel(global_dims, local_dims, kernel_constants, std::forward<Args>(args).data()...);
     CUDA_CHECK(cudaPeekAtLastError())
     CUDA_CHECK(cudaDeviceSynchronize())
   }
@@ -79,7 +81,7 @@ public:
   }
 
   template<typename T>
-  std::vector<T> read_image(const Image2DWrite<T>& image, size_t width, size_t height) const {
+  std::vector<T> read_image2D(const Image2DWrite<T>& image, size_t width, size_t height) const {
     return image.read(width, height);
   }
 
@@ -89,12 +91,6 @@ public:
     (void) width;
     (void) height;
     dst.copy_from(src);
-  }
-
-  template<typename T>
-  Buffer<T> create_buffer(MemFlags mem_flags, T& data) const {
-    (void) mem_flags;
-    return Buffer(1, &data);
   }
 
   template<typename T>
@@ -116,13 +112,34 @@ public:
   }
 
   template<typename T>
+  Buffer<T> create_buffer(MemFlags mem_flags, T data) const {
+    (void) mem_flags;
+    return Buffer(1, &data);
+  }
+
+  template<typename T>
   void fill_buffer(Buffer<T>& buf, size_t length, const T& t) const {
     buf.fill(length, t);
   }
 
   template<typename T>
+  void write_buffer(Buffer<T>& buf, const std::vector<T>& v) const {
+    buf.write(v);
+  }
+
+  template<typename T>
+  void write_buffer(Buffer<T>& buf, const T& t) const {
+    buf.write(t);
+  }
+
+  template<typename T>
   std::vector<T> read_buffer(const Buffer<T>& buf, size_t length) const {
     return buf.read(length);
+  }
+
+  template<typename T>
+  T read_buffer(const Buffer<T>& buf) const {
+    return buf.read();
   }
 
   template<typename T, typename... Args>
