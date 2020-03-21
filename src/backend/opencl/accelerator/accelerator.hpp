@@ -20,10 +20,7 @@
 #include "backend/opencl/utils/compatibility.hpp"
 #include "util/exception/exception.hpp"
 
-#define ADD_KERNEL(accel, kernel) accel.add_kernel(#kernel);
-#define REGISTER_KERNEL(kernel)
-#define CALL_KERNEL(accel, kernel, global_size, ...) \
-  accel.call_kernel(#kernel, global_size, __VA_ARGS__);
+#define RESOLVE_KERNEL(kernel) #kernel
 
 class Accelerator {
 public:

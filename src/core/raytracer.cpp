@@ -4,9 +4,6 @@
 #include "model/model.hpp"
 #include "constants.hpp"
 
-REGISTER_KERNEL(kernel_raytrace)
-REGISTER_KERNEL(kernel_interpolate)
-
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
   : width(width), height(height),
     name(name),
@@ -22,8 +19,8 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     intersectable_manager.add_model(model);
   }
 
-  ADD_KERNEL(accelerator, kernel_raytrace)
-  ADD_KERNEL(accelerator, kernel_interpolate)
+  accelerator.add_kernel("kernel_raytrace");
+  accelerator.add_kernel("kernel_interpolate");
 }
 
 void Raytracer::raytrace() {
@@ -60,15 +57,15 @@ void Raytracer::raytrace() {
 
     PROFILE_SECTION_START("Raytrace kernel");
     uint3 global_dims = { width, height / 2, 1 };
-    CALL_KERNEL(accelerator, kernel_raytrace, global_dims,
-                pixel_buf, pixel_dims_wrapper, ec,
-                triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims,
+                            pixel_buf, pixel_dims_wrapper, ec,
+                            triangle_buf, tri_meta_buf, bvh_buf, material_ims);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
-    CALL_KERNEL(accelerator, kernel_interpolate, global_dims,
-                pixel_buf, pixel_dims_wrapper, ec,
-                triangle_buf, tri_meta_buf, bvh_buf, material_ims)
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims,
+                            pixel_buf, pixel_dims_wrapper, ec,
+                            triangle_buf, tri_meta_buf, bvh_buf, material_ims);
     PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();

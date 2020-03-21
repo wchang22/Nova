@@ -9,23 +9,22 @@
 #include "backend/cuda/entry.hpp"
 #include "util/exception/exception.hpp"
 
-#define ADD_KERNEL(accel, kernel_name)
-#define REGISTER_KERNEL(kernel) \
-  template <typename... Args> \
-  void dispatch_##kernel(uint3 global_dims, const KernelConstants& kernel_constants, \
-                         Args&&... args) { \
-    kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...); \
-    CUDA_CHECK(cudaPeekAtLastError()) \
-    CUDA_CHECK(cudaDeviceSynchronize()); \
-  }
-#define CALL_KERNEL(accel, kernel, global_dims, ...) \
-  dispatch_##kernel(global_dims, accel.get_kernel_constants(), __VA_ARGS__);
+#define RESOLVE_KERNEL(kernel) kernel
 
 class Accelerator {
 public:
   Accelerator(const SceneParser& scene_parser);
 
-  const KernelConstants& get_kernel_constants() const { return kernel_constants; }
+  void add_kernel(const std::string& kernel_name) {
+    (void) kernel_name;
+  }
+
+  template<typename Kernel, typename... Args>
+  void call_kernel(const Kernel& kernel, uint3 global_dims, Args&&... args) {
+    kernel(global_dims, kernel_constants, std::forward<Args>(args).data()...);
+    CUDA_CHECK(cudaPeekAtLastError())
+    CUDA_CHECK(cudaDeviceSynchronize())
+  }
   
   template<typename T>
   Image2DRead<T> create_image2D_read(ImageChannelOrder channel_order, ImageChannelType channel_type,
