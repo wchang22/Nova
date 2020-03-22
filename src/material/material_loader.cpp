@@ -3,9 +3,7 @@
 
 #include "material_loader.hpp"
 
-MaterialLoader::MaterialLoader() {
-  stbi_set_flip_vertically_on_load(true);
-}
+MaterialLoader::MaterialLoader() { stbi_set_flip_vertically_on_load(true); }
 
 int MaterialLoader::load_material(const char* path) {
   materials.emplace_back(image_utils::read_image(path));
@@ -19,13 +17,15 @@ MaterialData MaterialLoader::build() const {
 
   // Find the average image width and height
   uint32_t width = std::accumulate(materials.cbegin(), materials.cend(), 0U,
-    [](uint32_t sum, const auto& im) {
-      return sum + im.width;
-    }) / materials.size();
+                                   [](uint32_t sum, const auto& im) {
+                                     return sum + im.width;
+                                   }) /
+                   materials.size();
   uint32_t height = std::accumulate(materials.cbegin(), materials.cend(), 0U,
-    [](uint32_t sum, const auto& im) {
-      return sum + im.height;
-    }) / materials.size();
+                                    [](uint32_t sum, const auto& im) {
+                                      return sum + im.height;
+                                    }) /
+                    materials.size();
 
   std::vector<uchar4> images_data;
   images_data.reserve(width * height * materials.size());
@@ -38,15 +38,9 @@ MaterialData MaterialLoader::build() const {
     } else {
       resized_image = image_utils::resize_image(material, width, height);
     }
-    images_data.insert(images_data.end(),
-                        std::make_move_iterator(resized_image.data.begin()),
-                        std::make_move_iterator(resized_image.data.end()));
+    images_data.insert(images_data.end(), std::make_move_iterator(resized_image.data.begin()),
+                       std::make_move_iterator(resized_image.data.end()));
   }
 
-  return {
-    images_data,
-    width,
-    height,
-    materials.size()
-  };
+  return { images_data, width, height, materials.size() };
 }

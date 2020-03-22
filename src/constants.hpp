@@ -23,7 +23,7 @@
 #include <cstddef>
 
 // Raytracer constants
-constexpr char SCENE_PATH[] = SRC_PATH"scene.toml";
+constexpr char SCENE_PATH[] = SRC_PATH "scene.toml";
 
 // BVH/Triangle constants
 constexpr size_t TRIANGLES_PER_LEAF_BITS = 6;

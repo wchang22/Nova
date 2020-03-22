@@ -1,11 +1,11 @@
 #ifndef RAYTRACER_HPP
 #define RAYTRACER_HPP
 
-#include "scene_parser.hpp"
+#include "backend/accelerator.hpp"
 #include "camera/camera.hpp"
 #include "intersectables/intersectable_manager.hpp"
 #include "material/material_loader.hpp"
-#include "backend/accelerator.hpp"
+#include "scene_parser.hpp"
 
 class Raytracer {
 public:

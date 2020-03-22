@@ -8,8 +8,7 @@ using namespace std::chrono;
 
 logger_t Logging::logger = nullptr;
 
-logger_t Logging::get_logger()
-{
+logger_t Logging::get_logger() {
   if (logger) {
     return logger;
   }

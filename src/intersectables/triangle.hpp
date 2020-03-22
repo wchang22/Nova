@@ -1,9 +1,9 @@
 #ifndef TRIANGLE_HPP
 #define TRIANGLE_HPP
 
+#include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtx/extended_min_max.hpp>
-#include <fstream>
 
 #include "intersectables/aabb.hpp"
 #include "kernel_types/triangle.hpp"
@@ -20,9 +20,7 @@ struct Triangle {
     return { top, bottom };
   }
 
-  inline bool operator==(const Triangle& t) const {
-    return t.v1 == v1 && t.v2 == v2 && t.v3 == v3;
-  }
+  inline bool operator==(const Triangle& t) const { return t.v1 == v1 && t.v2 == v2 && t.v3 == v3; }
 };
 
 struct TriangleHash {

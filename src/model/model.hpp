@@ -1,14 +1,13 @@
 #ifndef MODEL_HPP
 #define MODEL_HPP
 
-#include <vector>
 #include <assimp/scene.h>
+#include <vector>
 
 #include "intersectables/triangle.hpp"
 #include "material/material_loader.hpp"
 
-class Model
-{
+class Model {
 public:
   Model(const std::string& path, MaterialLoader& material_loader);
   const std::vector<std::pair<Triangle, TriangleMeta>>& get_triangles() const;

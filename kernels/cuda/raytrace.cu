@@ -1,27 +1,21 @@
-#include "raytrace.hpp"
+#include "backend/cuda/types/types.hpp"
 #include "constants.hpp"
-#include "vector_math.h"
 #include "intersection.hpp"
+#include "raytrace.hpp"
 #include "texture.hpp"
 #include "transforms.hpp"
 #include "types.hpp"
-#include "backend/cuda/types/types.hpp"
+#include "vector_math.h"
 
-__device__
-bool find_intersection(
-  TriangleData* triangles,
-  FlatBVHNode* bvh,
-  const Ray& ray,
-  Intersection& min_intrs,
-  bool fast
-) {
+__device__ bool find_intersection(
+  TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool fast) {
   /*
-  * We maintain a double ended stack for space efficiency.
-  * BVHNodes are pushed from the front to the back of the stack and
-  * triangle offsets and nums are pushed from the back to the front of the stack.
-  * This allows work items to find more than one leaf node before searching for
-  * triangles and reduces branch divergence.
-  */
+   * We maintain a double ended stack for space efficiency.
+   * BVHNodes are pushed from the front to the back of the stack and
+   * triangle offsets and nums are pushed from the back to the front of the stack.
+   * This allows work items to find more than one leaf node before searching for
+   * triangles and reduces branch divergence.
+   */
   uint stack[STACK_SIZE];
   int node_ptr = -1;
   int tri_ptr = STACK_SIZE;
@@ -35,7 +29,7 @@ bool find_intersection(
       FlatBVHNode node = bvh[node_index];
 
       if (!intersects_aabb(ray, make_float3(node.top_offset_left),
-                                make_float3(node.bottom_num_right))) {
+                           make_float3(node.bottom_num_right))) {
         node_index = stack[node_ptr--];
         continue;
       }
@@ -57,7 +51,7 @@ bool find_intersection(
 
         node_index = stack[node_ptr--];
       }
-    // Make sure tri_ptr and node_ptr do not collide
+      // Make sure tri_ptr and node_ptr do not collide
     } while (node_index && tri_ptr > node_ptr + 2);
 
     while (tri_ptr < STACK_SIZE) {
@@ -79,19 +73,15 @@ bool find_intersection(
   return min_intrs.tri_index != -1;
 }
 
-__device__
-float3 trace_ray(
-  uint2 pixel_coords,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials
-) { 
+__device__ float3 trace_ray(uint2 pixel_coords,
+                            EyeCoords ec,
+                            TriangleData* triangles,
+                            TriangleMetaData* tri_meta,
+                            FlatBVHNode* bvh,
+                            cudaTextureObject_t materials) {
   float2 alpha_beta = ec.coord_scale * (make_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = normalize(alpha_beta.x * ec.eye_coord_frame.x -
-                             alpha_beta.y * ec.eye_coord_frame.y -
-                                            ec.eye_coord_frame.z);
+                             alpha_beta.y * ec.eye_coord_frame.y - ec.eye_coord_frame.z);
   float3 ray_pos = ec.eye_pos;
 
   float3 color = make_float3(0.0f);
@@ -113,20 +103,22 @@ float3 trace_ray(
     float3 intrs_point = ray.origin + ray.direction * intrs.length;
 
     // Interpolate texture coords from vertex data
-    float2 texture_coord = triangle_interpolate(
-      intrs.barycentric, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
-    );
+    float2 texture_coord = triangle_interpolate(intrs.barycentric, meta.texture_coord1,
+                                                meta.texture_coord2, meta.texture_coord3);
 
     // Look up materials
-    float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
-                                   constants.default_diffuse);
+    float3 diffuse =
+      read_material(materials, meta, texture_coord, meta.diffuse_index, constants.default_diffuse);
     float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
-                                   make_float3(constants.default_metallic)).x;
-    float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,       
-                                    make_float3(constants.default_roughness)).x;
-    float ambient_occlusion = read_material(materials, meta, texture_coord,   
-                                            meta.ambient_occlusion_index,
-                                            make_float3(constants.default_ambient_occlusion)).x;
+                                   make_float3(constants.default_metallic))
+                       .x;
+    float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
+                                    make_float3(constants.default_roughness))
+                        .x;
+    float ambient_occlusion =
+      read_material(materials, meta, texture_coord, meta.ambient_occlusion_index,
+                    make_float3(constants.default_ambient_occlusion))
+        .x;
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
@@ -148,15 +140,15 @@ float3 trace_ray(
 
     // Shade the pixel if ray is not blocked
     if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-      intrs_color += shade(light_dir, view_dir, half_dir, light_distance,
-                          normal, diffuse, kS, metallic, roughness);
+      intrs_color += shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
+                           metallic, roughness);
     }
 
     /*
-    * Normally, color is calculated recursively:
-    * (intrs_color + specular * (intrs_color of reflected ray))
-    * So we use an additional "reflectance" value to unroll the recursion
-    */
+     * Normally, color is calculated recursively:
+     * (intrs_color + specular * (intrs_color of reflected ray))
+     * So we use an additional "reflectance" value to unroll the recursion
+     */
     color += reflectance * intrs_color;
     reflectance *= kS;
 
@@ -173,16 +165,13 @@ float3 trace_ray(
   return clamp(color, 0.0f, 1.0f);
 }
 
-__global__
-void raytrace(
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials
-) {
+__global__ void raytrace(uchar4* pixels,
+                         uint2 pixel_dims,
+                         EyeCoords ec,
+                         TriangleData* triangles,
+                         TriangleMetaData* tri_meta,
+                         FlatBVHNode* bvh,
+                         cudaTextureObject_t materials) {
   uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
                          blockDim.y * blockIdx.y + threadIdx.y };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
@@ -196,18 +185,15 @@ void raytrace(
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
 }
 
-__global__
-void interpolate(
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials,
-  uint* rem_pixels_counter,
-  uint2* rem_coords
-) {
+__global__ void interpolate(uchar4* pixels,
+                            uint2 pixel_dims,
+                            EyeCoords ec,
+                            TriangleData* triangles,
+                            TriangleMetaData* tri_meta,
+                            FlatBVHNode* bvh,
+                            cudaTextureObject_t materials,
+                            uint* rem_pixels_counter,
+                            uint2* rem_coords) {
   uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
                          blockDim.y * blockIdx.y + threadIdx.y };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
@@ -242,18 +228,15 @@ void interpolate(
   }
 }
 
-__global__
-void fill_remaining(
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials,
-  uint* rem_pixels_counter,
-  uint2* rem_coords
-) {
+__global__ void fill_remaining(uchar4* pixels,
+                               uint2 pixel_dims,
+                               EyeCoords ec,
+                               TriangleData* triangles,
+                               TriangleMetaData* tri_meta,
+                               FlatBVHNode* bvh,
+                               cudaTextureObject_t materials,
+                               uint* rem_pixels_counter,
+                               uint2* rem_coords) {
   uint id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id >= *rem_pixels_counter) {
     return;
@@ -266,65 +249,59 @@ void fill_remaining(
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
 }
 
-void kernel_raytrace(
-  uint2 global_dims,
-  uint2 local_dims,
-  const KernelConstants& kernel_constants,
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials
-) {
+void kernel_raytrace(uint2 global_dims,
+                     uint2 local_dims,
+                     const KernelConstants& kernel_constants,
+                     uchar4* pixels,
+                     uint2 pixel_dims,
+                     EyeCoords ec,
+                     TriangleData* triangles,
+                     TriangleMetaData* tri_meta,
+                     FlatBVHNode* bvh,
+                     cudaTextureObject_t materials) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
-                                sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                cudaMemcpyHostToDevice));
   raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh, materials);
 }
 
-void kernel_interpolate(
-  uint2 global_dims,
-  uint2 local_dims,
-  const KernelConstants& kernel_constants,
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials,
-  uint* rem_pixels_counter,
-  uint2* rem_coords
-) {
+void kernel_interpolate(uint2 global_dims,
+                        uint2 local_dims,
+                        const KernelConstants& kernel_constants,
+                        uchar4* pixels,
+                        uint2 pixel_dims,
+                        EyeCoords ec,
+                        TriangleData* triangles,
+                        TriangleMetaData* tri_meta,
+                        FlatBVHNode* bvh,
+                        cudaTextureObject_t materials,
+                        uint* rem_pixels_counter,
+                        uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
-                                sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
-  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles,
-                                          tri_meta, bvh, materials, rem_pixels_counter, rem_coords);
+  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                cudaMemcpyHostToDevice));
+  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh,
+                                          materials, rem_pixels_counter, rem_coords);
 }
 
-void kernel_fill_remaining(
-  uint2 global_dims,
-  uint2 local_dims,
-  const KernelConstants& kernel_constants,
-  uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  TriangleData* triangles,
-  TriangleMetaData* tri_meta,
-  FlatBVHNode* bvh,
-  cudaTextureObject_t materials,
-  uint* rem_pixels_counter,
-  uint2* rem_coords
-) {
+void kernel_fill_remaining(uint2 global_dims,
+                           uint2 local_dims,
+                           const KernelConstants& kernel_constants,
+                           uchar4* pixels,
+                           uint2 pixel_dims,
+                           EyeCoords ec,
+                           TriangleData* triangles,
+                           TriangleMetaData* tri_meta,
+                           FlatBVHNode* bvh,
+                           cudaTextureObject_t materials,
+                           uint* rem_pixels_counter,
+                           uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants,
-                                sizeof(KernelConstants), 0, cudaMemcpyHostToDevice));
-  fill_remaining<<<num_blocks, block_size>>>(
-    pixels, pixel_dims, ec, triangles, tri_meta, bvh, materials, rem_pixels_counter, rem_coords);
+  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                cudaMemcpyHostToDevice));
+  fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh,
+                                             materials, rem_pixels_counter, rem_coords);
 }

@@ -1,22 +1,18 @@
 #include "model.hpp"
 #include "util/exception/exception.hpp"
 
-#include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <cassert>
+#include <glm/glm.hpp>
 
 Model::Model(const std::string& path, MaterialLoader& material_loader)
-  : material_loader(material_loader)
-{
+  : material_loader(material_loader) {
   Assimp::Importer importer;
-  const aiScene* scene = importer.ReadFile(path.c_str(),
-                                           aiProcess_Triangulate |
-                                           aiProcess_OptimizeGraph |
-                                           aiProcess_OptimizeMeshes |
-                                           aiProcess_ImproveCacheLocality |
-                                           aiProcess_GenNormals |
-                                           aiProcess_CalcTangentSpace);
+  const aiScene* scene =
+    importer.ReadFile(path.c_str(), aiProcess_Triangulate | aiProcess_OptimizeGraph |
+                                      aiProcess_OptimizeMeshes | aiProcess_ImproveCacheLocality |
+                                      aiProcess_GenNormals | aiProcess_CalcTangentSpace);
 
   if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
     throw ModelException(std::string("Assimp Error: ") + importer.GetErrorString());
@@ -27,8 +23,7 @@ Model::Model(const std::string& path, MaterialLoader& material_loader)
   process_node(scene->mRootNode, scene);
 }
 
-void Model::process_node(aiNode* node, const aiScene* scene)
-{
+void Model::process_node(aiNode* node, const aiScene* scene) {
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
     process_mesh(mesh, scene);
@@ -39,8 +34,7 @@ void Model::process_node(aiNode* node, const aiScene* scene)
   }
 }
 
-void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
-{
+void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   bool has_textures = mesh->mTextureCoords[0];
   bool has_tangents = mesh->mTangents;
 
@@ -80,8 +74,8 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
     }
     if (has_tangents) {
       tangents.emplace_back(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
-      bitangents.emplace_back(
-        mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
+      bitangents.emplace_back(mesh->mBitangents[i].x, mesh->mBitangents[i].y,
+                              mesh->mBitangents[i].z);
     }
   }
 
@@ -128,11 +122,11 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene)
       fixed_bit3 *= -1.0f;
     }
 
-    triangles.emplace_back<std::pair<Triangle, TriangleMeta>>({
-      { v1, v2, v3 },
-      { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
-        diffuse_index, metallic_index, roughness_index, ambient_occlusion_index, normal_index }
-    });
+    triangles.emplace_back<std::pair<Triangle, TriangleMeta>>(
+      { { v1, v2, v3 },
+        { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
+          diffuse_index, metallic_index, roughness_index, ambient_occlusion_index,
+          normal_index } });
   }
 }
 

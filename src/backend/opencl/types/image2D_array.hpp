@@ -11,7 +11,7 @@
   #endif
 #endif
 
-template<typename T>
+template <typename T>
 class Image2DArray {
 public:
   Image2DArray() = default;
@@ -26,7 +26,7 @@ public:
     image = other.image;
     return *this;
   }
-  Image2DArray& operator=(Image2DArray& other) { 
+  Image2DArray& operator=(Image2DArray& other) {
     image = other.image;
     return *this;
   }

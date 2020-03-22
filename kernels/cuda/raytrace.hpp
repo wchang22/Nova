@@ -1,10 +1,10 @@
 #ifndef CUDA_KERNEL_RAYTRACE_HPP
 #define CUDA_KERNEL_RAYTRACE_HPP
 
-#include "kernel_types/kernel_constants.hpp"
-#include "kernel_types/eye_coords.hpp"
-#include "kernel_types/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
+#include "kernel_types/eye_coords.hpp"
+#include "kernel_types/kernel_constants.hpp"
+#include "kernel_types/triangle.hpp"
 
 void kernel_raytrace(uint2 global_dims,
                      uint2 local_dims,

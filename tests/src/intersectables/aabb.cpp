@@ -8,9 +8,7 @@ TEST_CASE("AABB surface area", "[aabb]") {
     glm::vec3(0.0f),
   };
 
-  SECTION("AABB calculate SA") {
-    REQUIRE(aabb1.get_surface_area() == Approx(6.0f));
-  }
+  SECTION("AABB calculate SA") { REQUIRE(aabb1.get_surface_area() == Approx(6.0f)); }
   SECTION("AABB compare SA equality") {
     AABB aabb2 {
       glm::vec3(1.1f),
@@ -35,9 +33,7 @@ TEST_CASE("AABB SAH", "[aabb]") {
     glm::vec3(0.0f),
   };
 
-  SECTION("AABB calculate SAH") {
-    REQUIRE(aabb1.get_cost(5) == Approx(30.0f));
-  }
+  SECTION("AABB calculate SAH") { REQUIRE(aabb1.get_cost(5) == Approx(30.0f)); }
   SECTION("AABB compare SAH equality") {
     AABB aabb2 {
       glm::vec3(1.1f),
@@ -161,7 +157,7 @@ TEST_CASE("AABB shrink", "[aabb]") {
       glm::vec3(1.0f),
       glm::vec3(-1.0f),
     };
-    
+
     aabb1.shrink(aabb2);
     REQUIRE(aabb1 == aabb_before);
   }

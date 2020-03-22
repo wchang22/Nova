@@ -5,8 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
-class TimeTree
-{
+class TimeTree {
 public:
   ~TimeTree();
 

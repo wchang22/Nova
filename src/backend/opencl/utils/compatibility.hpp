@@ -12,12 +12,12 @@
 #endif
 
 namespace compat_utils {
-  // Opencl 1.x and 2.x have different definitions for size_t arrays
-  #ifdef OPENCL_2
-    #define cl_size_t_array std::array<size_t, N>
-  #else
-    #define cl_size_t_array cl::size_t<N>
-  #endif
+// Opencl 1.x and 2.x have different definitions for size_t arrays
+#ifdef OPENCL_2
+  #define cl_size_t_array std::array<size_t, N>
+#else
+  #define cl_size_t_array cl::size_t<N>
+#endif
 
   template <int N>
   cl_size_t_array create_size_t(const std::array<size_t, N>& arr) {

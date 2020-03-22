@@ -1,23 +1,21 @@
 #ifndef CUDA_IMAGE2D_WRITE_HPP
 #define CUDA_IMAGE2D_WRITE_HPP
 
-#include <cuda_runtime.h>
 #include <cstring>
+#include <cuda_runtime.h>
 #include <vector>
 
 #include "backend/cuda/types/error.hpp"
 #include "backend/cuda/types/flags.hpp"
 #include "backend/cuda/types/image2D.hpp"
 
-template<typename T>
+template <typename T>
 class Image2DWrite : public Image2D<T> {
 public:
-  Image2DWrite(size_t width, size_t height)
-    : Image2D<T>(width, height)
-  {
+  Image2DWrite(size_t width, size_t height) : Image2D<T>(width, height) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
-    CUDA_CHECK(cudaMallocArray(&this->buffer, &channel_desc, width, height,
-                               cudaArraySurfaceLoadStore))
+    CUDA_CHECK(
+      cudaMallocArray(&this->buffer, &channel_desc, width, height, cudaArraySurfaceLoadStore))
 
     cudaResourceDesc res_desc;
     memset(&res_desc, 0, sizeof(res_desc));

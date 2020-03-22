@@ -13,12 +13,12 @@ public:
 
   Wrapper(const Wrapper& other) : value(other.value) {}
   Wrapper(Wrapper& other) : value(other.value) {}
-  
+
   Wrapper& operator=(const Wrapper& other) {
     value = other.value;
     return *this;
   }
-  Wrapper& operator=(Wrapper& other) { 
+  Wrapper& operator=(Wrapper& other) {
     value = other.value;
     return *this;
   }

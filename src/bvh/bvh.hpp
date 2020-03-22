@@ -1,14 +1,14 @@
 #ifndef BVH_HPP
 #define BVH_HPP
 
+#include <fstream>
 #include <glm/glm.hpp>
+#include <limits>
 #include <memory>
 #include <vector>
-#include <limits>
-#include <fstream>
 
-#include "intersectables/triangle.hpp"
 #include "intersectables/aabb.hpp"
+#include "intersectables/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
 
 struct BVHNode {
@@ -30,6 +30,7 @@ public:
 
   // Note: Modifies `triangles`
   std::vector<FlatBVHNode> build();
+
 private:
   struct SplitParams {
     float cost;
@@ -60,11 +61,12 @@ private:
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
   size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);
 
-  SplitParams find_object_split(const std::unique_ptr<BVHNode>& node,
-                                int axis, const std::vector<Bin>& bins);
+  SplitParams
+  find_object_split(const std::unique_ptr<BVHNode>& node, int axis, const std::vector<Bin>& bins);
   std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
-    split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
-               const std::vector<std::pair<AABB, glm::uvec3>>& bound_centers);
+  split_node(std::unique_ptr<BVHNode>& node,
+             SplitParams&& best_params,
+             const std::vector<std::pair<AABB, glm::uvec3>>& bound_centers);
 
   std::string name;
   std::vector<Triangle>& triangles;

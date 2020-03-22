@@ -1,8 +1,8 @@
 #ifndef IMAGEUTILS_HPP
 #define IMAGEUTILS_HPP
 
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "backend/types.hpp"
 

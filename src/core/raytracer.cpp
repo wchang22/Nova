@@ -1,18 +1,22 @@
 #include "raytracer.hpp"
+#include "constants.hpp"
+#include "model/model.hpp"
 #include "util/image/imageutils.hpp"
 #include "util/profiling/profiling.hpp"
-#include "model/model.hpp"
-#include "constants.hpp"
 
 Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
-  : width(width), height(height),
+  : width(width),
+    height(height),
     name(name),
     camera_settings(scene_parser.get_camera_settings()),
-    camera(camera_settings.position, camera_settings.forward, camera_settings.up,
-           width, height, camera_settings.fovy),
+    camera(camera_settings.position,
+           camera_settings.forward,
+           camera_settings.up,
+           width,
+           height,
+           camera_settings.fovy),
     intersectable_manager(name),
-    accelerator(scene_parser)
-{
+    accelerator(scene_parser) {
   const auto model_paths = scene_parser.get_model_paths();
   for (const auto& model_path : model_paths) {
     Model model(model_path, material_loader);
@@ -32,7 +36,7 @@ void Raytracer::raytrace() {
   accelerator.fill_buffer(pixel_buf, width * height, {});
   auto pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
   auto ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
-  auto [ triangle_data, triangle_meta_data, bvh_data ] = intersectable_manager.build();
+  auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
   auto triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
   auto tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
   auto bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
@@ -45,13 +49,9 @@ void Raytracer::raytrace() {
     material_data.data.emplace_back();
   }
   auto material_ims = accelerator.create_image2D_array(
-    ImageChannelOrder::RGBA, ImageChannelType::UINT8,
-    AddressMode::WRAP, FilterMode::NEAREST, true,
+    ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::WRAP, FilterMode::NEAREST, true,
     std::max(material_data.num_materials, static_cast<size_t>(1)),
-    std::max(material_data.width, 1U),
-    std::max(material_data.height, 1U),
-    material_data.data
-  );
+    std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
@@ -63,16 +63,15 @@ void Raytracer::raytrace() {
       PROFILE_SECTION_START("Raytrace kernel");
       uint2 global_dims { width, height / 2 };
       uint2 local_dims { 8, 4 };
-      accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                              pixel_buf, pixel_dims_wrapper, ec,
-                              triangle_buf, tri_meta_buf, bvh_buf, material_ims);
+      accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims, pixel_buf,
+                              pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
+                              material_ims);
       PROFILE_SECTION_END();
 
       PROFILE_SECTION_START("Interpolate kernel");
       accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
-                              pixel_buf, pixel_dims_wrapper, ec,
-                              triangle_buf, tri_meta_buf, bvh_buf, material_ims,
-                              rem_pixels_buf, rem_coords_buf);
+                              pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf,
+                              bvh_buf, material_ims, rem_pixels_buf, rem_coords_buf);
       PROFILE_SECTION_END();
     }
     {
@@ -81,9 +80,8 @@ void Raytracer::raytrace() {
       uint2 global_dims { counter, 1 };
       uint2 local_dims { 32, 1 };
       accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                              pixel_buf, pixel_dims_wrapper, ec,
-                              triangle_buf, tri_meta_buf, bvh_buf, material_ims,
-                              rem_pixels_buf, rem_coords_buf);
+                              pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf,
+                              bvh_buf, material_ims, rem_pixels_buf, rem_coords_buf);
       PROFILE_SECTION_END();
     }
   }

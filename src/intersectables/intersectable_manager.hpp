@@ -1,13 +1,13 @@
 #ifndef INTERSECTABLE_MANAGER_HPP
 #define INTERSECTABLE_MANAGER_HPP
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-#include "model/model.hpp"
-#include "intersectables/triangle.hpp"
 #include "bvh/bvh.hpp"
+#include "intersectables/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
+#include "model/model.hpp"
 
 struct IntersectableData {
   std::vector<TriangleData> triangle_data;

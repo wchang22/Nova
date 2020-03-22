@@ -1,17 +1,14 @@
 #include "camera.hpp"
-#include <iostream>
 #include <glm/gtx/string_cast.hpp>
+#include <iostream>
 
-Camera::Camera(const glm::vec3& position, const glm::vec3& forward,
-               const glm::vec3& up, uint32_t width, uint32_t height, float fovy)
-  : position(position),
-    forward(forward),
-    up(up),
-    width(width),
-    height(height),
-    fovy(fovy)
-{
-}
+Camera::Camera(const glm::vec3& position,
+               const glm::vec3& forward,
+               const glm::vec3& up,
+               uint32_t width,
+               uint32_t height,
+               float fovy)
+  : position(position), forward(forward), up(up), width(width), height(height), fovy(fovy) {}
 
 EyeCoords Camera::get_eye_coords() const {
   glm::vec2 half_fov(glm::vec2(fovy * width / height, fovy) / 2.0f);

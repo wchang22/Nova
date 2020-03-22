@@ -1,26 +1,29 @@
 #ifndef CUDA_IMAGE2D_READ_HPP
 #define CUDA_IMAGE2D_READ_HPP
 
-#include <cuda_runtime.h>
 #include <cstring>
+#include <cuda_runtime.h>
 #include <vector>
 
 #include "backend/cuda/types/error.hpp"
 #include "backend/cuda/types/flags.hpp"
 #include "backend/cuda/types/image2D.hpp"
 
-template<typename T>
+template <typename T>
 class Image2DRead : public Image2D<T> {
 public:
-  Image2DRead(AddressMode address_mode, FilterMode filter_mode, bool normalized_coords,
-              size_t width, size_t height, const std::vector<T>& data = {})
-    : Image2D<T>(width, height)
-  {
+  Image2DRead(AddressMode address_mode,
+              FilterMode filter_mode,
+              bool normalized_coords,
+              size_t width,
+              size_t height,
+              const std::vector<T>& data = {})
+    : Image2D<T>(width, height) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
     CUDA_CHECK(cudaMallocArray(&this->buffer, &channel_desc, width, height))
 
     if (!data.empty()) {
-      CUDA_CHECK(cudaMemcpy2DToArray(this->buffer, 0, 0, data.data(), width * sizeof(T),    
+      CUDA_CHECK(cudaMemcpy2DToArray(this->buffer, 0, 0, data.data(), width * sizeof(T),
                                      width * sizeof(T), height, cudaMemcpyHostToDevice))
     }
 

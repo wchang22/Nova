@@ -1,6 +1,8 @@
 #ifndef COMMON_UTILS_HPP
 #define COMMON_UTILS_HPP
 
+#include <cstdint>
+
 #ifdef BACKEND_OPENCL
   #include "backend/opencl/types/vector_types.hpp"
 #elif defined(BACKEND_CUDA)

@@ -14,13 +14,9 @@ struct AABB {
     return dot(xyz(dims), yzx(dims)) * 2;
   }
 
-  inline float get_cost(size_t num_triangles) const {
-    return get_surface_area() * num_triangles;
-  }
+  inline float get_cost(size_t num_triangles) const { return get_surface_area() * num_triangles; }
 
-  inline glm::vec3 get_center() const {
-    return (top + bottom) / 2.0f;
-  }
+  inline glm::vec3 get_center() const { return (top + bottom) / 2.0f; }
 
   inline void grow(const AABB& other) {
     top = max(top, other.top);

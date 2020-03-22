@@ -4,7 +4,7 @@
 #include "intersectables/triangle.hpp"
 
 TEST_CASE("Triangle bounds", "[triangle]") {
-  Triangle t1 { 
+  Triangle t1 {
     glm::vec3(1.32f, 3.56f, -4.12f),
     glm::vec3(0.0f),
     glm::vec3(-5.62f, 9.83f, -2.21f),
@@ -19,7 +19,7 @@ TEST_CASE("Triangle bounds", "[triangle]") {
 }
 
 TEST_CASE("(De)serialize triangle", "[triangle]") {
-  Triangle t1 { 
+  Triangle t1 {
     glm::vec3(1.32f, 3.56f, -4.12f),
     glm::vec3(0.0f),
     glm::vec3(-5.62f, 9.83f, -2.21f),
@@ -34,12 +34,12 @@ TEST_CASE("(De)serialize triangle", "[triangle]") {
 }
 
 TEST_CASE("Hash triangle", "[triangle]") {
-  Triangle t1 { 
+  Triangle t1 {
     glm::vec3(1.32f, 3.56f, -4.12f),
     glm::vec3(0.0f),
     glm::vec3(-5.62f, 9.83f, -2.21f),
   };
-  Triangle t2 { 
+  Triangle t2 {
     glm::vec3(1.321f, 3.56f, -4.12f),
     glm::vec3(0.0f),
     glm::vec3(-5.62f, 9.83f, -2.21f),

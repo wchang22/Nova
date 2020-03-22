@@ -17,11 +17,7 @@ enum class MemFlags {
   READ_WRITE = CL_MEM_READ_WRITE
 };
 
-enum class ImageChannelOrder {
-  RGB = CL_RGB,
-  RGBA = CL_RGBA,
-  R = CL_R
-};
+enum class ImageChannelOrder { RGB = CL_RGB, RGBA = CL_RGBA, R = CL_R };
 
 enum class ImageChannelType {
   UINT8 = CL_UNSIGNED_INT8,

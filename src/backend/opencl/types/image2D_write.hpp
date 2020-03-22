@@ -11,7 +11,7 @@
   #endif
 #endif
 
-template<typename T>
+template <typename T>
 class Image2DWrite {
 public:
   Image2DWrite() = default;
@@ -21,12 +21,12 @@ public:
 
   Image2DWrite(const Image2DWrite& other) : image(other.image) {}
   Image2DWrite(Image2DWrite& other) : image(other.image) {}
-  
+
   Image2DWrite& operator=(const Image2DWrite& other) {
     image = other.image;
     return *this;
   }
-  Image2DWrite& operator=(Image2DWrite& other) { 
+  Image2DWrite& operator=(Image2DWrite& other) {
     image = other.image;
     return *this;
   }

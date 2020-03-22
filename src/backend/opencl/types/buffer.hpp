@@ -26,7 +26,7 @@ public:
     buffer = other.buffer;
     return *this;
   }
-  Buffer& operator=(Buffer& other) { 
+  Buffer& operator=(Buffer& other) {
     buffer = other.buffer;
     return *this;
   }

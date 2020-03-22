@@ -1,15 +1,14 @@
 #ifndef CUDA_KERNEL_INTERSECTION_HPP
 #define CUDA_KERNEL_INTERSECTION_HPP
 
-#include "types.hpp"
 #include "kernel_types/triangle.hpp"
 #include "matrix.hpp"
+#include "types.hpp"
 
 // Use woop transformation to transform ray to unit triangle space
 // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
-__device__
-inline bool intersects_triangle(const Ray& ray, Intersection& intrs, int tri_index,
-                         const TriangleData& tri) {
+__device__ inline bool
+intersects_triangle(const Ray& ray, Intersection& intrs, int tri_index, const TriangleData& tri) {
   // Transform ray to unit triangle space
   Ray woop_ray = ray;
   woop_ray.origin = tri.transform * ray.origin;
@@ -35,8 +34,7 @@ inline bool intersects_triangle(const Ray& ray, Intersection& intrs, int tri_ind
 }
 
 // AABB fast intersection for BVH
-__device__
-inline bool intersects_aabb(const Ray& ray, float3 top, float3 bottom) {
+__device__ inline bool intersects_aabb(const Ray& ray, float3 top, float3 bottom) {
   // Find slab bounds on AABB
   float3 t1 = top * ray.inv_direction + ray.nio;
   float3 t2 = bottom * ray.inv_direction + ray.nio;

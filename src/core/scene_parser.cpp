@@ -18,12 +18,10 @@ CameraSettings SceneParser::get_camera_settings() const {
   const auto up = toml::find<std::array<float, 3>>(parsed_data, "camera", "up");
   const auto fovy = toml::find<float>(parsed_data, "camera", "fovy");
 
-  return {
-    { position[0], position[1], position[2] },
-    { forward[0], forward[1], forward[2] },
-    { up[0], up[1], up[2] },
-    fovy
-  };
+  return { { position[0], position[1], position[2] },
+           { forward[0], forward[1], forward[2] },
+           { up[0], up[1], up[2] },
+           fovy };
 }
 
 LightSettings SceneParser::get_light_settings() const {
@@ -43,12 +41,7 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   const auto ambient_occlusion =
     toml::find<float>(parsed_data, "shading_defaults", "ambient_occlusion");
 
-  return {
-    { diffuse[0], diffuse[1], diffuse[2] },
-    metallic,
-    roughness,
-    ambient_occlusion
-  };
+  return { { diffuse[0], diffuse[1], diffuse[2] }, metallic, roughness, ambient_occlusion };
 }
 
 int SceneParser::get_ray_recursion_depth() const {

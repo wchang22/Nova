@@ -6,8 +6,7 @@
 
 using logger_t = std::shared_ptr<std::ofstream>;
 
-class Logging
-{
+class Logging {
 public:
   Logging() = delete;
 
@@ -27,7 +26,7 @@ inline logger_t operator<<(logger_t logger, const T& message) {
   return logger;
 }
 
-inline logger_t operator<<(logger_t logger, std::ostream&(*f)(std::ostream&)) {
+inline logger_t operator<<(logger_t logger, std::ostream& (*f)(std::ostream&) ) {
 #ifdef LOG
   *logger << f;
 #else

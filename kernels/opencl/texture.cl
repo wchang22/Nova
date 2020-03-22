@@ -2,12 +2,13 @@
 #define TEXTURE_CL
 
 constant sampler_t material_sampler =
-  CLK_ADDRESS_REPEAT |
-  CLK_FILTER_NEAREST |
-  CLK_NORMALIZED_COORDS_TRUE;
+  CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_TRUE;
 
-float3 read_material(read_only image2d_array_t materials, TriangleMeta meta,
-                     float2 texture_coord, int index, float3 default_material) {
+float3 read_material(read_only image2d_array_t materials,
+                     TriangleMeta meta,
+                     float2 texture_coord,
+                     int index,
+                     float3 default_material) {
   if (meta.diffuse_index == -1 && meta.metallic_index == -1 && meta.roughness_index == -1 &&
       meta.ambient_occlusion_index == -1 && meta.normal_index == -1) {
     return default_material;
@@ -17,34 +18,28 @@ float3 read_material(read_only image2d_array_t materials, TriangleMeta meta,
   }
 
   float3 texture = convert_float3(
-    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz
-  );
+    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz);
 
   return uint3_to_float3(texture);
 }
 
-float3 compute_normal(read_only image2d_array_t materials, TriangleMeta meta,
-                      float2 texture_coord, float3 barycentric) {
+float3 compute_normal(read_only image2d_array_t materials,
+                      TriangleMeta meta,
+                      float2 texture_coord,
+                      float3 barycentric) {
   // Interpolate triangle normal from vertex data
-  float3 normal = fast_normalize(
-    triangle_interpolate3(barycentric, meta.normal1, meta.normal2, meta.normal3)
-  );
+  float3 normal =
+    fast_normalize(triangle_interpolate3(barycentric, meta.normal1, meta.normal2, meta.normal3));
 
   // Use the normal map to compute pixel normal if it exists
   if (meta.normal_index != -1) {
     float3 tangent = fast_normalize(
-      triangle_interpolate3(barycentric, meta.tangent1, meta.tangent2, meta.tangent3)
-    );
+      triangle_interpolate3(barycentric, meta.tangent1, meta.tangent2, meta.tangent3));
     float3 bitangent = fast_normalize(
-      triangle_interpolate3(barycentric, meta.bitangent1, meta.bitangent2, meta.bitangent3)
-    );
+      triangle_interpolate3(barycentric, meta.bitangent1, meta.bitangent2, meta.bitangent3));
 
     // Create TBN matrix and use it to convert tangent space pixel normal to world space
-    Mat3x3 tbn = mat3x3_transpose((Mat3x3) {
-      tangent,
-      bitangent,
-      normal
-    });
+    Mat3x3 tbn = mat3x3_transpose((Mat3x3) { tangent, bitangent, normal });
 
     float3 pixel_normal = read_material(materials, meta, texture_coord, meta.normal_index, 0);
     pixel_normal = fast_normalize(pixel_normal * 2.0f - 1.0f);
@@ -85,12 +80,19 @@ float3 specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metal
   return f;
 }
 
-float3 shade(float3 light_dir, float3 view_dir, float3 half_dir, float light_distance, 
-             float3 normal, float3 diffuse, float3 kS, float metallic, float roughness) {
+float3 shade(float3 light_dir,
+             float3 view_dir,
+             float3 half_dir,
+             float light_distance,
+             float3 normal,
+             float3 diffuse,
+             float3 kS,
+             float metallic,
+             float roughness) {
   float n_dot_v = max(dot(normal, view_dir), 0.0f);
   float n_dot_l = max(dot(normal, light_dir), 0.0f);
   float n_dot_h = max(dot(normal, half_dir), 0.0f);
-  
+
   float nvl = n_dot_v * n_dot_l;
 
   // normal distribution function

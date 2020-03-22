@@ -4,8 +4,8 @@
 #include <stdexcept>
 
 #include <stb_image.h>
-#include <stb_image_write.h>
 #include <stb_image_resize.h>
+#include <stb_image_write.h>
 
 namespace image_utils {
   image read_image(const char* path) {
@@ -34,10 +34,9 @@ namespace image_utils {
 
   image resize_image(const image& in, uint32_t width, uint32_t height) {
     std::vector<uchar4> resized_image_data(width * height);
-    int success = stbir_resize_uint8(reinterpret_cast<const uint8_t*>(in.data.data()),
-                                     in.width, in.height, 0,
-                                     reinterpret_cast<uint8_t*>(resized_image_data.data()),
-                                     width, height, 0, STBI_rgb_alpha);
+    int success = stbir_resize_uint8(
+      reinterpret_cast<const uint8_t*>(in.data.data()), in.width, in.height, 0,
+      reinterpret_cast<uint8_t*>(resized_image_data.data()), width, height, 0, STBI_rgb_alpha);
 
     if (!success) {
       throw ImageException("Failed to resize image");

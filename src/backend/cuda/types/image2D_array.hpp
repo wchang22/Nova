@@ -1,21 +1,25 @@
 #ifndef CUDA_IMAGE2D_ARRAY_HPP
 #define CUDA_IMAGE2D_ARRAY_HPP
 
-#include <cuda_runtime.h>
 #include <cstring>
+#include <cuda_runtime.h>
 #include <vector>
 
 #include "backend/cuda/types/error.hpp"
 #include "backend/cuda/types/flags.hpp"
 
-template<typename T>
+template <typename T>
 class Image2DArray {
 public:
   Image2DArray() : tex(), buffer(nullptr) {}
 
-  Image2DArray(AddressMode address_mode, FilterMode filter_mode,
-               bool normalized_coords, size_t array_size, size_t width,
-               size_t height, std::vector<T>& data) {
+  Image2DArray(AddressMode address_mode,
+               FilterMode filter_mode,
+               bool normalized_coords,
+               size_t array_size,
+               size_t width,
+               size_t height,
+               std::vector<T>& data) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
     cudaExtent extent = make_cudaExtent(width, height, array_size);
     CUDA_CHECK(cudaMalloc3DArray(&buffer, &channel_desc, extent, cudaArrayLayered))

@@ -28,23 +28,39 @@ using uint3 = cl_uint3;
 using uint4 = cl_uint4;
 
 template <typename vec_type>
-inline auto& x(vec_type& f) { return f.s[0]; }
+inline auto& x(vec_type& f) {
+  return f.s[0];
+}
 template <typename vec_type>
-inline const auto& x(const vec_type& f) { return f.s[0]; }
+inline const auto& x(const vec_type& f) {
+  return f.s[0];
+}
 
 template <typename vec_type>
-inline auto& y(vec_type& f) { return f.s[1]; }
+inline auto& y(vec_type& f) {
+  return f.s[1];
+}
 template <typename vec_type>
-inline const auto& y(const vec_type& f) { return f.s[1]; }
+inline const auto& y(const vec_type& f) {
+  return f.s[1];
+}
 
 template <typename vec_type>
-inline auto& z(vec_type& f) { return f.s[2]; }
+inline auto& z(vec_type& f) {
+  return f.s[2];
+}
 template <typename vec_type>
-inline const auto& z(const vec_type& f) { return f.s[2]; }
+inline const auto& z(const vec_type& f) {
+  return f.s[2];
+}
 
 template <typename vec_type>
-inline auto& w(vec_type& f) { return f.s[3]; }
+inline auto& w(vec_type& f) {
+  return f.s[3];
+}
 template <typename vec_type>
-inline const auto& w(const vec_type& f) { return f.s[3]; }
+inline const auto& w(const vec_type& f) {
+  return f.s[3];
+}
 
 #endif // OPENCL_VECTOR_TYPES_HPP

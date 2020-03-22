@@ -1,8 +1,8 @@
 #ifndef INTERSECTION_CL
 #define INTERSECTION_CL
 
-#include "types.cl"
 #include "transforms.cl"
+#include "types.cl"
 
 // Use woop transformation to transform ray to unit triangle space
 // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf

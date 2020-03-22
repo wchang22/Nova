@@ -6,10 +6,7 @@ namespace Profiling {
   static auto time_tree = TimeTree();
   static std::string current_parent;
 
-  TimeScope::TimeScope(const std::string& name)
-    : start(steady_clock::now()),
-      name(name)
-  {
+  TimeScope::TimeScope(const std::string& name) : start(steady_clock::now()), name(name) {
     time_tree.register_element(name);
 
     if (current_parent == name) {
@@ -34,8 +31,7 @@ namespace Profiling {
     time_tree.add_time(name, duration);
   }
 
-  void TimeScope::section_start(const std::string& message)
-  {
+  void TimeScope::section_start(const std::string& message) {
     this->message = message;
     t0 = steady_clock::now();
 
@@ -47,8 +43,7 @@ namespace Profiling {
     }
   }
 
-  void TimeScope::section_end()
-  {
+  void TimeScope::section_end() {
     const auto duration = duration_cast<microseconds>(steady_clock::now() - t0).count();
     time_tree.add_time(message, duration);
   }

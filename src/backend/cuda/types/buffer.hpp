@@ -9,9 +9,7 @@
 template <typename T>
 class Buffer {
 public:
-  Buffer(size_t length, const T* data = nullptr)
-    : length(length)
-  {
+  Buffer(size_t length, const T* data = nullptr) : length(length) {
     CUDA_CHECK(cudaMalloc(&buffer, length * sizeof(T)))
 
     if (data) {
@@ -19,9 +17,7 @@ public:
     }
   }
 
-  ~Buffer() {
-    cudaFree(buffer);
-  }
+  ~Buffer() { cudaFree(buffer); }
 
   void fill(size_t length, const T& t) {
     std::vector<T> buf(length, t);
@@ -32,9 +28,7 @@ public:
     CUDA_CHECK(cudaMemcpy(buffer, v.data(), v.size() * sizeof(T), cudaMemcpyHostToDevice))
   }
 
-  void write(const T& t) {
-    CUDA_CHECK(cudaMemcpy(buffer, &t, sizeof(T), cudaMemcpyHostToDevice))
-  }
+  void write(const T& t) { CUDA_CHECK(cudaMemcpy(buffer, &t, sizeof(T), cudaMemcpyHostToDevice)) }
 
   std::vector<T> read(size_t length) const {
     std::vector<T> buf(length);

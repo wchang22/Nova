@@ -5,11 +5,10 @@
 
 #include "backend/cuda/types/error.hpp"
 
-template<typename T>
+template <typename T>
 class Image2D {
 public:
-  Image2D(size_t width, size_t height)
-    : width(width), height(height) {}
+  Image2D(size_t width, size_t height) : width(width), height(height) {}
 
   virtual ~Image2D() {}
 

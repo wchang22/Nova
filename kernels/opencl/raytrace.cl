@@ -1,15 +1,10 @@
+#include "constants.cl"
 #include "intersection.cl"
 #include "texture.cl"
-#include "constants.cl"
 #include "transforms.cl"
 
 bool find_intersection(
-  global Triangle* triangles,
-  global BVHNode* bvh,
-  Ray ray,
-  Intersection* min_intrs,
-  bool fast
-) {
+  global Triangle* triangles, global BVHNode* bvh, Ray ray, Intersection* min_intrs, bool fast) {
   /*
    * We maintain a double ended stack for space efficiency.
    * BVHNodes are pushed from the front to the back of the stack and
@@ -72,18 +67,15 @@ bool find_intersection(
   return min_intrs->tri_index != -1;
 }
 
-float3 trace_ray(
-  uint2 pixel_coords,
-  EyeCoords ec,
-  global Triangle* triangles,
-  global TriangleMeta* tri_meta,
-  global BVHNode* bvh,
-  read_only image2d_array_t materials
-) {
+float3 trace_ray(uint2 pixel_coords,
+                 EyeCoords ec,
+                 global Triangle* triangles,
+                 global TriangleMeta* tri_meta,
+                 global BVHNode* bvh,
+                 read_only image2d_array_t materials) {
   float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
   float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
-                                  alpha_beta.y * ec.eye_coord_frame.y -
-                                                 ec.eye_coord_frame.z);
+                                  alpha_beta.y * ec.eye_coord_frame.y - ec.eye_coord_frame.z);
   float3 ray_pos = ec.eye_pos;
 
   float3 color = 0.0f;
@@ -105,11 +97,11 @@ float3 trace_ray(
     float3 intrs_point = ray.origin + ray.direction * intrs.length;
 
     // Interpolate texture coords from vertex data
-    float2 texture_coord = triangle_interpolate2(
-      intrs.barycentric, meta.texture_coord1, meta.texture_coord2, meta.texture_coord3
-    );
+    float2 texture_coord = triangle_interpolate2(intrs.barycentric, meta.texture_coord1,
+                                                 meta.texture_coord2, meta.texture_coord3);
 
     // Look up materials
+    // clang-format off
     float3 diffuse =
       read_material(materials, meta, texture_coord, meta.diffuse_index, DEFAULT_DIFFUSE);
     float metallic =
@@ -119,6 +111,7 @@ float3 trace_ray(
     float ambient_occlusion =
       read_material(materials, meta, texture_coord,
                     meta.ambient_occlusion_index, DEFAULT_AMBIENT_OCCLUSION).x;
+    // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
@@ -140,8 +133,8 @@ float3 trace_ray(
 
     // Shade the pixel if ray is not blocked
     if (!find_intersection(triangles, bvh, shadow_ray, &light_intrs, true)) {
-      intrs_color += shade(light_dir, view_dir, half_dir, light_distance,
-                           normal, diffuse, kS, metallic, roughness);
+      intrs_color += shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
+                           metallic, roughness);
     }
 
     /*
@@ -165,16 +158,13 @@ float3 trace_ray(
   return clamp(color, 0.0f, 1.0f);
 }
 
-kernel
-void kernel_raytrace(
-  global uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  global Triangle* triangles,
-  global TriangleMeta* tri_meta,
-  global BVHNode* bvh,
-  read_only image2d_array_t materials
-) {
+kernel void kernel_raytrace(global uchar4* pixels,
+                            uint2 pixel_dims,
+                            EyeCoords ec,
+                            global Triangle* triangles,
+                            global TriangleMeta* tri_meta,
+                            global BVHNode* bvh,
+                            read_only image2d_array_t materials) {
   uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
@@ -187,18 +177,15 @@ void kernel_raytrace(
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
 }
 
-kernel
-void kernel_interpolate(
-  global uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  global Triangle* triangles,
-  global TriangleMeta* tri_meta,
-  global BVHNode* bvh,
-  read_only image2d_array_t materials,
-  global uint* rem_pixels_counter,
-  global uint2* rem_coords
-) {
+kernel void kernel_interpolate(global uchar4* pixels,
+                               uint2 pixel_dims,
+                               EyeCoords ec,
+                               global Triangle* triangles,
+                               global TriangleMeta* tri_meta,
+                               global BVHNode* bvh,
+                               read_only image2d_array_t materials,
+                               global uint* rem_pixels_counter,
+                               global uint2* rem_coords) {
   uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
@@ -209,8 +196,9 @@ void kernel_interpolate(
   const int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint4 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    int index = linear_index(clamp(convert_int2(pixel_coords) + neighbor_offsets[i],
-                             0, convert_int2(pixel_dims) - 1), pixel_dims.x);
+    int index = linear_index(
+      clamp(convert_int2(pixel_coords) + neighbor_offsets[i], 0, convert_int2(pixel_dims) - 1),
+      pixel_dims.x);
     neighbors[i] = convert_uint4(pixels[index]);
   }
 
@@ -231,18 +219,15 @@ void kernel_interpolate(
   }
 }
 
-kernel
-void kernel_fill_remaining(
-  global uchar4* pixels,
-  uint2 pixel_dims,
-  EyeCoords ec,
-  global Triangle* triangles,
-  global TriangleMeta* tri_meta,
-  global BVHNode* bvh,
-  read_only image2d_array_t materials,
-  global uint* rem_pixels_counter,
-  global uint2* rem_coords
-) {
+kernel void kernel_fill_remaining(global uchar4* pixels,
+                                  uint2 pixel_dims,
+                                  EyeCoords ec,
+                                  global Triangle* triangles,
+                                  global TriangleMeta* tri_meta,
+                                  global BVHNode* bvh,
+                                  read_only image2d_array_t materials,
+                                  global uint* rem_pixels_counter,
+                                  global uint2* rem_coords) {
   uint id = get_global_id(0);
   if (id >= *rem_pixels_counter) {
     return;

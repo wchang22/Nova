@@ -1,19 +1,17 @@
+#include <algorithm>
 #include <cassert>
 #include <filesystem>
-#include <algorithm>
 
 #include "bvh.hpp"
-#include "util/exception/exception.hpp"
-#include "util/serialization/serialization.hpp"
-#include "util/profiling/profiling.hpp"
 #include "constants.hpp"
+#include "util/exception/exception.hpp"
+#include "util/profiling/profiling.hpp"
+#include "util/serialization/serialization.hpp"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
 BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
-  : name(name), triangles(triangles)
-{
-}
+  : name(name), triangles(triangles) {}
 
 std::vector<FlatBVHNode> BVH::build() {
   std::string bvh_file_name = name + ".bvh";
@@ -78,18 +76,19 @@ std::unique_ptr<BVHNode> BVH::build_bvh() {
   // Clear triangles, as they have all been moved out
   triangles.clear();
 
-  // Recursively build bvh in parallel
-  #pragma omp parallel
+// Recursively build bvh in parallel
+#pragma omp parallel
   {
-    #pragma omp single
+#pragma omp single
     build_bvh_node(root, 0);
-    #pragma omp taskwait
+#pragma omp taskwait
   }
   return root;
 }
 
 BVH::SplitParams BVH::find_object_split(const std::unique_ptr<BVHNode>& node,
-                                        int axis, const std::vector<Bin>& bins) {
+                                        int axis,
+                                        const std::vector<Bin>& bins) {
   uint32_t num_bins = bins.size();
   uint32_t num_splits = num_bins - 1;
   uint32_t num_triangles = node->triangles.size();
@@ -137,11 +136,12 @@ BVH::SplitParams BVH::find_object_split(const std::unique_ptr<BVHNode>& node,
     left_num_triangles += bins[split_index + 1].num_triangles;
   }
 
-  return best_params;  
+  return best_params;
 }
 
 std::pair<std::unique_ptr<BVHNode>, std::unique_ptr<BVHNode>>
-BVH::split_node(std::unique_ptr<BVHNode>& node, SplitParams&& best_params,
+BVH::split_node(std::unique_ptr<BVHNode>& node,
+                SplitParams&& best_params,
                 const std::vector<std::pair<AABB, glm::uvec3>>& bound_splits) {
   // Create real nodes and push triangles in each node
   auto left = std::make_unique<BVHNode>();
@@ -189,13 +189,14 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
 
   // Precompute triangle bounds and split indices
   std::vector<std::pair<AABB, glm::uvec3>> bound_splits;
-  std::transform(node->triangles.cbegin(), node->triangles.cend(),
-                  std::back_inserter(bound_splits), [&](const auto& tri) {
-    AABB bounds = tri.get_bounds();
-    glm::vec3 center = bounds.get_center();
-    glm::uvec3 split_index = min(static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
-    return std::make_pair(bounds, split_index);
-  });
+  std::transform(node->triangles.cbegin(), node->triangles.cend(), std::back_inserter(bound_splits),
+                 [&](const auto& tri) {
+                   AABB bounds = tri.get_bounds();
+                   glm::vec3 center = bounds.get_center();
+                   glm::uvec3 split_index =
+                     min(static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
+                   return std::make_pair(bounds, split_index);
+                 });
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
@@ -225,12 +226,12 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
 
   auto [left, right] = split_node(node, std::move(best_params), bound_splits);
 
-  // Recursively build left and right nodes
-  #pragma omp task default(none) shared(left)
+// Recursively build left and right nodes
+#pragma omp task default(none) shared(left)
   build_bvh_node(left, depth + 1);
-  #pragma omp task default(none) shared(right)
+#pragma omp task default(none) shared(right)
   build_bvh_node(right, depth + 1);
-  #pragma omp taskwait
+#pragma omp taskwait
 
   node->left = std::move(left);
   node->right = std::move(right);
@@ -251,10 +252,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   size_t flat_node_index = flat_nodes.size();
 
   // Build flat node and insert into list
-  FlatBVHNode flat_node {
-    { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
-    { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 }
-  };
+  FlatBVHNode flat_node { { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
+                          { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 } };
   flat_nodes.emplace_back(std::move(flat_node));
 
   // Leaf node
@@ -264,8 +263,7 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
     // Denote that the node is a leaf node by negating
     w(flat_nodes[flat_node_index].top_offset_left) = triangles.size();
     w(flat_nodes[flat_node_index].bottom_num_right) = -static_cast<float>(node->triangles.size());
-    triangles.insert(triangles.end(),
-                     std::make_move_iterator(node->triangles.begin()),
+    triangles.insert(triangles.end(), std::make_move_iterator(node->triangles.begin()),
                      std::make_move_iterator(node->triangles.end()));
     node->triangles.clear();
   } else { // Inner node

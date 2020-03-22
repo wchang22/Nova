@@ -11,7 +11,7 @@
   #endif
 #endif
 
-template<typename T>
+template <typename T>
 class Image2DRead {
 public:
   Image2DRead() = default;
@@ -21,12 +21,12 @@ public:
 
   Image2DRead(const Image2DRead& other) : image(other.image) {}
   Image2DRead(Image2DRead& other) : image(other.image) {}
-  
+
   Image2DRead& operator=(const Image2DRead& other) {
     image = other.image;
     return *this;
   }
-  Image2DRead& operator=(Image2DRead& other) { 
+  Image2DRead& operator=(Image2DRead& other) {
     image = other.image;
     return *this;
   }

@@ -1,8 +1,8 @@
 #ifndef SCENE_PARSER_HPP
 #define SCENE_PARSER_HPP
 
-#include <toml.hpp>
 #include <glm/glm.hpp>
+#include <toml.hpp>
 
 struct CameraSettings {
   glm::vec3 position;
