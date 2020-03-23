@@ -203,18 +203,18 @@ __global__ void interpolate(uchar4* pixels,
 
   // Sample 4 neighbours
   int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
-  uint4 neighbors[4];
+  uint3 neighbors[4];
   for (uint i = 0; i < 4; i++) {
     int index = linear_index(
       clamp(make_int2(pixel_coords) + neighbor_offsets[i], make_int2(0), make_int2(pixel_dims) - 1),
       pixel_dims.x);
-    neighbors[i] = make_uint4(pixels[index]);
+    neighbors[i] = make_uint3(make_uchar3(pixels[index]));
   }
 
   // Check color differences in the neighbours
-  uint4 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
-  uint4 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
-  float3 color_range = make_float3(make_uint3(color_max - color_min)) / 255.0f;
+  uint3 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
+  uint3 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
+  float3 color_range = make_float3(color_max - color_min) / 255.0f;
 
   // If difference is large, raytrace to find color
   if (length(color_range) > INTERP_THRESHOLD) {
@@ -223,8 +223,8 @@ __global__ void interpolate(uchar4* pixels,
   // Otherwise, interpolate
   else {
     int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
-    uchar4 color = make_uchar4((neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4U);
-    pixels[pixel_index] = color;
+    uint3 color = (neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4U;
+    pixels[pixel_index] = make_uchar4(make_uint4(color, 255));
   }
 }
 

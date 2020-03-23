@@ -106,6 +106,9 @@ inline __host__ __device__ uint3 make_uint3(uint4 a) { return make_uint3(a.x, a.
 inline __host__ __device__ uint3 make_uint3(int3 a) {
   return make_uint3(uint(a.x), uint(a.y), uint(a.z));
 }
+inline __host__ __device__ uint3 make_uint3(uchar3 a) {
+  return make_uint3(uint(a.x), uint(a.y), uint(a.z));
+}
 
 inline __host__ __device__ float4 make_float4(float s) { return make_float4(s, s, s, s); }
 inline __host__ __device__ float4 make_float4(float3 a) { return make_float4(a.x, a.y, a.z, 0.0f); }
@@ -746,6 +749,9 @@ inline __host__ __device__ float4 operator/(float b, float4 a) {
 
 inline __host__ __device__ uint4 operator/(uint4 a, uint b) {
   return make_uint4(a.x / b, a.y / b, a.z / b, a.w / b);
+}
+inline __host__ __device__ uint3 operator/(uint3 a, uint b) {
+  return make_uint3(a.x / b, a.y / b, a.z / b);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
