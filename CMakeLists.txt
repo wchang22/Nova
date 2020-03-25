@@ -46,6 +46,7 @@ file(GLOB_RECURSE SOURCES
     src/material/*
     src/model/*
     src/util/*
+    src/window/*
     src/constants.h
 )
 if (OpenCL_FOUND)
