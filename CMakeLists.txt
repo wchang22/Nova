@@ -17,12 +17,20 @@ else()
     message(FATAL_ERROR "Unknown backend ${BACKEND}")
 endif()
 
+# Dependencies that require compilation
+add_subdirectory(dependencies)
+
 # Library includes
 set(LIBS_NAME includes)
 file(GLOB_RECURSE LIBS_SOURCES include/*)
 add_library(${LIBS_NAME} STATIC ${LIBS_SOURCES})
-target_include_directories(${LIBS_NAME} PRIVATE include)
-target_compile_definitions(${LIBS_NAME} PRIVATE GLM_FORCE_INTRINSICS GLM_FORCE_SILENT_WARNINGS)
+target_link_libraries(${LIBS_NAME} ${CMAKE_DL_LIBS} glfw)
+target_include_directories(${LIBS_NAME} PRIVATE include ${GLFW_INCLUDE_PATH})
+target_compile_definitions(${LIBS_NAME} PRIVATE
+    GLM_FORCE_INTRINSICS
+    GLM_FORCE_SILENT_WARNINGS
+    IMGUI_IMPL_OPENGL_LOADER_GLAD
+)
 target_compile_options(${LIBS_NAME} PRIVATE -march=native -O3)
 
 # Source files
@@ -74,6 +82,7 @@ set(PROJECT_LIBS
     ${CUDA_LIB_NAME}
     OpenMP::OpenMP_CXX
     stdc++fs
+    glfw
 )
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
@@ -83,6 +92,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     include
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     kernels
+    ${GLFW_INCLUDE_PATH}
 )
 
 # Options
@@ -145,12 +155,3 @@ else()
 endif()
 
 add_subdirectory(tests)
-
-# Assimp
-set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE BOOL OFF)
-set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT CACHE BOOL OFF)
-set(ASSIMP_NO_EXPORT ON)
-set(ASSIMP_BUILD_ASSIMP_TOOLS CACHE BOOL OFF)
-set(ASSIMP_BUILD_TESTS CACHE BOOL OFF)
-set(ASSIMP_BUILD_OBJ_IMPORTER ON)
-add_subdirectory(assimp)
