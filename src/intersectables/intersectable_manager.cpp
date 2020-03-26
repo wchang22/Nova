@@ -3,8 +3,6 @@
 #include "constants.hpp"
 #include "util/exception/exception.hpp"
 
-IntersectableManager::IntersectableManager(const std::string& name) : name(name) {}
-
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
   if (triangles.size() >= MAX_TRIANGLES) {
     throw TriangleException("Max number of triangles exceeded");
@@ -21,7 +19,7 @@ void IntersectableManager::add_model(const Model& model) {
 }
 
 IntersectableData IntersectableManager::build() {
-  BVH bvh(name, triangles);
+  BVH bvh(triangles);
   std::vector<FlatBVHNode> bvh_data = bvh.build();
 
   // BVH modifies the order of triangles, so we need to look up the meta data

@@ -1,36 +1,35 @@
 #include "raytracer.hpp"
+#include "camera/camera.hpp"
 #include "constants.hpp"
 #include "model/model.hpp"
-#include "util/image/imageutils.hpp"
+#include "scene/scene.hpp"
 #include "util/profiling/profiling.hpp"
 
-Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
-  : width(width),
-    height(height),
-    name(name),
-    camera_settings(scene_parser.get_camera_settings()),
-    camera(
-      { camera_settings.position[0], camera_settings.position[1], camera_settings.position[2] },
-      { camera_settings.forward[0], camera_settings.forward[1], camera_settings.forward[2] },
-      { camera_settings.up[0], camera_settings.up[1], camera_settings.up[2] },
-      width,
-      height,
-      camera_settings.fovy),
-    intersectable_manager(name),
-    accelerator(scene_parser) {
-  const auto model_paths = scene_parser.get_model_paths();
-  for (const auto& model_path : model_paths) {
-    Model model(model_path, material_loader);
-    intersectable_manager.add_model(model);
-  }
-
+Raytracer::Raytracer() : accelerator(scene_parser) {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
   accelerator.add_kernel("kernel_fill_remaining");
 }
 
-void Raytracer::raytrace() {
+image_utils::image Raytracer::raytrace(const Scene& scene, uint32_t width, uint32_t height) {
   PROFILE_SCOPE("Raytrace");
+
+  PROFILE_SECTION_START("Get Data");
+  auto camera_position = scene.get_camera_position();
+  auto camera_forward = scene.get_camera_forward();
+  auto camera_up = scene.get_camera_up();
+  auto camera_fovy = scene.get_camera_fovy();
+  Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
+                { camera_forward[0], camera_forward[1], camera_forward[2] },
+                { camera_up[0], camera_up[1], camera_up[2] }, width, height, camera_fovy);
+
+  const auto model_path = scene.get_model_path();
+  if (loaded_models.find(model_path) == loaded_models.end()) {
+    Model model(model_path, material_loader);
+    intersectable_manager.add_model(model);
+    loaded_models.emplace(model_path);
+  }
+  PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Build data");
   auto pixel_buf = accelerator.create_buffer<uchar4>(MemFlags::READ_WRITE, width * height);
@@ -56,35 +55,31 @@ void Raytracer::raytrace() {
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Raytrace profile");
-  for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
-    PROFILE_SCOPE("Raytrace profile loop");
+  accelerator.write_buffer(rem_pixels_buf, 0U);
+  {
+    PROFILE_SECTION_START("Raytrace kernel");
+    uint2 global_dims { width, height / 2 };
+    uint2 local_dims { 8, 4 };
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims, pixel_buf,
+                            pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
+                            material_ims);
+    PROFILE_SECTION_END();
 
-    accelerator.write_buffer(rem_pixels_buf, 0U);
-    {
-      PROFILE_SECTION_START("Raytrace kernel");
-      uint2 global_dims { width, height / 2 };
-      uint2 local_dims { 8, 4 };
-      accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims, pixel_buf,
-                              pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
-                              material_ims);
-      PROFILE_SECTION_END();
-
-      PROFILE_SECTION_START("Interpolate kernel");
-      accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
-                              pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf,
-                              bvh_buf, material_ims, rem_pixels_buf, rem_coords_buf);
-      PROFILE_SECTION_END();
-    }
-    {
-      PROFILE_SECTION_START("Fill remaining kernel");
-      uint32_t counter = accelerator.read_buffer(rem_pixels_buf);
-      uint2 global_dims { counter, 1 };
-      uint2 local_dims { 32, 1 };
-      accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                              pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf,
-                              bvh_buf, material_ims, rem_pixels_buf, rem_coords_buf);
-      PROFILE_SECTION_END();
-    }
+    PROFILE_SECTION_START("Interpolate kernel");
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims, pixel_buf,
+                            pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
+                            material_ims, rem_pixels_buf, rem_coords_buf);
+    PROFILE_SECTION_END();
+  }
+  {
+    PROFILE_SECTION_START("Fill remaining kernel");
+    uint32_t counter = accelerator.read_buffer(rem_pixels_buf);
+    uint2 global_dims { counter, 1 };
+    uint2 local_dims { 32, 1 };
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
+                            pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
+                            material_ims, rem_pixels_buf, rem_coords_buf);
+    PROFILE_SECTION_END();
   }
   PROFILE_SECTION_END();
 
@@ -92,7 +87,9 @@ void Raytracer::raytrace() {
   std::vector<uchar4> pixels = accelerator.read_buffer(pixel_buf, width * height);
   PROFILE_SECTION_END();
 
-  PROFILE_SECTION_START("Write image");
-  image_utils::write_image((name + ".jpg").c_str(), { pixels, width, height });
-  PROFILE_SECTION_END();
+  return {
+    pixels,
+    width,
+    height,
+  };
 }

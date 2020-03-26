@@ -1,6 +1,5 @@
 #include "scene.hpp"
 #include "scene/scene_parser.hpp"
-#include "util/image/imageutils.hpp"
 
 Scene::Scene() {
   SceneParser scene_parser;
@@ -18,8 +17,6 @@ Scene::Scene() {
     camera_fovy,         light_position,   light_intensity,   ray_recursion_depth,
     default_diffuse,     default_metallic, default_roughness, default_ambient_occlusion
   };
-
-  settings.model_path = "raytrace.jpg";
 }
 
 void Scene::init_texture() {
@@ -110,9 +107,16 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-void Scene::update_model() {
-  auto im = image_utils::read_image(settings.model_path.c_str());
+void Scene::set_width(uint32_t width) { this->width = width; }
 
+uint32_t Scene::get_width() const { return width; }
+
+void Scene::set_height(uint32_t height) { this->height = height; }
+
+uint32_t Scene::get_height() const { return height; }
+
+void Scene::render() {
+  auto im = raytracer.raytrace(*this, width, height);
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, im.width, im.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,

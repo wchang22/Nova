@@ -1,27 +1,27 @@
 #ifndef RAYTRACER_HPP
 #define RAYTRACER_HPP
 
+#include <unordered_set>
+
 #include "backend/accelerator.hpp"
-#include "camera/camera.hpp"
 #include "intersectables/intersectable_manager.hpp"
 #include "material/material_loader.hpp"
 #include "scene/scene_parser.hpp"
 
+class Scene;
+
 class Raytracer {
 public:
-  Raytracer(uint32_t width, uint32_t height, const std::string& name);
+  Raytracer();
 
-  void raytrace();
+  image_utils::image raytrace(const Scene& scene, uint32_t width, uint32_t height);
 
 private:
-  uint32_t width, height;
-  std::string name;
   SceneParser scene_parser;
-  CameraSettings camera_settings;
-  Camera camera;
   IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
   Accelerator accelerator;
+  std::unordered_set<std::string> loaded_models;
 };
 
 #endif // RAYTRACER_HPP

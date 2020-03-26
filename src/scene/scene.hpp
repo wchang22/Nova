@@ -1,6 +1,8 @@
 #include <array>
 #include <glad/glad.h>
 
+#include "core/raytracer.hpp"
+
 class Scene {
 public:
   Scene();
@@ -48,10 +50,18 @@ public:
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
 
-  void update_model();
+  void set_width(uint32_t width);
+  uint32_t get_width() const;
+  void set_height(uint32_t height);
+  uint32_t get_height() const;
+
+  void render();
   GLuint get_scene_texture_id() const;
 
 private:
+  uint32_t width;
+  uint32_t height;
   Settings settings;
+  Raytracer raytracer;
   GLuint scene_texture_id;
 };

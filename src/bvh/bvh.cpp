@@ -10,55 +10,11 @@
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
-BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
-  : name(name), triangles(triangles) {}
+BVH::BVH(std::vector<Triangle>& triangles) : triangles(triangles) {}
 
 std::vector<FlatBVHNode> BVH::build() {
-  std::string bvh_file_name = name + ".bvh";
-  std::string tri_file_name = name + ".tri";
-  std::fstream bvh_file(bvh_file_name);
-  std::fstream tri_file(tri_file_name);
-
-  std::vector<FlatBVHNode> flat_bvh;
-
-  // If cached files do not exist
-  if (!bvh_file.is_open() || !tri_file.is_open()) {
-    bvh_file.open(bvh_file_name, std::ios::out);
-    tri_file.open(tri_file_name, std::ios::out);
-    if (!bvh_file.is_open()) {
-      throw FileException("Cannot create " + bvh_file_name);
-    }
-    if (!tri_file.is_open()) {
-      throw FileException("Cannot create " + tri_file_name);
-    }
-
-    // Build bvh and serialize them into files
-    std::unique_ptr<BVHNode> bvh = build_bvh();
-    flat_bvh = build_flat_bvh(bvh);
-
-    bvh_file << flat_bvh;
-    tri_file << triangles;
-  } else {
-    size_t triangles_size = triangles.size();
-
-    // Each line is a bvh node
-    std::string line;
-    getline(bvh_file, line);
-    if (line.empty()) {
-      throw FileException("Invalid bvh file " + bvh_file_name);
-    }
-    bvh_file.seekg(0);
-    size_t bvh_size = std::filesystem::file_size(bvh_file_name) / line.length();
-
-    triangles.clear();
-    triangles.reserve(triangles_size);
-    flat_bvh.reserve(bvh_size);
-
-    // Deserialize bvh and triangles from file
-    bvh_file >> flat_bvh;
-    tri_file >> triangles;
-  }
-
+  std::unique_ptr<BVHNode> bvh = build_bvh();
+  std::vector<FlatBVHNode> flat_bvh = build_flat_bvh(bvh);
   return flat_bvh;
 }
 

@@ -1,15 +1,12 @@
 #include <iostream>
 
 #include "backend/types.hpp"
-#include "core/raytracer.hpp"
 #include "window/window.hpp"
 
 int main() {
   try {
     Window window;
     window.main_loop();
-    // Raytracer rt(1280, 720, "raytrace");
-    // rt.raytrace();
   } catch (const Error& e) {
     std::cerr << e.what() << ": " << get_error_string(e.err()) << std::endl;
     return 1;

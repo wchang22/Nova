@@ -17,13 +17,11 @@ struct IntersectableData {
 
 class IntersectableManager {
 public:
-  IntersectableManager(const std::string& name);
   void add_triangle(const Triangle& tri, const TriangleMeta& meta);
   void add_model(const Model& model);
   IntersectableData build();
 
 private:
-  std::string name;
   std::vector<Triangle> triangles;
   std::unordered_map<Triangle, TriangleMeta, TriangleHash> triangle_map;
 };

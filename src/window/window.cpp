@@ -18,6 +18,7 @@ const ImVec4 BG_COLOR(91.0f / 255.0f, 87.0f / 255.0f, 142.0f / 255.0f, 1.0f);
 const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
 const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
 const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);
+const ImVec4 ERROR_COLOR(1.0f, 0.0f, 0.0f, 1.0f);
 const ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                       ImGuiWindowFlags_NoCollapse |
                                       ImGuiWindowFlags_NoBringToFrontOnFocus;
@@ -62,6 +63,7 @@ Window::Window() {
   // Default styles
   ImGui::StyleColorsClassic();
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
   ImGui::PushStyleColor(ImGuiCol_WindowBg, BG_COLOR);
   ImGui::PushStyleColor(ImGuiCol_Header, HEADER_COLOR);
   ImGui::PushStyleColor(ImGuiCol_Button, BUTTON_COLOR);
@@ -103,6 +105,7 @@ void Window::display_scene_settings() {
   auto& style = ImGui::GetStyle();
 
   static std::string model_path = scene.get_model_path();
+  static bool model_path_error = false;
   static std::array<float, 3> camera_position = scene.get_camera_position();
   static std::array<float, 3> camera_forward = scene.get_camera_forward();
   static std::array<float, 3> camera_up = scene.get_camera_up();
@@ -122,7 +125,14 @@ void Window::display_scene_settings() {
     ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (model_path_error) {
+        ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
+      }
       ImGui::InputText("Path##Model", &model_path);
+      if (model_path_error) {
+        ImGui::PopStyleColor();
+      }
+      model_path = scene.set_model_path(model_path);
     }
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -166,7 +176,14 @@ void Window::display_scene_settings() {
 
     ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
     if (ImGui::Button("Update##SceneSettings", { window_width / 2.0f, 0 })) {
-      scene.update_model();
+      scene.set_width(width);
+      scene.set_height(height);
+      try {
+        scene.render();
+        model_path_error = false;
+      } catch (const ModelException& e) {
+        model_path_error = true;
+      }
     }
 
     ImGui::End();
@@ -194,8 +211,6 @@ void Window::display_render() {
 }
 
 void Window::main_loop() {
-  scene.update_model();
-
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
