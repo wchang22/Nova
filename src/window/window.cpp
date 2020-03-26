@@ -2,13 +2,25 @@
 
 #include <iostream>
 
+// clang-format off
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+// clang-format on
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include "util/exception/exception.hpp"
+
+const ImVec4 BG_COLOR(91.0f / 255.0f, 87.0f / 255.0f, 142.0f / 255.0f, 1.0f);
+const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
+const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
+const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);
+const size_t MAX_PATH_LENGTH = 260;
+const ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                      ImGuiWindowFlags_NoCollapse |
+                                      ImGuiWindowFlags_NoBringToFrontOnFocus;
 
 Window::Window() {
   // Setup GLFW and window
@@ -44,9 +56,16 @@ Window::Window() {
   // Setup Dear ImGui
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  auto& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+  // Default styles
   ImGui::StyleColorsClassic();
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, BG_COLOR);
+  ImGui::PushStyleColor(ImGuiCol_Header, HEADER_COLOR);
+  ImGui::PushStyleColor(ImGuiCol_Button, BUTTON_COLOR);
+  ImGui::PushStyleColor(ImGuiCol_FrameBg, INPUT_COLOR);
 
   // Setup Platform/Renderer bindings
   ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -61,49 +80,110 @@ Window::~Window() {
   glfwTerminate();
 }
 
-void Window::main_loop() {
-  bool show_demo_window = true;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+void Window::display_menu() {
+  if (ImGui::BeginMainMenuBar()) {
+    menu_height = ImGui::GetWindowHeight();
+    if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("Quit")) {
+        glfwSetWindowShouldClose(window, true);
+      }
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
+  }
+}
 
+void Window::display_details_settings() {
+  float window_width = 0.25f * width;
+  float window_height = 1.0f * height - menu_height;
+  auto& io = ImGui::GetIO();
+  auto& style = ImGui::GetStyle();
+
+  static char model_path[MAX_PATH_LENGTH] = "";
+  static float camera_position[3] {};
+  static float camera_forward[3] {};
+  static float camera_up[3] {};
+  static float camera_fovy {};
+  static float light_position[3] {};
+  static float light_intensity[3] {};
+  static int ray_bounces {};
+  static float shading_diffuse[3] {};
+  static float shading_metallic {};
+  static float shading_roughness {};
+  static float shading_ambient_occlusion {};
+
+  if (ImGui::Begin("Details and Settings", nullptr, WINDOW_FLAGS)) {
+    ImGui::SetWindowPos({ 0.0f, menu_height }, true);
+    ImGui::SetWindowSize({ window_width, window_height }, true);
+
+    ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+    if (ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputText("Path", model_path, MAX_PATH_LENGTH);
+    }
+
+    if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Position", camera_position);
+      ImGui::InputFloat3("Forward", camera_forward);
+      ImGui::InputFloat3("Up", camera_up);
+      ImGui::InputFloat("FOVy", &camera_fovy);
+    }
+
+    if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Position", light_position);
+      ImGui::InputFloat3("Intensity", light_intensity);
+    }
+
+    if (ImGui::CollapsingHeader("Ray Bounces", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputInt("Number", &ray_bounces);
+      ray_bounces = std::max(ray_bounces, 1);
+    }
+
+    if (ImGui::CollapsingHeader("Shading Defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Diffuse", shading_diffuse);
+      ImGui::InputFloat("Metallic", &shading_metallic);
+      ImGui::InputFloat("Roughness", &shading_roughness);
+      ImGui::InputFloat("AO", &shading_ambient_occlusion);
+    }
+
+    ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
+    if (ImGui::Button("Update", { window_width / 2.0f, 0 })) {
+    }
+
+    ImGui::End();
+  }
+}
+
+void Window::display_render() {
+  float window_width = 0.75f * width;
+  float window_height = 1.0f * height - menu_height;
+
+  ImGui::Begin("Render", nullptr, WINDOW_FLAGS);
+
+  ImGui::SetWindowPos({ width - window_width, menu_height }, true);
+  ImGui::SetWindowSize({ window_width, window_height }, true);
+
+  ImGui::End();
+}
+
+void Window::main_loop() {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
-    // Start the Dear ImGui frame
+    // New frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if (show_demo_window)
-      ImGui::ShowDemoWindow(&show_demo_window);
-
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-    {
-      static float f = 0.0f;
-      static int counter = 0;
-
-      ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-      ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-      ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-
-      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-      ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-      if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-          counter++;
-      ImGui::SameLine();
-      ImGui::Text("counter = %d", counter);
-
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::End();
-    }
+    // Displays
+    display_menu();
+    display_details_settings();
+    display_render();
 
     // Rendering
     ImGui::Render();
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
