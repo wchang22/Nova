@@ -105,6 +105,7 @@ void Window::display_scene_settings() {
   auto& io = ImGui::GetIO();
   auto& style = ImGui::GetStyle();
 
+  static bool real_time = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
   static std::array<float, 3> camera_position = scene.get_camera_position();
@@ -119,11 +120,30 @@ void Window::display_scene_settings() {
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
 
+  const auto render = [&]() {
+    if (model_path_error) {
+      return;
+    }
+
+    scene.set_width(width);
+    scene.set_height(height);
+    try {
+      scene.render();
+      model_path_error = false;
+    } catch (const ModelException& e) {
+      model_path_error = true;
+    }
+  };
+
   if (ImGui::Begin("Details and Settings", nullptr, WINDOW_FLAGS)) {
     ImGui::SetWindowPos({ 0.0f, menu_height }, true);
     ImGui::SetWindowSize({ window_width, window_height }, true);
 
     ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+    if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
+    }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       if (model_path_error) {
@@ -133,7 +153,6 @@ void Window::display_scene_settings() {
       if (model_path_error) {
         ImGui::PopStyleColor();
       }
-      model_path = scene.set_model_path(model_path);
     }
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -177,17 +196,18 @@ void Window::display_scene_settings() {
 
     ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
     if (ImGui::Button("Update##SceneSettings", { window_width / 2.0f, 0 })) {
-      scene.set_width(width);
-      scene.set_height(height);
-      try {
-        scene.render();
-        model_path_error = false;
-      } catch (const ModelException& e) {
-        model_path_error = true;
+      model_path = scene.set_model_path(model_path);
+      model_path_error = false;
+      if (!real_time) {
+        render();
       }
     }
 
     ImGui::End();
+  }
+
+  if (real_time) {
+    render();
   }
 }
 

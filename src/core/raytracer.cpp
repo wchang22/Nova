@@ -52,8 +52,6 @@ void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
   // Update Model
   const auto model_path = scene.get_model_path();
   if (model_path != loaded_model) {
-    loaded_model = model_path;
-
     intersectable_manager.clear();
     material_loader.clear();
 
@@ -74,6 +72,8 @@ void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
       ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::WRAP, FilterMode::NEAREST,
       true, std::max(material_data.num_materials, static_cast<size_t>(1)),
       std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
+
+    loaded_model = model_path;
   }
 
   rem_pixels_buf = accelerator.create_buffer<uint32_t>(MemFlags::READ_WRITE, 0U);
