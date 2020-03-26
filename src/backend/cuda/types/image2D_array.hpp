@@ -55,6 +55,16 @@ public:
     cudaFreeArray(buffer);
   }
 
+  Image2DArray(Image2DArray&& other) : tex(other.tex), buffer(other.buffer) {
+    other.tex = 0;
+    other.buffer = 0;
+  }
+  Image2DArray& operator=(Image2DArray&& other) {
+    std::swap(tex, other.tex);
+    std::swap(buffer, other.buffer);
+    return *this;
+  }
+
   cudaTextureObject_t& data() { return tex; };
 
 private:

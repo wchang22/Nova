@@ -31,7 +31,7 @@ public:
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;
-  int get_ray_recursion_depth() const;
+  int get_ray_bounces() const;
 
 private:
   toml::value parsed_data;

@@ -8,13 +8,13 @@ Scene::Scene() {
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [light_position, light_intensity] = scene_parser.get_light_settings();
-  const int ray_recursion_depth = scene_parser.get_ray_recursion_depth();
+  const int ray_bounces = scene_parser.get_ray_bounces();
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
   settings = {
     model_paths.front(), camera_position,  camera_forward,    camera_up,
-    camera_fovy,         light_position,   light_intensity,   ray_recursion_depth,
+    camera_fovy,         light_position,   light_intensity,   ray_bounces,
     default_diffuse,     default_metallic, default_roughness, default_ambient_occlusion
   };
 }
@@ -96,7 +96,7 @@ float Scene::set_shading_metallic(float metallic) {
 float Scene::get_shading_metallic() const { return settings.shading_metallic; }
 
 float Scene::set_shading_roughness(float roughness) {
-  return settings.shading_metallic = std::clamp(roughness, 0.0f, 1.0f);
+  return settings.shading_roughness = std::clamp(roughness, 0.0f, 1.0f);
 }
 
 float Scene::get_shading_roughness() const { return settings.shading_roughness; }

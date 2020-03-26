@@ -7,14 +7,13 @@
 #include "backend/common/utils/utils.hpp"
 #include "backend/cuda/entry.hpp"
 #include "backend/cuda/types/types.hpp"
-#include "scene/scene_parser.hpp"
 #include "util/exception/exception.hpp"
 
 #define RESOLVE_KERNEL(kernel) kernel
 
 class Accelerator {
 public:
-  Accelerator(const SceneParser& scene_parser);
+  Accelerator();
 
   void add_kernel(const std::string& kernel_name) { (void) kernel_name; }
 

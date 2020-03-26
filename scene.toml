@@ -34,8 +34,8 @@ intensity = [500.0, 500.0, 500.0]
 # Fireplace
 # position = [3.0, 2.87, -0.5]
 
-[ray_recursion]
-depth = 5
+[ray_bounces]
+number = 5
 
 [shading_defaults]
 diffuse = [1.0, 1.0, 1.0]

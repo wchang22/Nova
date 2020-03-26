@@ -5,7 +5,7 @@
 #include "scene/scene.hpp"
 #include "util/profiling/profiling.hpp"
 
-Raytracer::Raytracer() : accelerator(scene_parser) {
+Raytracer::Raytracer() {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
   accelerator.add_kernel("kernel_fill_remaining");
@@ -15,14 +15,32 @@ void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
   PROFILE_SCOPE("Set Scene");
 
   // Update Camera
-  auto camera_position = scene.get_camera_position();
-  auto camera_forward = scene.get_camera_forward();
-  auto camera_up = scene.get_camera_up();
-  auto camera_fovy = scene.get_camera_fovy();
+  const auto& camera_position = scene.get_camera_position();
+  const auto& camera_forward = scene.get_camera_forward();
+  const auto& camera_up = scene.get_camera_up();
+  const auto camera_fovy = scene.get_camera_fovy();
   Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
                 { camera_forward[0], camera_forward[1], camera_forward[2] },
                 { camera_up[0], camera_up[1], camera_up[2] }, width, height, camera_fovy);
-  ec = accelerator.create_wrapper<EyeCoords>(camera.get_eye_coords());
+
+  // Update Scene Params
+  const auto& shading_diffuse = scene.get_shading_diffuse();
+  const auto& shading_metallic = scene.get_shading_metallic();
+  const auto& shading_roughness = scene.get_shading_roughness();
+  const auto& shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
+  const auto& light_position = scene.get_light_position();
+  const auto& light_intensity = scene.get_light_intensity();
+  const auto ray_bounces = scene.get_ray_bounces();
+
+  scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
+    SceneParams { camera.get_eye_coords(),
+                  { light_position[0], light_position[1], light_position[2] },
+                  { light_intensity[0], light_intensity[1], light_intensity[2] },
+                  { shading_diffuse[0], shading_diffuse[1], shading_diffuse[2] },
+                  shading_metallic,
+                  shading_roughness,
+                  shading_ambient_occlusion,
+                  ray_bounces });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
@@ -72,15 +90,15 @@ image_utils::image Raytracer::raytrace() {
     PROFILE_SECTION_START("Raytrace kernel");
     uint2 global_dims { width, height / 2 };
     uint2 local_dims { 8, 4 };
-    accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims, pixel_buf,
-                            pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
-                            material_ims);
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
+                            scene_params_wrapper, pixel_buf, pixel_dims_wrapper, triangle_buf,
+                            tri_meta_buf, bvh_buf, material_ims);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims, pixel_buf,
-                            pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
-                            material_ims, rem_pixels_buf, rem_coords_buf);
+                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
+                            rem_pixels_buf, rem_coords_buf);
     PROFILE_SECTION_END();
   }
   {
@@ -89,8 +107,8 @@ image_utils::image Raytracer::raytrace() {
     uint2 global_dims { counter, 1 };
     uint2 local_dims { 32, 1 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                            pixel_buf, pixel_dims_wrapper, ec, triangle_buf, tri_meta_buf, bvh_buf,
-                            material_ims, rem_pixels_buf, rem_coords_buf);
+                            scene_params_wrapper, pixel_buf, pixel_dims_wrapper, triangle_buf,
+                            tri_meta_buf, bvh_buf, material_ims, rem_pixels_buf, rem_coords_buf);
     PROFILE_SECTION_END();
   }
 

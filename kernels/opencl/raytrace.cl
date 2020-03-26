@@ -68,20 +68,22 @@ bool find_intersection(
 }
 
 float3 trace_ray(uint2 pixel_coords,
-                 EyeCoords ec,
+                 SceneParams scene_params,
                  global Triangle* triangles,
                  global TriangleMeta* tri_meta,
                  global BVHNode* bvh,
                  read_only image2d_array_t materials) {
-  float2 alpha_beta = ec.coord_scale * (convert_float2(pixel_coords) - ec.coord_dims + 0.5f);
-  float3 ray_dir = fast_normalize(alpha_beta.x * ec.eye_coord_frame.x -
-                                  alpha_beta.y * ec.eye_coord_frame.y - ec.eye_coord_frame.z);
-  float3 ray_pos = ec.eye_pos;
+  float2 alpha_beta = scene_params.eye_coords.coord_scale *
+                      (convert_float2(pixel_coords) - scene_params.eye_coords.coord_dims + 0.5f);
+  float3 ray_dir = fast_normalize(alpha_beta.x * scene_params.eye_coords.eye_coord_frame.x -
+                                  alpha_beta.y * scene_params.eye_coords.eye_coord_frame.y -
+                                  scene_params.eye_coords.eye_coord_frame.z);
+  float3 ray_pos = scene_params.eye_coords.eye_pos;
 
   float3 color = 0.0f;
   float3 reflectance = 1.0f;
 
-  for (int depth = 0; depth < RAY_RECURSION_DEPTH; depth++) {
+  for (int depth = 0; depth < scene_params.ray_bounces; depth++) {
     Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
     Intersection intrs = NO_INTERSECTION;
@@ -102,15 +104,14 @@ float3 trace_ray(uint2 pixel_coords,
 
     // Look up materials
     // clang-format off
-    float3 diffuse =
-      read_material(materials, meta, texture_coord, meta.diffuse_index, DEFAULT_DIFFUSE);
-    float metallic =
-      read_material(materials, meta, texture_coord, meta.metallic_index, DEFAULT_METALLIC).x;
-    float roughness =
-      read_material(materials, meta, texture_coord, meta.roughness_index, DEFAULT_ROUGHNESS).x;
-    float ambient_occlusion =
-      read_material(materials, meta, texture_coord,
-                    meta.ambient_occlusion_index, DEFAULT_AMBIENT_OCCLUSION).x;
+    float3 diffuse = read_material(materials, meta, texture_coord,
+      meta.diffuse_index, scene_params.shading_diffuse);
+    float metallic = read_material(materials, meta, texture_coord,
+      meta.metallic_index, scene_params.shading_metallic).x;
+    float roughness = read_material(materials, meta, texture_coord,
+      meta.roughness_index, scene_params.shading_roughness).x;
+    float ambient_occlusion = read_material(materials, meta, texture_coord,
+      meta.ambient_occlusion_index, scene_params.shading_ambient_occlusion).x;
     // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
@@ -119,10 +120,10 @@ float3 trace_ray(uint2 pixel_coords,
     float3 intrs_color = diffuse * ambient_occlusion * 0.03f;
 
     // Calculate lighting params
-    float3 light_dir = fast_normalize(LIGHT_POSITION - intrs_point);
+    float3 light_dir = fast_normalize(scene_params.light_position - intrs_point);
     float3 view_dir = -ray.direction;
     float3 half_dir = fast_normalize(light_dir + view_dir);
-    float light_distance = fast_distance(LIGHT_POSITION, intrs_point);
+    float light_distance = fast_distance(scene_params.light_position, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
 
     // Cast a shadow ray to the light
@@ -133,8 +134,8 @@ float3 trace_ray(uint2 pixel_coords,
 
     // Shade the pixel if ray is not blocked
     if (!find_intersection(triangles, bvh, shadow_ray, &light_intrs, true)) {
-      intrs_color += shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
-                           metallic, roughness);
+      intrs_color += shade(scene_params, light_dir, view_dir, half_dir, light_distance, normal,
+                           diffuse, kS, metallic, roughness);
     }
 
     /*
@@ -158,9 +159,9 @@ float3 trace_ray(uint2 pixel_coords,
   return clamp(color, 0.0f, 1.0f);
 }
 
-kernel void kernel_raytrace(global uchar4* pixels,
+kernel void kernel_raytrace(SceneParams scene_params,
+                            global uchar4* pixels,
                             uint2 pixel_dims,
-                            EyeCoords ec,
                             global Triangle* triangles,
                             global TriangleMeta* tri_meta,
                             global BVHNode* bvh,
@@ -171,7 +172,7 @@ kernel void kernel_raytrace(global uchar4* pixels,
   }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
-  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
@@ -179,7 +180,6 @@ kernel void kernel_raytrace(global uchar4* pixels,
 
 kernel void kernel_interpolate(global uchar4* pixels,
                                uint2 pixel_dims,
-                               EyeCoords ec,
                                global Triangle* triangles,
                                global TriangleMeta* tri_meta,
                                global BVHNode* bvh,
@@ -219,9 +219,9 @@ kernel void kernel_interpolate(global uchar4* pixels,
   }
 }
 
-kernel void kernel_fill_remaining(global uchar4* pixels,
+kernel void kernel_fill_remaining(SceneParams scene_params,
+                                  global uchar4* pixels,
                                   uint2 pixel_dims,
-                                  EyeCoords ec,
                                   global Triangle* triangles,
                                   global TriangleMeta* tri_meta,
                                   global BVHNode* bvh,
@@ -234,7 +234,7 @@ kernel void kernel_fill_remaining(global uchar4* pixels,
   }
   uint2 pixel_coords = rem_coords[id];
 
-  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);

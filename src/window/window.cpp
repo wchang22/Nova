@@ -15,7 +15,7 @@
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
 
-const ImVec4 BG_COLOR(91.0f / 255.0f, 87.0f / 255.0f, 142.0f / 255.0f, 1.0f);
+const ImVec4 BG_COLOR(0.2f, 0.2f, 0.2f, 1.0f);
 const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
 const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
 const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);

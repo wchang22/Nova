@@ -41,6 +41,6 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   return { diffuse, metallic, roughness, ambient_occlusion };
 }
 
-int SceneParser::get_ray_recursion_depth() const {
-  return toml::find<int>(parsed_data, "ray_recursion", "depth");
+int SceneParser::get_ray_bounces() const {
+  return toml::find<int>(parsed_data, "ray_bounces", "number");
 }

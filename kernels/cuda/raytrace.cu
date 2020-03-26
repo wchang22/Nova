@@ -74,20 +74,22 @@ __device__ bool find_intersection(
 }
 
 __device__ float3 trace_ray(uint2 pixel_coords,
-                            EyeCoords ec,
+                            const SceneParams& scene_params,
                             TriangleData* triangles,
                             TriangleMetaData* tri_meta,
                             FlatBVHNode* bvh,
                             cudaTextureObject_t materials) {
-  float2 alpha_beta = ec.coord_scale * (make_float2(pixel_coords) - ec.coord_dims + 0.5f);
-  float3 ray_dir = normalize(alpha_beta.x * ec.eye_coord_frame.x -
-                             alpha_beta.y * ec.eye_coord_frame.y - ec.eye_coord_frame.z);
-  float3 ray_pos = ec.eye_pos;
+  float2 alpha_beta = scene_params.eye_coords.coord_scale *
+                      (make_float2(pixel_coords) - scene_params.eye_coords.coord_dims + 0.5f);
+  float3 ray_dir = normalize(alpha_beta.x * scene_params.eye_coords.eye_coord_frame.x -
+                             alpha_beta.y * scene_params.eye_coords.eye_coord_frame.y -
+                             scene_params.eye_coords.eye_coord_frame.z);
+  float3 ray_pos = scene_params.eye_coords.eye_pos;
 
   float3 color = make_float3(0.0f);
   float3 reflectance = make_float3(1.0f);
 
-  for (int depth = 0; depth < constants.ray_recursion_depth; depth++) {
+  for (int depth = 0; depth < scene_params.ray_bounces; depth++) {
     Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
 
     Intersection intrs = no_intersection();
@@ -107,18 +109,17 @@ __device__ float3 trace_ray(uint2 pixel_coords,
                                                 meta.texture_coord2, meta.texture_coord3);
 
     // Look up materials
-    float3 diffuse =
-      read_material(materials, meta, texture_coord, meta.diffuse_index, constants.default_diffuse);
+    // clang-format off
+    float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
+                                   scene_params.shading_diffuse);
     float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
-                                   make_float3(constants.default_metallic))
-                       .x;
+                                   make_float3(scene_params.shading_metallic)).x;
     float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
-                                    make_float3(constants.default_roughness))
-                        .x;
+                                    make_float3(scene_params.shading_roughness)).x;
     float ambient_occlusion =
       read_material(materials, meta, texture_coord, meta.ambient_occlusion_index,
-                    make_float3(constants.default_ambient_occlusion))
-        .x;
+                    make_float3(scene_params.shading_ambient_occlusion)).x;
+    // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
@@ -126,10 +127,10 @@ __device__ float3 trace_ray(uint2 pixel_coords,
     float3 intrs_color = diffuse * ambient_occlusion * 0.03f;
 
     // Calculate lighting params
-    float3 light_dir = normalize(constants.light_position - intrs_point);
-    float3 view_dir = normalize(ec.eye_pos - intrs_point);
+    float3 light_dir = normalize(scene_params.light_position - intrs_point);
+    float3 view_dir = -ray.direction;
     float3 half_dir = normalize(light_dir + view_dir);
-    float light_distance = distance(constants.light_position, intrs_point);
+    float light_distance = distance(scene_params.light_position, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
 
     // Cast a shadow ray to the light
@@ -140,8 +141,8 @@ __device__ float3 trace_ray(uint2 pixel_coords,
 
     // Shade the pixel if ray is not blocked
     if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-      intrs_color += shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
-                           metallic, roughness);
+      intrs_color += shade(scene_params, light_dir, view_dir, half_dir, light_distance, normal,
+                           diffuse, kS, metallic, roughness);
     }
 
     /*
@@ -165,9 +166,9 @@ __device__ float3 trace_ray(uint2 pixel_coords,
   return clamp(color, 0.0f, 1.0f);
 }
 
-__global__ void raytrace(uchar4* pixels,
+__global__ void raytrace(SceneParams scene_params,
+                         uchar4* pixels,
                          uint2 pixel_dims,
-                         EyeCoords ec,
                          TriangleData* triangles,
                          TriangleMetaData* tri_meta,
                          FlatBVHNode* bvh,
@@ -179,7 +180,7 @@ __global__ void raytrace(uchar4* pixels,
   }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
-  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
@@ -187,7 +188,6 @@ __global__ void raytrace(uchar4* pixels,
 
 __global__ void interpolate(uchar4* pixels,
                             uint2 pixel_dims,
-                            EyeCoords ec,
                             TriangleData* triangles,
                             TriangleMetaData* tri_meta,
                             FlatBVHNode* bvh,
@@ -228,9 +228,9 @@ __global__ void interpolate(uchar4* pixels,
   }
 }
 
-__global__ void fill_remaining(uchar4* pixels,
+__global__ void fill_remaining(SceneParams scene_params,
+                               uchar4* pixels,
                                uint2 pixel_dims,
-                               EyeCoords ec,
                                TriangleData* triangles,
                                TriangleMetaData* tri_meta,
                                FlatBVHNode* bvh,
@@ -243,7 +243,7 @@ __global__ void fill_remaining(uchar4* pixels,
   }
   uint2 pixel_coords = rem_coords[id];
 
-  float3 color = trace_ray(pixel_coords, ec, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
@@ -252,9 +252,9 @@ __global__ void fill_remaining(uchar4* pixels,
 void kernel_raytrace(uint2 global_dims,
                      uint2 local_dims,
                      const KernelConstants& kernel_constants,
+                     const SceneParams& scene_params,
                      uchar4* pixels,
                      uint2 pixel_dims,
-                     EyeCoords ec,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
@@ -263,7 +263,8 @@ void kernel_raytrace(uint2 global_dims,
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                 cudaMemcpyHostToDevice));
-  raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh, materials);
+  raytrace<<<num_blocks, block_size>>>(scene_params, pixels, pixel_dims, triangles, tri_meta, bvh,
+                                       materials);
 }
 
 void kernel_interpolate(uint2 global_dims,
@@ -271,7 +272,6 @@ void kernel_interpolate(uint2 global_dims,
                         const KernelConstants& kernel_constants,
                         uchar4* pixels,
                         uint2 pixel_dims,
-                        EyeCoords ec,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
@@ -282,16 +282,16 @@ void kernel_interpolate(uint2 global_dims,
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                 cudaMemcpyHostToDevice));
-  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh,
-                                          materials, rem_pixels_counter, rem_coords);
+  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials,
+                                          rem_pixels_counter, rem_coords);
 }
 
 void kernel_fill_remaining(uint2 global_dims,
                            uint2 local_dims,
                            const KernelConstants& kernel_constants,
+                           const SceneParams& scene_params,
                            uchar4* pixels,
                            uint2 pixel_dims,
-                           EyeCoords ec,
                            TriangleData* triangles,
                            TriangleMetaData* tri_meta,
                            FlatBVHNode* bvh,
@@ -302,6 +302,6 @@ void kernel_fill_remaining(uint2 global_dims,
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                 cudaMemcpyHostToDevice));
-  fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, ec, triangles, tri_meta, bvh,
-                                             materials, rem_pixels_counter, rem_coords);
+  fill_remaining<<<num_blocks, block_size>>>(scene_params, pixels, pixel_dims, triangles, tri_meta,
+                                             bvh, materials, rem_pixels_counter, rem_coords);
 }

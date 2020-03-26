@@ -18,14 +18,13 @@
 #include "backend/opencl/types/types.hpp"
 #include "backend/opencl/utils/compatibility.hpp"
 #include "backend/opencl/utils/kernel.hpp"
-#include "scene/scene_parser.hpp"
 #include "util/exception/exception.hpp"
 
 #define RESOLVE_KERNEL(kernel) #kernel
 
 class Accelerator {
 public:
-  Accelerator(const SceneParser& scene_parser);
+  Accelerator();
   void add_kernel(const std::string& kernel_name);
 
   template <typename... Args>

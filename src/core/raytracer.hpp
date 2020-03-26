@@ -3,9 +3,8 @@
 
 #include "backend/accelerator.hpp"
 #include "intersectables/intersectable_manager.hpp"
-#include "kernel_types/eye_coords.hpp"
+#include "kernel_types/scene_params.hpp"
 #include "material/material_loader.hpp"
-#include "scene/scene_parser.hpp"
 
 class Scene;
 
@@ -17,7 +16,6 @@ public:
   image_utils::image raytrace();
 
 private:
-  SceneParser scene_parser;
   IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
   Accelerator accelerator;
@@ -28,7 +26,7 @@ private:
   uint32_t height;
   Buffer<uchar4> pixel_buf;
   Wrapper<uint2> pixel_dims_wrapper;
-  Wrapper<EyeCoords> ec;
+  Wrapper<SceneParams> scene_params_wrapper;
   Buffer<TriangleData> triangle_buf;
   Buffer<TriangleMetaData> tri_meta_buf;
   Buffer<FlatBVHNode> bvh_buf;
