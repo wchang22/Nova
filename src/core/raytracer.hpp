@@ -5,7 +5,7 @@
 #include "camera/camera.hpp"
 #include "intersectables/intersectable_manager.hpp"
 #include "material/material_loader.hpp"
-#include "scene_parser.hpp"
+#include "scene/scene_parser.hpp"
 
 class Raytracer {
 public:

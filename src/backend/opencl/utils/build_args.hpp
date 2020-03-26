@@ -1,7 +1,7 @@
 #ifndef OPENCL_BUILD_ARGS_HPP
 #define OPENCL_BUILD_ARGS_HPP
 
-#include <glm/glm.hpp>
+#include <array>
 #include <sstream>
 #include <string>
 
@@ -16,8 +16,8 @@ public:
     build_args << "-D" << key << "=" << value << " ";
   }
 
-  void add_define(const std::string& key, const glm::vec3& value) {
-    build_args << "-D" << key << "=(float3)(" << value.x << "," << value.y << "," << value.z
+  void add_define(const std::string& key, const std::array<float, 3>& value) {
+    build_args << "-D" << key << "=(float3)(" << value[0] << "," << value[1] << "," << value[2]
                << ") ";
   }
 

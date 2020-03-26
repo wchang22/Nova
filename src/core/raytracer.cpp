@@ -9,12 +9,13 @@ Raytracer::Raytracer(uint32_t width, uint32_t height, const std::string& name)
     height(height),
     name(name),
     camera_settings(scene_parser.get_camera_settings()),
-    camera(camera_settings.position,
-           camera_settings.forward,
-           camera_settings.up,
-           width,
-           height,
-           camera_settings.fovy),
+    camera(
+      { camera_settings.position[0], camera_settings.position[1], camera_settings.position[2] },
+      { camera_settings.forward[0], camera_settings.forward[1], camera_settings.forward[2] },
+      { camera_settings.up[0], camera_settings.up[1], camera_settings.up[2] },
+      width,
+      height,
+      camera_settings.fovy),
     intersectable_manager(name),
     accelerator(scene_parser) {
   const auto model_paths = scene_parser.get_model_paths();

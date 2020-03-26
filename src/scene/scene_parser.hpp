@@ -1,26 +1,26 @@
 #ifndef SCENE_PARSER_HPP
 #define SCENE_PARSER_HPP
 
-#include <glm/glm.hpp>
+#include <array>
 #include <toml.hpp>
 
 struct CameraSettings {
-  glm::vec3 position;
-  glm::vec3 forward;
-  glm::vec3 up;
+  std::array<float, 3> position;
+  std::array<float, 3> forward;
+  std::array<float, 3> up;
   float fovy;
 };
 
 struct ShadingDefaultSettings {
-  glm::vec3 diffuse;
+  std::array<float, 3> diffuse;
   float metallic;
   float roughness;
   float ambient_occlusion;
 };
 
 struct LightSettings {
-  glm::vec3 position;
-  glm::vec3 intensity;
+  std::array<float, 3> position;
+  std::array<float, 3> intensity;
 };
 
 class SceneParser {

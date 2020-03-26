@@ -18,7 +18,7 @@
 #include "backend/opencl/types/types.hpp"
 #include "backend/opencl/utils/compatibility.hpp"
 #include "backend/opencl/utils/kernel.hpp"
-#include "core/scene_parser.hpp"
+#include "scene/scene_parser.hpp"
 #include "util/exception/exception.hpp"
 
 #define RESOLVE_KERNEL(kernel) #kernel

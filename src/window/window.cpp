@@ -8,6 +8,7 @@
 // clang-format on
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_stdlib.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
@@ -17,7 +18,6 @@ const ImVec4 BG_COLOR(91.0f / 255.0f, 87.0f / 255.0f, 142.0f / 255.0f, 1.0f);
 const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
 const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
 const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);
-const size_t MAX_PATH_LENGTH = 260;
 const ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                       ImGuiWindowFlags_NoCollapse |
                                       ImGuiWindowFlags_NoBringToFrontOnFocus;
@@ -70,9 +70,12 @@ Window::Window() {
   // Setup Platform/Renderer bindings
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 330");
+
+  scene.init_texture();
 }
 
 Window::~Window() {
+  scene.cleanup_texture();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -83,8 +86,8 @@ Window::~Window() {
 void Window::display_menu() {
   if (ImGui::BeginMainMenuBar()) {
     menu_height = ImGui::GetWindowHeight();
-    if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Quit")) {
+    if (ImGui::BeginMenu("File##Menu")) {
+      if (ImGui::MenuItem("Quit##Menu")) {
         glfwSetWindowShouldClose(window, true);
       }
       ImGui::EndMenu();
@@ -93,24 +96,24 @@ void Window::display_menu() {
   }
 }
 
-void Window::display_details_settings() {
+void Window::display_scene_settings() {
   float window_width = 0.25f * width;
   float window_height = 1.0f * height - menu_height;
   auto& io = ImGui::GetIO();
   auto& style = ImGui::GetStyle();
 
-  static char model_path[MAX_PATH_LENGTH] = "";
-  static float camera_position[3] {};
-  static float camera_forward[3] {};
-  static float camera_up[3] {};
-  static float camera_fovy {};
-  static float light_position[3] {};
-  static float light_intensity[3] {};
-  static int ray_bounces {};
-  static float shading_diffuse[3] {};
-  static float shading_metallic {};
-  static float shading_roughness {};
-  static float shading_ambient_occlusion {};
+  static std::string model_path = scene.get_model_path();
+  static std::array<float, 3> camera_position = scene.get_camera_position();
+  static std::array<float, 3> camera_forward = scene.get_camera_forward();
+  static std::array<float, 3> camera_up = scene.get_camera_up();
+  static float camera_fovy = scene.get_camera_fovy();
+  static std::array<float, 3> light_position = scene.get_light_position();
+  static std::array<float, 3> light_intensity = scene.get_light_intensity();
+  static int ray_bounces = scene.get_ray_bounces();
+  static std::array<float, 3> shading_diffuse = scene.get_shading_diffuse();
+  static float shading_metallic = scene.get_shading_metallic();
+  static float shading_roughness = scene.get_shading_roughness();
+  static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
 
   if (ImGui::Begin("Details and Settings", nullptr, WINDOW_FLAGS)) {
     ImGui::SetWindowPos({ 0.0f, menu_height }, true);
@@ -118,36 +121,52 @@ void Window::display_details_settings() {
 
     ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-    if (ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputText("Path", model_path, MAX_PATH_LENGTH);
+    if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputText("Path##Model", &model_path);
     }
 
-    if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputFloat3("Position", camera_position);
-      ImGui::InputFloat3("Forward", camera_forward);
-      ImGui::InputFloat3("Up", camera_up);
-      ImGui::InputFloat("FOVy", &camera_fovy);
+    if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Position##Camera", camera_position.data());
+      ImGui::InputFloat3("Forward##Camera", camera_forward.data());
+      ImGui::InputFloat3("Up##Camera", camera_up.data());
+      ImGui::InputFloat("FOVy##Camera", &camera_fovy);
+
+      camera_position = scene.set_camera_position(camera_position);
+      camera_forward = scene.set_camera_forward(camera_forward);
+      camera_up = scene.set_camera_up(camera_up);
+      camera_fovy = scene.set_camera_fovy(camera_fovy);
     }
 
-    if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputFloat3("Position", light_position);
-      ImGui::InputFloat3("Intensity", light_intensity);
+    if (ImGui::CollapsingHeader("Light##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Position##Light", light_position.data());
+      ImGui::InputFloat3("Intensity##Light", light_intensity.data());
+
+      light_position = scene.set_light_position(light_position);
+      light_intensity = scene.set_light_intensity(light_intensity);
     }
 
-    if (ImGui::CollapsingHeader("Ray Bounces", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputInt("Number", &ray_bounces);
-      ray_bounces = std::max(ray_bounces, 1);
+    if (ImGui::CollapsingHeader("Ray Bounces##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputInt("Number##RayBounces", &ray_bounces);
+
+      ray_bounces = scene.set_ray_bounces(ray_bounces);
     }
 
-    if (ImGui::CollapsingHeader("Shading Defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputFloat3("Diffuse", shading_diffuse);
-      ImGui::InputFloat("Metallic", &shading_metallic);
-      ImGui::InputFloat("Roughness", &shading_roughness);
-      ImGui::InputFloat("AO", &shading_ambient_occlusion);
+    if (ImGui::CollapsingHeader("Shading Defaults##SceneSettings",
+                                ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputFloat3("Diffuse##ShadingDefaults", shading_diffuse.data());
+      ImGui::InputFloat("Metallic##ShadingDefaults", &shading_metallic);
+      ImGui::InputFloat("Roughness##ShadingDefaults", &shading_roughness);
+      ImGui::InputFloat("AO##ShadingDefaults", &shading_ambient_occlusion);
+
+      shading_diffuse = scene.set_shading_diffuse(shading_diffuse);
+      shading_metallic = scene.set_shading_metallic(shading_metallic);
+      shading_roughness = scene.set_shading_roughness(shading_roughness);
+      shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
     ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
-    if (ImGui::Button("Update", { window_width / 2.0f, 0 })) {
+    if (ImGui::Button("Update##SceneSettings", { window_width / 2.0f, 0 })) {
+      scene.update_model();
     }
 
     ImGui::End();
@@ -157,16 +176,26 @@ void Window::display_details_settings() {
 void Window::display_render() {
   float window_width = 0.75f * width;
   float window_height = 1.0f * height - menu_height;
+  float image_width = window_width;
+  float image_height = window_width * height / width;
+  ImVec2 image_size { window_width, window_width * height / width };
+  ImVec2 image_margin { (window_width - image_width) / 2.0f,
+                        (window_height - image_height) / 2.0f };
 
   ImGui::Begin("Render", nullptr, WINDOW_FLAGS);
 
   ImGui::SetWindowPos({ width - window_width, menu_height }, true);
   ImGui::SetWindowSize({ window_width, window_height }, true);
 
+  ImGui::SetCursorPos(image_margin);
+  ImGui::Image(reinterpret_cast<ImTextureID>(scene.get_scene_texture_id()), image_size);
+
   ImGui::End();
 }
 
 void Window::main_loop() {
+  scene.update_model();
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
@@ -177,7 +206,7 @@ void Window::main_loop() {
 
     // Displays
     display_menu();
-    display_details_settings();
+    display_scene_settings();
     display_render();
 
     // Rendering
