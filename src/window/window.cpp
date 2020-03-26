@@ -13,6 +13,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "util/exception/exception.hpp"
+#include "util/profiling/profiling.hpp"
 
 const ImVec4 BG_COLOR(91.0f / 255.0f, 87.0f / 255.0f, 142.0f / 255.0f, 1.0f);
 const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
@@ -212,6 +213,8 @@ void Window::display_render() {
 
 void Window::main_loop() {
   while (!glfwWindowShouldClose(window)) {
+    PROFILE_SCOPE("Main Loop");
+
     glfwPollEvents();
 
     // New frame

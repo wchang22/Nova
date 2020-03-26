@@ -18,6 +18,11 @@ void IntersectableManager::add_model(const Model& model) {
   }
 }
 
+void IntersectableManager::clear() {
+  triangles.clear();
+  triangle_map.clear();
+}
+
 IntersectableData IntersectableManager::build() {
   BVH bvh(triangles);
   std::vector<FlatBVHNode> bvh_data = bvh.build();

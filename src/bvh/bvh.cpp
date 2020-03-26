@@ -13,13 +13,20 @@
 BVH::BVH(std::vector<Triangle>& triangles) : triangles(triangles) {}
 
 std::vector<FlatBVHNode> BVH::build() {
+  PROFILE_SCOPE("Build BVH");
+
+  PROFILE_SECTION_START("Build BVH Tree");
   std::unique_ptr<BVHNode> bvh = build_bvh();
+  PROFILE_SECTION_END();
+
+  PROFILE_SECTION_START("Build Flat BVH");
   std::vector<FlatBVHNode> flat_bvh = build_flat_bvh(bvh);
+  PROFILE_SECTION_END();
+
   return flat_bvh;
 }
 
 std::unique_ptr<BVHNode> BVH::build_bvh() {
-  PROFILE_SCOPE("Build BVH");
   auto root = std::make_unique<BVHNode>();
 
   root->triangles.reserve(triangles.size());

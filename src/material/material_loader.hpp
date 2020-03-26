@@ -15,6 +15,7 @@ public:
   MaterialLoader();
 
   int load_material(const char* path);
+  void clear();
   MaterialData build() const;
 
 private:

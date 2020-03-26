@@ -10,6 +10,8 @@ int MaterialLoader::load_material(const char* path) {
   return static_cast<int>(materials.size() - 1);
 }
 
+void MaterialLoader::clear() { materials.clear(); }
+
 MaterialData MaterialLoader::build() const {
   if (materials.empty()) {
     return {};

@@ -19,6 +19,7 @@ class IntersectableManager {
 public:
   void add_triangle(const Triangle& tri, const TriangleMeta& meta);
   void add_model(const Model& model);
+  void clear();
   IntersectableData build();
 
 private:

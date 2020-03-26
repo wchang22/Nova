@@ -116,9 +116,9 @@ void Scene::set_height(uint32_t height) { this->height = height; }
 uint32_t Scene::get_height() const { return height; }
 
 void Scene::render() {
-  auto im = raytracer.raytrace(*this, width, height);
+  raytracer.set_scene(*this, width, height);
+  auto im = raytracer.raytrace();
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, im.width, im.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                im.data.data());
   glBindTexture(GL_TEXTURE_2D, 0);
