@@ -22,8 +22,13 @@
 
 #include <cstddef>
 
+// Window constants
+constexpr char FONT_PATH[] = ASSETS_PATH "/fonts/SourceCodePro-Bold.ttf";
+constexpr float FONT_SIZE = 14.0f;
+
 // Raytracer constants
 constexpr char SCENE_PATH[] = SRC_PATH "scene.toml";
+constexpr char MODEL_FILE_TYPES[] = ".obj";
 
 // BVH/Triangle constants
 constexpr size_t TRIANGLES_PER_LEAF_BITS = 6;

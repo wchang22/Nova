@@ -13,6 +13,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/ImGuiFileDialog.h>
 
+#include "constants.hpp"
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
 
@@ -26,7 +27,6 @@ constexpr float RIGHT_PANEL_PERCENTAGE = 1.0f - LEFT_PANEL_PERCENTAGE;
 constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                           ImGuiWindowFlags_NoCollapse |
                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
-constexpr char MODEL_FILE_TYPES[] = ".obj";
 
 Window::Window() {
   // Setup GLFW and window
@@ -64,6 +64,7 @@ Window::Window() {
   ImGui::CreateContext();
   auto& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.Fonts->AddFontFromFileTTF(FONT_PATH, FONT_SIZE);
 
   // Default styles
   ImGui::StyleColorsClassic();
