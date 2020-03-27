@@ -11,6 +11,7 @@
 #include <imgui/imgui_stdlib.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#include <imgui/ImGuiFileDialog.h>
 
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
@@ -25,6 +26,7 @@ constexpr float RIGHT_PANEL_PERCENTAGE = 1.0f - LEFT_PANEL_PERCENTAGE;
 constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                           ImGuiWindowFlags_NoCollapse |
                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
+constexpr char MODEL_FILE_TYPES[] = ".obj";
 
 Window::Window() {
   // Setup GLFW and window
@@ -155,6 +157,19 @@ void Window::display_scene_settings() {
       if (model_path_error) {
         ImGui::PopStyleColor();
       }
+      ImGui::Indent(window_width / 2.0f -
+                    2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
+      if (ImGui::Button("Browse##Model", { window_width * 0.5f, 0 })) {
+        ImGuiFileDialog::Instance()->OpenDialog("BrowseModelKey", "Browse", MODEL_FILE_TYPES, ".");
+      }
+      ImGui::Indent(
+        -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
+      if (ImGuiFileDialog::Instance()->FileDialog("BrowseModelKey")) {
+        if (ImGuiFileDialog::Instance()->IsOk) {
+          model_path = ImGuiFileDialog::Instance()->GetFilepathName();
+        }
+        ImGuiFileDialog::Instance()->CloseDialog("BrowseModelKey");
+      }
     }
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -196,7 +211,8 @@ void Window::display_scene_settings() {
       shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
-    ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
+    ImGui::Indent(window_width / 2.0f -
+                  2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
     if (ImGui::Button("Update##SceneSettings", { window_width * 0.5f, 0 })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
@@ -204,6 +220,8 @@ void Window::display_scene_settings() {
         render();
       }
     }
+    ImGui::Indent(
+      -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
 
     ImGui::End();
   }
