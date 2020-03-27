@@ -207,6 +207,12 @@ void Window::display_scene_settings() {
   }
 
   if (real_time) {
+    handle_mouse_drag();
+    handle_mouse_wheel();
+    handle_keyboard();
+    camera_position = scene.get_camera_position();
+    camera_forward = scene.get_camera_forward();
+    camera_fovy = scene.get_camera_fovy();
     render();
   }
 }
@@ -214,11 +220,8 @@ void Window::display_scene_settings() {
 void Window::display_render() {
   float window_width = 0.75f * width;
   float window_height = 1.0f * height - menu_height;
-  float image_width = window_width;
-  float image_height = window_width * height / width;
   ImVec2 image_size { window_width, window_width * height / width };
-  ImVec2 image_margin { (window_width - image_width) / 2.0f,
-                        (window_height - image_height) / 2.0f };
+  ImVec2 image_margin { 0.0f, (window_height - image_size.y) / 2.0f };
 
   ImGui::Begin("Render", nullptr, WINDOW_FLAGS);
 
@@ -229,6 +232,80 @@ void Window::display_render() {
   ImGui::Image(reinterpret_cast<ImTextureID>(scene.get_scene_texture_id()), image_size);
 
   ImGui::End();
+}
+
+void Window::handle_keyboard() {
+  float window_width = 0.75f * width;
+  float window_height = 1.0f * height - menu_height;
+  ImVec2 image_size { window_width, window_width * height / width };
+  ImVec2 image_margin { width - window_width, (window_height - image_size.y) / 2.0f };
+
+  ImVec2 mouse_pos = ImGui::GetMousePos();
+
+  if (mouse_pos.x > image_margin.x + image_size.x || mouse_pos.x < image_margin.x ||
+      mouse_pos.y > image_margin.y + image_size.y || mouse_pos.y < image_margin.y) {
+    return;
+  }
+
+  auto& io = ImGui::GetIO();
+  float frame_duration = 1.0f / io.Framerate;
+  float camera_speed = 5.0f * frame_duration;
+
+  if (ImGui::IsKeyPressed(GLFW_KEY_W)) {
+    scene.move_camera(Camera::Direction::FORWARD, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_S)) {
+    scene.move_camera(Camera::Direction::BACKWARD, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_A)) {
+    scene.move_camera(Camera::Direction::LEFT, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_D)) {
+    scene.move_camera(Camera::Direction::RIGHT, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_SPACE)) {
+    scene.move_camera(Camera::Direction::UP, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_X)) {
+    scene.move_camera(Camera::Direction::DOWN, camera_speed);
+  }
+}
+
+void Window::handle_mouse_drag() {
+  constexpr float MOUSE_SENSITIVITY = 1e-1f;
+
+  float window_width = 0.75f * width;
+  float window_height = 1.0f * height - menu_height;
+  ImVec2 image_size { window_width, window_width * height / width };
+  ImVec2 image_margin { width - window_width, (window_height - image_size.y) / 2.0f };
+
+  ImVec2 mouse_pos = ImGui::GetMousePos();
+
+  if (mouse_pos.x > image_margin.x + image_size.x || mouse_pos.x < image_margin.x ||
+      mouse_pos.y > image_margin.y + image_size.y || mouse_pos.y < image_margin.y) {
+    return;
+  }
+
+  if (!ImGui::IsMousePosValid()) {
+    return;
+  }
+
+  ImVec2 delta = ImGui::GetMouseDragDelta();
+
+  if (std::abs(delta.x) < std::numeric_limits<float>::epsilon() &&
+      std::abs(delta.y) < std::numeric_limits<float>::epsilon()) {
+    return;
+  }
+
+  delta.x *= -MOUSE_SENSITIVITY;
+  delta.y *= MOUSE_SENSITIVITY;
+
+  scene.update_camera_direction(delta.x, delta.y);
+  ImGui::ResetMouseDragDelta();
+}
+
+void Window::handle_mouse_wheel() {
+  scene.zoom_camera(-ImGui::GetIO().MouseWheel);
 }
 
 void Window::main_loop() {

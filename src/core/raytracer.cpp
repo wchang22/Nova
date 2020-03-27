@@ -14,15 +14,6 @@ Raytracer::Raytracer() {
 void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
   PROFILE_SCOPE("Set Scene");
 
-  // Update Camera
-  const auto& camera_position = scene.get_camera_position();
-  const auto& camera_forward = scene.get_camera_forward();
-  const auto& camera_up = scene.get_camera_up();
-  const auto camera_fovy = scene.get_camera_fovy();
-  Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
-                { camera_forward[0], camera_forward[1], camera_forward[2] },
-                { camera_up[0], camera_up[1], camera_up[2] }, width, height, camera_fovy);
-
   // Update Scene Params
   const auto& shading_diffuse = scene.get_shading_diffuse();
   const auto& shading_metallic = scene.get_shading_metallic();
@@ -33,7 +24,7 @@ void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
   const auto ray_bounces = scene.get_ray_bounces();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { camera.get_eye_coords(),
+    SceneParams { scene.get_camera_eye_coords(),
                   { light_position[0], light_position[1], light_position[2] },
                   { light_intensity[0], light_intensity[1], light_intensity[2] },
                   { shading_diffuse[0], shading_diffuse[1], shading_diffuse[2] },

@@ -12,9 +12,12 @@ Scene::Scene() {
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
+  Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
+                { camera_forward[0], camera_forward[1], camera_forward[2] },
+                { camera_up[0], camera_up[1], camera_up[2] }, width, height, camera_fovy);
+
   settings = {
-    model_paths.front(), camera_position,  camera_forward,    camera_up,
-    camera_fovy,         light_position,   light_intensity,   ray_bounces,
+    model_paths.front(), camera,           light_position,    light_intensity,          ray_bounces,
     default_diffuse,     default_metallic, default_roughness, default_ambient_occlusion
   };
 }
@@ -35,29 +38,57 @@ const std::string& Scene::set_model_path(const std::string& path) {
 
 const std::string& Scene::get_model_path() const { return settings.model_path; }
 
-const std::array<float, 3>& Scene::set_camera_position(const std::array<float, 3>& position) {
-  return settings.camera_position = position;
+std::array<float, 3> Scene::set_camera_position(const std::array<float, 3>& position) {
+  settings.camera.set_position({ position[0], position[1], position[2] });
+  return position;
 }
 
-const std::array<float, 3>& Scene::get_camera_position() const { return settings.camera_position; }
-
-const std::array<float, 3>& Scene::set_camera_forward(const std::array<float, 3>& forward) {
-  return settings.camera_forward = forward;
+std::array<float, 3> Scene::get_camera_position() const {
+  const glm::vec3& position = settings.camera.get_position();
+  return { position.x, position.y, position.z };
 }
 
-const std::array<float, 3>& Scene::get_camera_forward() const { return settings.camera_forward; }
-
-const std::array<float, 3>& Scene::set_camera_up(const std::array<float, 3>& up) {
-  return settings.camera_up = up;
+std::array<float, 3> Scene::set_camera_forward(const std::array<float, 3>& forward) {
+  settings.camera.set_forward({ forward[0], forward[1], forward[2] });
+  return forward;
 }
 
-const std::array<float, 3>& Scene::get_camera_up() const { return settings.camera_up; }
+std::array<float, 3> Scene::get_camera_forward() const {
+  const glm::vec3& forward = settings.camera.get_forward();
+  return { forward.x, forward.y, forward.z };
+}
+
+std::array<float, 3> Scene::set_camera_up(const std::array<float, 3>& up) {
+  settings.camera.set_up({ up[0], up[1], up[2] });
+  return up;
+}
+
+std::array<float, 3> Scene::get_camera_up() const {
+  const glm::vec3& up = settings.camera.get_up();
+  return { up.x, up.y, up.z };
+}
 
 float Scene::set_camera_fovy(float fovy) {
-  return settings.camera_fovy = std::clamp(fovy, 1.0f, 45.0f);
+  float clamped_fovy = std::clamp(fovy, 1.0f, 45.0f);
+  settings.camera.set_fovy(fovy);
+  return clamped_fovy;
 }
 
-float Scene::get_camera_fovy() const { return settings.camera_fovy; }
+float Scene::get_camera_fovy() const { return settings.camera.get_fovy(); }
+
+void Scene::update_camera_direction(float delta_x, float delta_y) {
+  settings.camera.update_direction(delta_x, delta_y);
+}
+
+void Scene::move_camera(Camera::Direction direction, float speed) {
+  settings.camera.move(direction, speed);
+}
+
+void Scene::zoom_camera(float delta) {
+  settings.camera.zoom(delta);
+}
+
+EyeCoords Scene::get_camera_eye_coords() const { return settings.camera.get_eye_coords(); }
 
 const std::array<float, 3>& Scene::set_light_position(const std::array<float, 3>& position) {
   return settings.light_position = position;
@@ -107,11 +138,17 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-void Scene::set_width(uint32_t width) { this->width = width; }
+void Scene::set_width(uint32_t width) {
+  settings.camera.set_width(width);
+  this->width = width;
+}
 
 uint32_t Scene::get_width() const { return width; }
 
-void Scene::set_height(uint32_t height) { this->height = height; }
+void Scene::set_height(uint32_t height) {
+  settings.camera.set_height(height);
+  this->height = height;
+}
 
 uint32_t Scene::get_height() const { return height; }
 
