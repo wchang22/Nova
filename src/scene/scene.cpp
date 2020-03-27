@@ -48,14 +48,14 @@ std::array<float, 3> Scene::get_camera_position() const {
   return { position.x, position.y, position.z };
 }
 
-std::array<float, 3> Scene::set_camera_forward(const std::array<float, 3>& forward) {
-  settings.camera.set_forward({ forward[0], forward[1], forward[2] });
-  return forward;
+std::array<float, 3> Scene::set_camera_target(const std::array<float, 3>& target) {
+  settings.camera.set_target({ target[0], target[1], target[2] });
+  return target;
 }
 
-std::array<float, 3> Scene::get_camera_forward() const {
-  const glm::vec3& forward = settings.camera.get_forward();
-  return { forward.x, forward.y, forward.z };
+std::array<float, 3> Scene::get_camera_target() const {
+  const glm::vec3& target = settings.camera.get_target();
+  return { target.x, target.y, target.z };
 }
 
 std::array<float, 3> Scene::set_camera_up(const std::array<float, 3>& up) {
@@ -76,16 +76,8 @@ float Scene::set_camera_fovy(float fovy) {
 
 float Scene::get_camera_fovy() const { return settings.camera.get_fovy(); }
 
-void Scene::update_camera_direction(float delta_x, float delta_y) {
-  settings.camera.update_direction(delta_x, delta_y);
-}
-
 void Scene::move_camera(Camera::Direction direction, float speed) {
   settings.camera.move(direction, speed);
-}
-
-void Scene::zoom_camera(float delta) {
-  settings.camera.zoom(delta);
 }
 
 EyeCoords Scene::get_camera_eye_coords() const { return settings.camera.get_eye_coords(); }

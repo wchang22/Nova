@@ -14,11 +14,11 @@ std::vector<std::string> SceneParser::get_model_paths() const {
 
 CameraSettings SceneParser::get_camera_settings() const {
   const auto position = toml::find<std::array<float, 3>>(parsed_data, "camera", "position");
-  const auto forward = toml::find<std::array<float, 3>>(parsed_data, "camera", "forward");
+  const auto target = toml::find<std::array<float, 3>>(parsed_data, "camera", "target");
   const auto up = toml::find<std::array<float, 3>>(parsed_data, "camera", "up");
   const auto fovy = toml::find<float>(parsed_data, "camera", "fovy");
 
-  return { position, forward, up, fovy };
+  return { position, target, up, fovy };
 }
 
 LightSettings SceneParser::get_light_settings() const {

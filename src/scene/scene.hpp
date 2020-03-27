@@ -27,15 +27,13 @@ public:
   const std::string& get_model_path() const;
   std::array<float, 3> set_camera_position(const std::array<float, 3>& position);
   std::array<float, 3> get_camera_position() const;
-  std::array<float, 3> set_camera_forward(const std::array<float, 3>& forward);
-  std::array<float, 3> get_camera_forward() const;
+  std::array<float, 3> set_camera_target(const std::array<float, 3>& target);
+  std::array<float, 3> get_camera_target() const;
   std::array<float, 3> set_camera_up(const std::array<float, 3>& up);
   std::array<float, 3> get_camera_up() const;
   float set_camera_fovy(float fovy);
   float get_camera_fovy() const;
-  void update_camera_direction(float delta_x, float delta_y);
   void move_camera(Camera::Direction direction, float speed);
-  void zoom_camera(float delta);
   EyeCoords get_camera_eye_coords() const;
   const std::array<float, 3>& set_light_position(const std::array<float, 3>& position);
   const std::array<float, 3>& get_light_position() const;

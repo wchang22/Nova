@@ -6,7 +6,7 @@
 
 struct CameraSettings {
   std::array<float, 3> position;
-  std::array<float, 3> forward;
+  std::array<float, 3> target;
   std::array<float, 3> up;
   float fovy;
 };

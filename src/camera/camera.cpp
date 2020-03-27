@@ -1,22 +1,18 @@
+#include <glm/gtx/transform.hpp>
+
 #include "camera.hpp"
 
 Camera::Camera(const glm::vec3& position,
-               const glm::vec3& forward,
+               const glm::vec3& target,
                const glm::vec3& up,
                uint32_t width,
                uint32_t height,
                float fovy)
-  : position(position), forward(forward), up(up), width(width), height(height), fovy(fovy) {
-  glm::vec3 normalized_forward = glm::normalize(forward);
-  pitch = glm::degrees(std::asin(normalized_forward.y));
-  yaw = glm::degrees(std::atan2(-normalized_forward.x, -normalized_forward.z));
-}
+  : position(position), target(target), up(up), width(width), height(height), fovy(fovy) {}
 
 void Camera::set_position(const glm::vec3& position) { this->position = position; }
 
-void Camera::set_forward(const glm::vec3& forward) {
-  this->forward = forward;
-}
+void Camera::set_target(const glm::vec3& target) { this->target = target; }
 
 void Camera::set_up(const glm::vec3& up) { this->up = up; }
 
@@ -28,47 +24,45 @@ void Camera::set_fovy(float fovy) { this->fovy = fovy; }
 
 const glm::vec3& Camera::get_position() const { return position; }
 
-const glm::vec3& Camera::get_forward() const { return forward; }
+const glm::vec3& Camera::get_target() const { return target; }
 
 const glm::vec3& Camera::get_up() const { return up; }
 
 float Camera::get_fovy() const { return fovy; }
 
-void Camera::update_direction(float delta_x, float delta_y) {
-  yaw += delta_x;
-  pitch = std::clamp(pitch + delta_y, -89.0f, 89.0f);
-
-  forward.x = std::cos(glm::radians(pitch)) * std::cos(glm::radians(yaw));
-  forward.y = std::sin(glm::radians(pitch));
-  forward.z = std::cos(glm::radians(pitch)) * std::sin(glm::radians(yaw));
-  forward = glm::normalize(forward);
-}
-
 void Camera::move(Direction direction, float speed) {
+  glm::vec3 w = -glm::normalize(target - position);
+  glm::vec3 u = glm::normalize(glm::cross(up, w));
+  glm::vec3 v = glm::cross(w, u);
+
+  glm::vec3 forward = position - target;
+
   switch (direction) {
     case Direction::FORWARD:
-      position += glm::normalize(forward) * speed;
+      if (speed <= glm::length(forward)) {
+        position += -w * speed;
+      }
       break;
     case Direction::BACKWARD:
-      position += -glm::normalize(forward) * speed;
+      position += w * speed;
       break;
     case Direction::LEFT:
-      position += glm::normalize(glm::cross(glm::normalize(up), glm::normalize(forward))) * speed;
+      position = glm::mat3(glm::rotate(-glm::radians(speed), v)) * forward + target;
       break;
     case Direction::RIGHT:
-      position += glm::normalize(glm::cross(glm::normalize(forward), glm::normalize(up))) * speed;
+      position = glm::mat3(glm::rotate(glm::radians(speed), v)) * forward + target;
       break;
     case Direction::UP:
-      position += glm::normalize(up) * speed;
+      if (glm::dot(w, glm::normalize(up)) < 0.98f) {
+        position = glm::mat3(glm::rotate(-glm::radians(speed), u)) * forward + target;
+      }
       break;
     case Direction::DOWN:
-      position += -glm::normalize(up) * speed;
+      if (glm::dot(-w, glm::normalize(up)) < 0.98f) {
+        position = glm::mat3(glm::rotate(glm::radians(speed), u)) * forward + target;
+      }
       break;
   }
-}
-
-void Camera::zoom(float delta) {
-  fovy = std::clamp(fovy + delta, 1.0f, 45.0f);
 }
 
 EyeCoords Camera::get_eye_coords() const {
@@ -76,7 +70,7 @@ EyeCoords Camera::get_eye_coords() const {
   glm::vec2 coord_dims(glm::vec2(width, height) / 2.0f);
   glm::vec2 coord_scale(glm::tan(glm::radians(half_fov)) / coord_dims);
 
-  glm::vec3 w = -glm::normalize(forward);
+  glm::vec3 w = -glm::normalize(target - position);
   glm::vec3 u = glm::normalize(glm::cross(up, w));
   glm::vec3 v = glm::cross(w, u);
 

@@ -17,6 +17,7 @@ private:
   void handle_keyboard();
   void handle_mouse_drag();
   void handle_mouse_wheel();
+  bool in_render_box();
 
   GLFWwindow* window;
   Scene scene;

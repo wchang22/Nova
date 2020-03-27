@@ -20,9 +20,11 @@ const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
 const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
 const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);
 const ImVec4 ERROR_COLOR(1.0f, 0.0f, 0.0f, 1.0f);
-const ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                      ImGuiWindowFlags_NoCollapse |
-                                      ImGuiWindowFlags_NoBringToFrontOnFocus;
+constexpr float LEFT_PANEL_PERCENTAGE = 0.25f;
+constexpr float RIGHT_PANEL_PERCENTAGE = 1.0f - LEFT_PANEL_PERCENTAGE;
+constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                          ImGuiWindowFlags_NoCollapse |
+                                          ImGuiWindowFlags_NoBringToFrontOnFocus;
 
 Window::Window() {
   // Setup GLFW and window
@@ -100,8 +102,8 @@ void Window::display_menu() {
 }
 
 void Window::display_scene_settings() {
-  float window_width = 0.25f * width;
-  float window_height = 1.0f * height - menu_height;
+  float window_width = LEFT_PANEL_PERCENTAGE * width;
+  float window_height = height - menu_height;
   auto& io = ImGui::GetIO();
   auto& style = ImGui::GetStyle();
 
@@ -109,7 +111,7 @@ void Window::display_scene_settings() {
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
   static std::array<float, 3> camera_position = scene.get_camera_position();
-  static std::array<float, 3> camera_forward = scene.get_camera_forward();
+  static std::array<float, 3> camera_target = scene.get_camera_target();
   static std::array<float, 3> camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
   static std::array<float, 3> light_position = scene.get_light_position();
@@ -157,12 +159,12 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::InputFloat3("Position##Camera", camera_position.data());
-      ImGui::InputFloat3("Forward##Camera", camera_forward.data());
+      ImGui::InputFloat3("Target##Camera", camera_target.data());
       ImGui::InputFloat3("Up##Camera", camera_up.data());
-      ImGui::InputFloat("FOVy##Camera", &camera_fovy);
+      ImGui::InputFloat("FOV##Camera", &camera_fovy);
 
       camera_position = scene.set_camera_position(camera_position);
-      camera_forward = scene.set_camera_forward(camera_forward);
+      camera_target = scene.set_camera_target(camera_target);
       camera_up = scene.set_camera_up(camera_up);
       camera_fovy = scene.set_camera_fovy(camera_fovy);
     }
@@ -195,7 +197,7 @@ void Window::display_scene_settings() {
     }
 
     ImGui::Indent(window_width / 2.0f - 2.0f * style.FramePadding.x);
-    if (ImGui::Button("Update##SceneSettings", { window_width / 2.0f, 0 })) {
+    if (ImGui::Button("Update##SceneSettings", { window_width * 0.5f, 0 })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
       if (!real_time) {
@@ -211,17 +213,15 @@ void Window::display_scene_settings() {
     handle_mouse_wheel();
     handle_keyboard();
     camera_position = scene.get_camera_position();
-    camera_forward = scene.get_camera_forward();
-    camera_fovy = scene.get_camera_fovy();
     render();
   }
 }
 
 void Window::display_render() {
-  float window_width = 0.75f * width;
-  float window_height = 1.0f * height - menu_height;
+  float window_width = RIGHT_PANEL_PERCENTAGE * width;
+  float window_height = height - menu_height;
   ImVec2 image_size { window_width, window_width * height / width };
-  ImVec2 image_margin { 0.0f, (window_height - image_size.y) / 2.0f };
+  ImVec2 image_margin { 0.0f, (window_height - image_size.y) * 0.5f };
 
   ImGui::Begin("Render", nullptr, WINDOW_FLAGS);
 
@@ -234,78 +234,63 @@ void Window::display_render() {
   ImGui::End();
 }
 
-void Window::handle_keyboard() {
-  float window_width = 0.75f * width;
-  float window_height = 1.0f * height - menu_height;
+bool Window::in_render_box() {
+  float window_width = RIGHT_PANEL_PERCENTAGE * width;
+  float window_height = height - menu_height;
   ImVec2 image_size { window_width, window_width * height / width };
-  ImVec2 image_margin { width - window_width, (window_height - image_size.y) / 2.0f };
+  ImVec2 image_margin { width - window_width, (window_height - image_size.y) * 0.5f };
 
   ImVec2 mouse_pos = ImGui::GetMousePos();
 
-  if (mouse_pos.x > image_margin.x + image_size.x || mouse_pos.x < image_margin.x ||
-      mouse_pos.y > image_margin.y + image_size.y || mouse_pos.y < image_margin.y) {
+  return mouse_pos.x <= image_margin.x + image_size.x && mouse_pos.x >= image_margin.x &&
+         mouse_pos.y <= image_margin.y + image_size.y && mouse_pos.y >= image_margin.y;
+}
+
+void Window::handle_keyboard() {
+  if (!in_render_box()) {
     return;
   }
 
+  constexpr float MOUSE_SENSITIVITY = 100.0f;
   auto& io = ImGui::GetIO();
-  float frame_duration = 1.0f / io.Framerate;
-  float camera_speed = 5.0f * frame_duration;
+  float camera_speed = MOUSE_SENSITIVITY / io.Framerate;
 
-  if (ImGui::IsKeyPressed(GLFW_KEY_W)) {
-    scene.move_camera(Camera::Direction::FORWARD, camera_speed);
-  }
-  if (ImGui::IsKeyPressed(GLFW_KEY_S)) {
-    scene.move_camera(Camera::Direction::BACKWARD, camera_speed);
-  }
-  if (ImGui::IsKeyPressed(GLFW_KEY_A)) {
-    scene.move_camera(Camera::Direction::LEFT, camera_speed);
-  }
-  if (ImGui::IsKeyPressed(GLFW_KEY_D)) {
-    scene.move_camera(Camera::Direction::RIGHT, camera_speed);
-  }
-  if (ImGui::IsKeyPressed(GLFW_KEY_SPACE)) {
+  if (ImGui::IsKeyPressed(GLFW_KEY_W) || ImGui::IsKeyPressed(GLFW_KEY_UP)) {
     scene.move_camera(Camera::Direction::UP, camera_speed);
   }
-  if (ImGui::IsKeyPressed(GLFW_KEY_X)) {
+  if (ImGui::IsKeyPressed(GLFW_KEY_S) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)) {
     scene.move_camera(Camera::Direction::DOWN, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_A) || ImGui::IsKeyPressed(GLFW_KEY_LEFT)) {
+    scene.move_camera(Camera::Direction::LEFT, camera_speed);
+  }
+  if (ImGui::IsKeyPressed(GLFW_KEY_D) || ImGui::IsKeyPressed(GLFW_KEY_RIGHT)) {
+    scene.move_camera(Camera::Direction::RIGHT, camera_speed);
   }
 }
 
 void Window::handle_mouse_drag() {
-  constexpr float MOUSE_SENSITIVITY = 1e-1f;
-
-  float window_width = 0.75f * width;
-  float window_height = 1.0f * height - menu_height;
-  ImVec2 image_size { window_width, window_width * height / width };
-  ImVec2 image_margin { width - window_width, (window_height - image_size.y) / 2.0f };
-
-  ImVec2 mouse_pos = ImGui::GetMousePos();
-
-  if (mouse_pos.x > image_margin.x + image_size.x || mouse_pos.x < image_margin.x ||
-      mouse_pos.y > image_margin.y + image_size.y || mouse_pos.y < image_margin.y) {
+  if (!in_render_box()) {
     return;
   }
 
-  if (!ImGui::IsMousePosValid()) {
-    return;
-  }
-
+  constexpr float MOUSE_SENSITIVITY = 0.5f;
   ImVec2 delta = ImGui::GetMouseDragDelta();
-
-  if (std::abs(delta.x) < std::numeric_limits<float>::epsilon() &&
-      std::abs(delta.y) < std::numeric_limits<float>::epsilon()) {
-    return;
-  }
-
-  delta.x *= -MOUSE_SENSITIVITY;
-  delta.y *= MOUSE_SENSITIVITY;
-
-  scene.update_camera_direction(delta.x, delta.y);
+  scene.move_camera(Camera::Direction::LEFT, delta.x * MOUSE_SENSITIVITY);
+  scene.move_camera(Camera::Direction::UP, delta.y * MOUSE_SENSITIVITY);
   ImGui::ResetMouseDragDelta();
 }
 
 void Window::handle_mouse_wheel() {
-  scene.zoom_camera(-ImGui::GetIO().MouseWheel);
+  if (!in_render_box()) {
+    return;
+  }
+
+  constexpr float MOUSE_SENSITIVITY = 10.0f;
+  auto& io = ImGui::GetIO();
+  float camera_speed = MOUSE_SENSITIVITY / io.Framerate * ImGui::GetIO().MouseWheel;
+
+  scene.move_camera(Camera::Direction::FORWARD, camera_speed);
 }
 
 void Window::main_loop() {
