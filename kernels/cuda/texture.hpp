@@ -88,8 +88,7 @@ specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metallic) {
   return f;
 }
 
-__device__ inline float3 shade(const SceneParams& scene_params,
-                               float3 light_dir,
+__device__ inline float3 shade(float3 light_dir,
                                float3 view_dir,
                                float3 half_dir,
                                float light_distance,
@@ -113,7 +112,7 @@ __device__ inline float3 shade(const SceneParams& scene_params,
   float3 kD = (1.0f - kS) * (1.0f - metallic);
 
   float3 brdf = kD * diffuse * CUDART_INV_PI + d * kS * g / fmaxf(4.0f * nvl, 1e-3f);
-  float3 radiance = scene_params.light_intensity / fmaxf(light_distance * light_distance, 1.0f);
+  float3 radiance = params.light_intensity / fmaxf(light_distance * light_distance, 1.0f);
 
   return brdf * radiance * n_dot_l;
 }

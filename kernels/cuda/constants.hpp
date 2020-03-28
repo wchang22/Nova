@@ -2,9 +2,11 @@
 #define CUDA_KERNEL_CONSTANTS_HPP
 
 #include "kernel_types/kernel_constants.hpp"
+#include "kernel_types/scene_params.hpp"
 #include "math_constants.h"
 
 __device__ __constant__ extern KernelConstants constants;
+__device__ __constant__ extern SceneParams params;
 
 #define STACK_SIZE 96
 
