@@ -340,10 +340,10 @@ void Window::handle_keyboard() {
     scene.move_camera(Camera::Direction::UP, camera_speed);
   }
   if (ImGui::IsKeyPressed(GLFW_KEY_S) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)) {
-    scene.move_camera(Camera::Direction::DOWN, camera_speed);
+    scene.move_camera(Camera::Direction::UP, -camera_speed);
   }
   if (ImGui::IsKeyPressed(GLFW_KEY_A) || ImGui::IsKeyPressed(GLFW_KEY_LEFT)) {
-    scene.move_camera(Camera::Direction::LEFT, camera_speed);
+    scene.move_camera(Camera::Direction::RIGHT, -camera_speed);
   }
   if (ImGui::IsKeyPressed(GLFW_KEY_D) || ImGui::IsKeyPressed(GLFW_KEY_RIGHT)) {
     scene.move_camera(Camera::Direction::RIGHT, camera_speed);
@@ -358,7 +358,8 @@ void Window::handle_mouse_drag() {
   constexpr float MOUSE_SENSITIVITY = 0.5f;
   ImVec2 delta = ImGui::GetMouseDragDelta();
 
-  scene.move_camera(Camera::Direction::LEFT, delta.x * MOUSE_SENSITIVITY);
+  // TODO std::array, glm::vec conversions, typedefs
+  scene.move_camera(Camera::Direction::RIGHT, -delta.x * MOUSE_SENSITIVITY);
   scene.move_camera(Camera::Direction::UP, delta.y * MOUSE_SENSITIVITY);
   ImGui::ResetMouseDragDelta();
 }
@@ -370,8 +371,12 @@ void Window::handle_mouse_wheel() {
 
   constexpr float MOUSE_SENSITIVITY = 20.0f;
   auto& io = ImGui::GetIO();
+  float scroll_amount = io.MouseWheel;
+  if (scroll_amount == 0) {
+    return;
+  }
   // Adjust camera speed according to frame rate
-  float camera_speed = MOUSE_SENSITIVITY / io.Framerate * ImGui::GetIO().MouseWheel;
+  float camera_speed = MOUSE_SENSITIVITY / io.Framerate * scroll_amount;
 
   scene.move_camera(Camera::Direction::FORWARD, camera_speed);
 }

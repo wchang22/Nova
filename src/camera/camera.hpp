@@ -16,11 +16,8 @@ public:
 
   enum class Direction {
     FORWARD,
-    BACKWARD,
-    LEFT,
     RIGHT,
     UP,
-    DOWN,
   };
 
   void set_position(const glm::vec3& position);

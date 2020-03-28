@@ -37,33 +37,27 @@ void Camera::move(Direction direction, float speed) {
   glm::vec3 v = glm::cross(w, u);
 
   glm::vec3 forward = position - target;
+  float distance = glm::length(forward);
+
+  // Slow down movement as we move close to the target position
+  constexpr auto dist_mod = [](float x) {
+    return std::exp(2.0f * std::min(x, 2.334f) - 4.0f) + 0.05f;
+  };
 
   switch (direction) {
     case Direction::FORWARD:
       // Prevent camera position from moving past target position
-      if (speed <= glm::length(forward)) {
-        position += -w * speed;
+      if (distance >= 0.1f || speed < 0.0f) {
+        position += -w * glm::sign(speed) * dist_mod(distance);
       }
-      break;
-    case Direction::BACKWARD:
-      position += w * speed;
-      break;
-    case Direction::LEFT:
-      position = glm::mat3(glm::rotate(-glm::radians(speed), v)) * forward + target;
       break;
     case Direction::RIGHT:
       position = glm::mat3(glm::rotate(glm::radians(speed), v)) * forward + target;
       break;
     case Direction::UP:
-      // Prevent camera from moving past overhead position
-      if (glm::dot(w, glm::normalize(up)) < rotate_threshold) {
+      // Prevent camera from moving past overhead/underneath position
+      if (glm::dot(w, glm::normalize(up)) * glm::sign(speed) < rotate_threshold) {
         position = glm::mat3(glm::rotate(-glm::radians(speed), u)) * forward + target;
-      }
-      break;
-    case Direction::DOWN:
-      // Prevent camera from moving past underhead position
-      if (glm::dot(-w, glm::normalize(up)) < rotate_threshold) {
-        position = glm::mat3(glm::rotate(glm::radians(speed), u)) * forward + target;
       }
       break;
   }
