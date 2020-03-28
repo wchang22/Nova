@@ -11,6 +11,8 @@
   #endif
 #endif
 
+namespace nova {
+
 template <typename T>
 class Image2DArray {
 public:
@@ -45,5 +47,7 @@ public:
 private:
   cl::Image2DArray image;
 };
+
+}
 
 #endif // OPENCL_IMAGE2D_ARRAY_HPP

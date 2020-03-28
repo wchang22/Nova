@@ -5,6 +5,8 @@
 #include "scene/scene.hpp"
 #include "util/profiling/profiling.hpp"
 
+namespace nova {
+
 Raytracer::Raytracer() {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
@@ -14,16 +16,16 @@ Raytracer::Raytracer() {
 void Raytracer::set_scene(const Scene& scene) {
   PROFILE_SCOPE("Set Scene");
 
-  uint32_t width = static_cast<uint32_t>(scene.get_output_dimensions()[0]);
-  uint32_t height = static_cast<uint32_t>(scene.get_output_dimensions()[1]);
+  const uint32_t width = static_cast<uint32_t>(scene.get_output_dimensions()[0]);
+  const uint32_t height = static_cast<uint32_t>(scene.get_output_dimensions()[1]);
 
   // Update Scene Params
-  const auto& shading_diffuse = scene.get_shading_diffuse();
-  const auto& shading_metallic = scene.get_shading_metallic();
-  const auto& shading_roughness = scene.get_shading_roughness();
-  const auto& shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
-  const auto& light_position = scene.get_light_position();
-  const auto& light_intensity = scene.get_light_intensity();
+  const vec3f& shading_diffuse = scene.get_shading_diffuse();
+  const float shading_metallic = scene.get_shading_metallic();
+  const float shading_roughness = scene.get_shading_roughness();
+  const float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
+  const vec3f& light_position = scene.get_light_position();
+  const vec3f& light_intensity = scene.get_light_intensity();
   const int ray_bounces = scene.get_ray_bounces();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
@@ -53,7 +55,7 @@ void Raytracer::set_scene(const Scene& scene) {
     Model model(model_path, material_loader);
     intersectable_manager.add_model(model);
 
-    auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
+    const auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
     triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
     tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
     bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
@@ -115,4 +117,6 @@ image_utils::image Raytracer::raytrace() {
     width,
     height,
   };
+}
+
 }

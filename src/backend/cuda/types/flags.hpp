@@ -3,6 +3,8 @@
 
 #include <cuda_runtime.h>
 
+namespace nova {
+
 enum class MemFlags {
   READ_ONLY,
   WRITE_ONLY,
@@ -34,5 +36,7 @@ enum class FilterMode {
   NEAREST = cudaFilterModePoint,
   LINEAR = cudaFilterModeLinear,
 };
+
+}
 
 #endif // CUDA_FLAGS_HPP

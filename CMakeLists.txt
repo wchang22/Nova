@@ -47,6 +47,7 @@ file(GLOB_RECURSE SOURCES
     src/model/*
     src/scene/*
     src/util/*
+    src/vector/*
     src/window/*
     src/constants.h
 )

@@ -9,6 +9,8 @@
 #include "kernel_types/bvh_node.hpp"
 #include "model/model.hpp"
 
+namespace nova {
+
 struct IntersectableData {
   std::vector<TriangleData> triangle_data;
   std::vector<TriangleMetaData> triangle_meta_data;
@@ -26,5 +28,7 @@ private:
   std::vector<Triangle> triangles;
   std::unordered_map<Triangle, TriangleMeta, TriangleHash> triangle_map;
 };
+
+}
 
 #endif // INTERSECTABLE_MANAGER_HPP

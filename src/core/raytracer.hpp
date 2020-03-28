@@ -6,6 +6,8 @@
 #include "kernel_types/scene_params.hpp"
 #include "material/material_loader.hpp"
 
+namespace nova {
+
 class Scene;
 
 class Raytracer {
@@ -34,5 +36,7 @@ private:
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<uchar4> material_ims;
 };
+
+}
 
 #endif // RAYTRACER_HPP

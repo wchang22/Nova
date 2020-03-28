@@ -9,6 +9,8 @@
 #include "backend/cuda/types/flags.hpp"
 #include "backend/cuda/types/image2D.hpp"
 
+namespace nova {
+
 template <typename T>
 class Image2DRead : public Image2D<T> {
 public:
@@ -53,5 +55,7 @@ public:
 private:
   cudaTextureObject_t tex;
 };
+
+}
 
 #endif // CUDA_IMAGE2D_READ_HPP

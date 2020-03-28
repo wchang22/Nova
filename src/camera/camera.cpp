@@ -2,6 +2,8 @@
 
 #include "camera.hpp"
 
+namespace nova {
+
 Camera::Camera(const glm::vec3& position,
                const glm::vec3& target,
                const glm::vec3& up,
@@ -79,4 +81,6 @@ EyeCoords Camera::get_eye_coords() const {
     { position.x, position.y, position.z },
     { { u.x, u.y, u.z }, { v.x, v.y, v.z }, { w.x, w.y, w.z } },
   };
+}
+
 }

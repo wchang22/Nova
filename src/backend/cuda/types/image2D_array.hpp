@@ -8,6 +8,8 @@
 #include "backend/cuda/types/error.hpp"
 #include "backend/cuda/types/flags.hpp"
 
+namespace nova {
+
 template <typename T>
 class Image2DArray {
 public:
@@ -70,5 +72,7 @@ private:
   cudaTextureObject_t tex;
   cudaArray_t buffer;
 };
+
+}
 
 #endif // CUDA_IMAGE2D_ARRAY_HPP

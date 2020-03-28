@@ -5,6 +5,8 @@
 #include "util/exception/exception.hpp"
 #include "util/file/fileutils.hpp"
 
+namespace nova {
+
 Accelerator::Accelerator() : context(CL_DEVICE_TYPE_GPU) {
   cl::Device device(context.getInfo<CL_CONTEXT_DEVICES>().front());
   queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
@@ -26,4 +28,6 @@ Accelerator::Accelerator() : context(CL_DEVICE_TYPE_GPU) {
 
 void Accelerator::add_kernel(const std::string& kernel_name) {
   kernel_map[kernel_name] = cl::Kernel(program, kernel_name.c_str());
+}
+
 }

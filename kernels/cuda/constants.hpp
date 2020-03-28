@@ -5,6 +5,8 @@
 #include "kernel_types/scene_params.hpp"
 #include "math_constants.h"
 
+namespace nova {
+
 __device__ __constant__ extern KernelConstants constants;
 __device__ __constant__ extern SceneParams params;
 
@@ -15,5 +17,7 @@ const float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 const float COLOR_EPSILON = 0.5f / 255.0f;
 // Min neighbour colour difference required to raytrace instead of interpolate
 const float INTERP_THRESHOLD = CUDART_SQRT_THREE_3_F;
+
+}
 
 #endif // CUDA_KERNEL_CONSTANTS_HPP

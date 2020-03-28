@@ -8,6 +8,8 @@
 #include "intersectables/aabb.hpp"
 #include "kernel_types/triangle.hpp"
 
+namespace nova {
+
 struct Triangle {
   glm::vec3 v1;
   glm::vec3 v2;
@@ -49,5 +51,7 @@ struct TriangleMeta {
   int ambient_occlusion_index;
   int normal_index;
 };
+
+}
 
 #endif // TRIANGLE_HPP

@@ -2,20 +2,23 @@
 
 #include "camera/camera.hpp"
 #include "core/raytracer.hpp"
+#include "vector/vector_types.hpp"
+
+namespace nova {
 
 class Scene {
 public:
   Scene();
 
   struct Settings {
-    std::array<int, 2> output_dimensions;
+    vec2i output_dimensions;
     std::string output_file_path;
     std::string model_path;
     Camera camera;
-    std::array<float, 3> light_position;
-    std::array<float, 3> light_intensity;
+    vec3f light_position;
+    vec3f light_intensity;
     int ray_bounces;
-    std::array<float, 3> shading_diffuse;
+    vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
     float shading_ambient_occlusion;
@@ -26,24 +29,24 @@ public:
 
   const std::string& set_model_path(const std::string& path);
   const std::string& get_model_path() const;
-  std::array<float, 3> set_camera_position(const std::array<float, 3>& position);
-  std::array<float, 3> get_camera_position() const;
-  std::array<float, 3> set_camera_target(const std::array<float, 3>& target);
-  std::array<float, 3> get_camera_target() const;
-  std::array<float, 3> set_camera_up(const std::array<float, 3>& up);
-  std::array<float, 3> get_camera_up() const;
+  vec3f set_camera_position(const vec3f& position);
+  vec3f get_camera_position() const;
+  vec3f set_camera_target(const vec3f& target);
+  vec3f get_camera_target() const;
+  vec3f set_camera_up(const vec3f& up);
+  vec3f get_camera_up() const;
   float set_camera_fovy(float fovy);
   float get_camera_fovy() const;
   void move_camera(Camera::Direction direction, float speed);
   EyeCoords get_camera_eye_coords() const;
-  const std::array<float, 3>& set_light_position(const std::array<float, 3>& position);
-  const std::array<float, 3>& get_light_position() const;
-  const std::array<float, 3>& set_light_intensity(const std::array<float, 3>& intensity);
-  const std::array<float, 3>& get_light_intensity() const;
+  const vec3f& set_light_position(const vec3f& position);
+  const vec3f& get_light_position() const;
+  const vec3f& set_light_intensity(const vec3f& intensity);
+  const vec3f& get_light_intensity() const;
   int set_ray_bounces(int bounces);
   int get_ray_bounces() const;
-  const std::array<float, 3>& set_shading_diffuse(const std::array<float, 3>& diffuse);
-  const std::array<float, 3>& get_shading_diffuse() const;
+  const vec3f& set_shading_diffuse(const vec3f& diffuse);
+  const vec3f& get_shading_diffuse() const;
   float set_shading_metallic(float metallic);
   float get_shading_metallic() const;
   float set_shading_roughness(float roughness);
@@ -51,8 +54,8 @@ public:
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
 
-  const std::array<int, 2>& set_output_dimensions(const std::array<int, 2>& dimensions);
-  const std::array<int, 2>& get_output_dimensions() const;
+  const vec2i& set_output_dimensions(const vec2i& dimensions);
+  const vec2i& get_output_dimensions() const;
   const std::string& set_output_file_path(const std::string& path);
   const std::string& get_output_file_path() const;
 
@@ -65,3 +68,5 @@ private:
   Raytracer raytracer;
   GLuint scene_texture_id;
 };
+
+}

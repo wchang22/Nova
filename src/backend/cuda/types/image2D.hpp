@@ -5,6 +5,8 @@
 
 #include "backend/cuda/types/error.hpp"
 
+namespace nova {
+
 template <typename T>
 class Image2D {
 public:
@@ -22,5 +24,7 @@ protected:
   size_t width;
   size_t height;
 };
+
+}
 
 #endif // CUDA_IMAGE2D_HPP

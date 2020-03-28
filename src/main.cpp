@@ -14,12 +14,12 @@ int main(int argc, char** argv) {
 
   try {
     app.parse(argc, argv);
-    Window window(headless);
+    nova::Window window(headless);
     window.main_loop();
   } catch (const CLI::Error& e) {
     app.exit(e);
-  } catch (const Error& e) {
-    std::cerr << e.what() << ": " << get_error_string(e.err()) << std::endl;
+  } catch (const nova::Error& e) {
+    std::cerr << e.what() << ": " << nova::get_error_string(e.err()) << std::endl;
     return 1;
   } catch (const std::runtime_error& e) {
     std::cerr << e.what() << std::endl;

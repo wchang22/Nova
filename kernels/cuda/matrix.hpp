@@ -4,6 +4,8 @@
 #include "kernel_types/matrix.hpp"
 #include "vector_math.h"
 
+namespace nova {
+
 __device__ inline Mat3x3 make_mat3x3(const Mat3x4& mat) {
   return {
     make_float3(mat.x),
@@ -24,6 +26,8 @@ __device__ inline Mat3x3 transpose(const Mat3x3& mat) {
 __device__ inline float3 operator*(const Mat3x4& mat, float3 vec) {
   float4 vec4 = make_float4(vec, 1.0f);
   return { dot(mat.x, vec4), dot(mat.y, vec4), dot(mat.z, vec4) };
+}
+
 }
 
 #endif // CUDA_KERNEL_MATRIX_HPP

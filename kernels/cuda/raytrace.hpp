@@ -7,6 +7,8 @@
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
 
+namespace nova {
+
 void kernel_raytrace(uint2 global_dims,
                      uint2 local_dims,
                      const KernelConstants& kernel_constants,
@@ -42,5 +44,7 @@ void kernel_fill_remaining(uint2 global_dims,
                            cudaTextureObject_t materials,
                            uint* rem_pixels_counter,
                            uint2* rem_coords);
+
+}
 
 #endif // CUDA_KERNEL_RAYTRACE_HPP

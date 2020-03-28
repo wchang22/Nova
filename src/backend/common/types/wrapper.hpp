@@ -3,6 +3,8 @@
 
 #include <utility>
 
+namespace nova {
+
 template <typename T>
 class Wrapper {
 public:
@@ -37,5 +39,7 @@ public:
 private:
   T value;
 };
+
+}
 
 #endif // COMMON_WRAPPER_HPP

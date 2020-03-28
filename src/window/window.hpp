@@ -2,6 +2,8 @@
 
 struct GLFWwindow;
 
+namespace nova {
+
 class Window {
 public:
   Window(bool headless = false);
@@ -26,3 +28,5 @@ private:
   int height;
   float menu_height;
 };
+
+}

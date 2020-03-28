@@ -3,28 +3,32 @@
 
 #include <toml.hpp>
 
+#include "vector/vector_types.hpp"
+
+namespace nova {
+
 struct OutputSettings {
-  std::array<int, 2> dimensions;
+  vec2i dimensions;
   std::string file_path;
 };
 
 struct CameraSettings {
-  std::array<float, 3> position;
-  std::array<float, 3> target;
-  std::array<float, 3> up;
+  vec3f position;
+  vec3f target;
+  vec3f up;
   float fovy;
 };
 
 struct ShadingDefaultSettings {
-  std::array<float, 3> diffuse;
+  vec3f diffuse;
   float metallic;
   float roughness;
   float ambient_occlusion;
 };
 
 struct LightSettings {
-  std::array<float, 3> position;
-  std::array<float, 3> intensity;
+  vec3f position;
+  vec3f intensity;
 };
 
 class SceneParser {
@@ -41,5 +45,7 @@ public:
 private:
   toml::value parsed_data;
 };
+
+}
 
 #endif // SCENE_PARSER_HPP

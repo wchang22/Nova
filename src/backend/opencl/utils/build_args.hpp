@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+namespace nova {
+
 class BuildArgs {
 public:
   void add_flag(const std::string& flag) { build_args << flag << " "; }
@@ -26,5 +28,7 @@ public:
 private:
   std::stringstream build_args;
 };
+
+}
 
 #endif // OPENCL_BUILD_ARGS_HPP

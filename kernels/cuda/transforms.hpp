@@ -3,6 +3,8 @@
 
 #include "vector_math.h"
 
+namespace nova {
+
 __device__ inline float3 uint3_to_float3(float3 u) { return u / 255.0f; }
 
 __device__ inline float3
@@ -16,5 +18,7 @@ triangle_interpolate(float3 barycentric_coords, float2 a, float2 b, float2 c) {
 }
 
 __device__ inline int linear_index(int2 p, int width) { return p.y * width + p.x; }
+
+}
 
 #endif // CUDA_KERNEL_TRANSFORMS_HPP

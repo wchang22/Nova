@@ -11,6 +11,8 @@
 #include "intersectables/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
 
+namespace nova {
+
 struct BVHNode {
   AABB aabb;
   std::vector<Triangle> triangles;
@@ -70,5 +72,7 @@ private:
 
   std::vector<Triangle>& triangles;
 };
+
+}
 
 #endif

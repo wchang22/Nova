@@ -5,6 +5,8 @@
 #include <iostream>
 #include <stdexcept>
 
+namespace nova {
+
 struct Error : public std::runtime_error {
   Error(cudaError_t error);
   cudaError_t err() const;
@@ -13,6 +15,8 @@ struct Error : public std::runtime_error {
 };
 
 const char* get_error_string(cudaError_t code);
+
+}
 
 #define CUDA_CHECK(result)                                                            \
   if (result != cudaSuccess) {                                                        \

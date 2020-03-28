@@ -1,8 +1,12 @@
-#include "scene.hpp"
+#include <glm/gtc/type_ptr.hpp>
+
 #include "constants.hpp"
+#include "scene.hpp"
 #include "scene/scene_parser.hpp"
 #include "util/image/imageutils.hpp"
 #include "util/profiling/profiling.hpp"
+
+namespace nova {
 
 Scene::Scene() {
   SceneParser scene_parser;
@@ -16,10 +20,9 @@ Scene::Scene() {
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
-  Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
-                { camera_forward[0], camera_forward[1], camera_forward[2] },
-                { camera_up[0], camera_up[1], camera_up[2] },
-                { output_dimensions[0], output_dimensions[1] }, camera_fovy);
+  Camera camera(glm::make_vec3(camera_position.data()), glm::make_vec3(camera_forward.data()),
+                glm::make_vec3(camera_up.data()), { output_dimensions[0], output_dimensions[1] },
+                camera_fovy);
 
   settings = { output_dimensions,
                output_file_path,
@@ -50,32 +53,32 @@ const std::string& Scene::set_model_path(const std::string& path) {
 
 const std::string& Scene::get_model_path() const { return settings.model_path; }
 
-std::array<float, 3> Scene::set_camera_position(const std::array<float, 3>& position) {
-  settings.camera.set_position({ position[0], position[1], position[2] });
+vec3f Scene::set_camera_position(const vec3f& position) {
+  settings.camera.set_position(glm::make_vec3(position.data()));
   return position;
 }
 
-std::array<float, 3> Scene::get_camera_position() const {
+vec3f Scene::get_camera_position() const {
   const glm::vec3& position = settings.camera.get_position();
   return { position.x, position.y, position.z };
 }
 
-std::array<float, 3> Scene::set_camera_target(const std::array<float, 3>& target) {
-  settings.camera.set_target({ target[0], target[1], target[2] });
+vec3f Scene::set_camera_target(const vec3f& target) {
+  settings.camera.set_target(glm::make_vec3(target.data()));
   return target;
 }
 
-std::array<float, 3> Scene::get_camera_target() const {
+vec3f Scene::get_camera_target() const {
   const glm::vec3& target = settings.camera.get_target();
   return { target.x, target.y, target.z };
 }
 
-std::array<float, 3> Scene::set_camera_up(const std::array<float, 3>& up) {
-  settings.camera.set_up({ up[0], up[1], up[2] });
+vec3f Scene::set_camera_up(const vec3f& up) {
+  settings.camera.set_up(glm::make_vec3(up.data()));
   return up;
 }
 
-std::array<float, 3> Scene::get_camera_up() const {
+vec3f Scene::get_camera_up() const {
   const glm::vec3& up = settings.camera.get_up();
   return { up.x, up.y, up.z };
 }
@@ -94,13 +97,13 @@ void Scene::move_camera(Camera::Direction direction, float speed) {
 
 EyeCoords Scene::get_camera_eye_coords() const { return settings.camera.get_eye_coords(); }
 
-const std::array<float, 3>& Scene::set_light_position(const std::array<float, 3>& position) {
+const vec3f& Scene::set_light_position(const vec3f& position) {
   return settings.light_position = position;
 }
 
-const std::array<float, 3>& Scene::get_light_position() const { return settings.light_position; }
+const vec3f& Scene::get_light_position() const { return settings.light_position; }
 
-const std::array<float, 3>& Scene::set_light_intensity(const std::array<float, 3>& intensity) {
+const vec3f& Scene::set_light_intensity(const vec3f& intensity) {
   return settings.light_intensity = {
     std::max(intensity[0], 0.0f),
     std::max(intensity[1], 0.0f),
@@ -108,13 +111,13 @@ const std::array<float, 3>& Scene::set_light_intensity(const std::array<float, 3
   };
 }
 
-const std::array<float, 3>& Scene::get_light_intensity() const { return settings.light_intensity; }
+const vec3f& Scene::get_light_intensity() const { return settings.light_intensity; }
 
 int Scene::set_ray_bounces(int bounces) { return settings.ray_bounces = std::max(1, bounces); }
 
 int Scene::get_ray_bounces() const { return settings.ray_bounces; }
 
-const std::array<float, 3>& Scene::set_shading_diffuse(const std::array<float, 3>& diffuse) {
+const vec3f& Scene::set_shading_diffuse(const vec3f& diffuse) {
   return settings.shading_diffuse = {
     std::clamp(diffuse[0], 0.0f, 1.0f),
     std::clamp(diffuse[1], 0.0f, 1.0f),
@@ -122,7 +125,7 @@ const std::array<float, 3>& Scene::set_shading_diffuse(const std::array<float, 3
   };
 }
 
-const std::array<float, 3>& Scene::get_shading_diffuse() const { return settings.shading_diffuse; }
+const vec3f& Scene::get_shading_diffuse() const { return settings.shading_diffuse; }
 
 float Scene::set_shading_metallic(float metallic) {
   return settings.shading_metallic = std::clamp(metallic, 0.0f, 1.0f);
@@ -142,16 +145,14 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-const std::array<int, 2>& Scene::set_output_dimensions(const std::array<int, 2>& dimensions) {
+const vec2i& Scene::set_output_dimensions(const vec2i& dimensions) {
   settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);
   settings.output_dimensions[1] = std::clamp(dimensions[1], 1, MAX_RESOLUTION.second);
   settings.camera.set_dimensions({ settings.output_dimensions[0], settings.output_dimensions[1] });
   return settings.output_dimensions;
 }
 
-const std::array<int, 2>& Scene::get_output_dimensions() const {
-  return settings.output_dimensions;
-}
+const vec2i& Scene::get_output_dimensions() const { return settings.output_dimensions; }
 
 const std::string& Scene::set_output_file_path(const std::string& path) {
   return settings.output_file_path = path;
@@ -188,3 +189,5 @@ void Scene::render_to_image() {
 }
 
 GLuint Scene::get_scene_texture_id() const { return scene_texture_id; }
+
+}

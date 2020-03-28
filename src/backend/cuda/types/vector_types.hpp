@@ -3,6 +3,8 @@
 
 #include <cuda_runtime.h>
 
+namespace nova {
+
 template <typename vec_type>
 inline auto& x(vec_type& f) {
   return f.x;
@@ -37,6 +39,8 @@ inline auto& w(vec_type& f) {
 template <typename vec_type>
 inline const auto& w(const vec_type& f) {
   return f.w;
+}
+
 }
 
 #endif // CUDA_VECTOR_TYPES_HPP

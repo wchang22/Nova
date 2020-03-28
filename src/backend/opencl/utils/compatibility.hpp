@@ -11,7 +11,7 @@
   #endif
 #endif
 
-namespace compat_utils {
+namespace nova::compat_utils {
 // Opencl 1.x and 2.x have different definitions for size_t arrays
 #ifdef OPENCL_2
   #define cl_size_t_array std::array<size_t, N>
@@ -19,14 +19,14 @@ namespace compat_utils {
   #define cl_size_t_array cl::size_t<N>
 #endif
 
-  template <int N>
-  cl_size_t_array create_size_t(const std::array<size_t, N>& arr) {
-    cl_size_t_array s;
-    for (int i = 0; i < N; i++) {
-      s[i] = arr[i];
-    }
-    return s;
+template <int N>
+cl_size_t_array create_size_t(const std::array<size_t, N>& arr) {
+  cl_size_t_array s;
+  for (int i = 0; i < N; i++) {
+    s[i] = arr[i];
   }
+  return s;
+}
 }
 
 #endif // OPENCL_COMPATIBILITY_HPP

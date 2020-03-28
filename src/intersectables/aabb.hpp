@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/vec_swizzle.hpp>
 
+namespace nova {
+
 // Axis-aligned bounding box
 struct AABB {
   glm::vec3 top;
@@ -37,5 +39,7 @@ struct AABB {
     return { -vec_max, vec_max };
   }
 };
+
+}
 
 #endif // AABB_HPP

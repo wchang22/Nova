@@ -5,20 +5,20 @@
 #include <string>
 
 namespace Profiling {
-  class TimeScope {
-  public:
-    TimeScope(const std::string& name);
-    ~TimeScope();
+class TimeScope {
+public:
+  TimeScope(const std::string& name);
+  ~TimeScope();
 
-    void section_start(const std::string& message);
-    void section_end();
+  void section_start(const std::string& message);
+  void section_end();
 
-  private:
-    std::chrono::steady_clock::time_point start;
-    std::chrono::steady_clock::time_point t0;
-    std::string message;
-    std::string name;
-  };
+private:
+  std::chrono::steady_clock::time_point start;
+  std::chrono::steady_clock::time_point t0;
+  std::string message;
+  std::string name;
+};
 }
 
 #endif // TIMESCOPE_HPP

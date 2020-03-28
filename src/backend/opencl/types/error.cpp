@@ -1,5 +1,7 @@
 #include "error.hpp"
 
+namespace nova {
+
 const char* get_error_string(cl_int error) {
   switch (error) {
     // run-time and JIT compiler errors
@@ -140,4 +142,6 @@ const char* get_error_string(cl_int error) {
     default:
       return "Unknown OpenCL error";
   }
+}
+
 }

@@ -11,6 +11,8 @@
 
 #define RESOLVE_KERNEL(kernel) kernel
 
+namespace nova {
+
 class Accelerator {
 public:
   Accelerator();
@@ -160,5 +162,7 @@ public:
 private:
   KernelConstants kernel_constants;
 };
+
+}
 
 #endif // CUDA_ACCELERATOR_HPP

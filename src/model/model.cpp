@@ -7,6 +7,8 @@
 #include <cassert>
 #include <glm/glm.hpp>
 
+namespace nova {
+
 Model::Model(const std::string& path, MaterialLoader& material_loader)
   : material_loader(material_loader) {
   PROFILE_SCOPE("Load model");
@@ -148,4 +150,6 @@ int Model::load_materials(aiMaterial* material, aiTextureType type) {
 
 const std::vector<std::pair<Triangle, TriangleMeta>>& Model::get_triangles() const {
   return triangles;
+}
+
 }

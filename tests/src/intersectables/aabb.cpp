@@ -2,6 +2,8 @@
 
 #include "intersectables/aabb.hpp"
 
+using namespace nova;
+
 TEST_CASE("AABB surface area", "[aabb]") {
   AABB aabb1 {
     glm::vec3(1.0f),

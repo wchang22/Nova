@@ -17,6 +17,8 @@
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
 
+namespace nova {
+
 const ImVec4 BG_COLOR(0.2f, 0.2f, 0.2f, 1.0f);
 const ImVec4 HEADER_COLOR(53.0f / 255.0f, 53.0f / 255.0f, 70.0f / 255.0f, 1.0f);
 const ImVec4 BUTTON_COLOR(49.0f / 255.0f, 49.0f / 255.0f, 104.0f / 255.0f, 1.0f);
@@ -158,19 +160,19 @@ void Window::display_scene_settings() {
 
   // UI element variables
   static bool real_time = false;
-  static std::array<int, 2> output_dimensions = scene.get_output_dimensions();
+  static vec2i output_dimensions = scene.get_output_dimensions();
   static std::string output_file_path = scene.get_output_file_path();
   static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
-  static std::array<float, 3> camera_position = scene.get_camera_position();
-  static std::array<float, 3> camera_target = scene.get_camera_target();
-  static std::array<float, 3> camera_up = scene.get_camera_up();
+  static vec3f camera_position = scene.get_camera_position();
+  static vec3f camera_target = scene.get_camera_target();
+  static vec3f camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
-  static std::array<float, 3> light_position = scene.get_light_position();
-  static std::array<float, 3> light_intensity = scene.get_light_intensity();
+  static vec3f light_position = scene.get_light_position();
+  static vec3f light_intensity = scene.get_light_intensity();
   static int ray_bounces = scene.get_ray_bounces();
-  static std::array<float, 3> shading_diffuse = scene.get_shading_diffuse();
+  static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
@@ -358,7 +360,6 @@ void Window::handle_mouse_drag() {
   constexpr float MOUSE_SENSITIVITY = 0.5f;
   ImVec2 delta = ImGui::GetMouseDragDelta();
 
-  // TODO std::array, glm::vec conversions, typedefs
   scene.move_camera(Camera::Direction::RIGHT, -delta.x * MOUSE_SENSITIVITY);
   scene.move_camera(Camera::Direction::UP, delta.y * MOUSE_SENSITIVITY);
   ImGui::ResetMouseDragDelta();
@@ -411,4 +412,6 @@ void Window::main_loop() {
       glfwSwapBuffers(window);
     }
   }
+}
+
 }

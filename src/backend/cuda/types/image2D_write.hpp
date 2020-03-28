@@ -9,6 +9,8 @@
 #include "backend/cuda/types/flags.hpp"
 #include "backend/cuda/types/image2D.hpp"
 
+namespace nova {
+
 template <typename T>
 class Image2DWrite : public Image2D<T> {
 public:
@@ -42,5 +44,7 @@ public:
 private:
   cudaSurfaceObject_t surf;
 };
+
+}
 
 #endif // CUDA_IMAGE2D_WRITE_HPP

@@ -3,6 +3,8 @@
 
 #include "util/image/imageutils.hpp"
 
+namespace nova {
+
 struct MaterialData {
   std::vector<uchar4> data;
   uint32_t width;
@@ -21,5 +23,7 @@ public:
 private:
   std::vector<image_utils::image> materials;
 };
+
+}
 
 #endif // MATERIALS_HPP

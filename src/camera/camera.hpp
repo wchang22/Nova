@@ -5,6 +5,8 @@
 
 #include "kernel_types/eye_coords.hpp"
 
+namespace nova {
+
 class Camera {
 public:
   Camera() = default;
@@ -45,5 +47,7 @@ private:
   float pitch;
   float yaw;
 };
+
+}
 
 #endif // CAMERA_HPP

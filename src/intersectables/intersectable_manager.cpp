@@ -3,6 +3,8 @@
 #include "constants.hpp"
 #include "util/exception/exception.hpp"
 
+namespace nova {
+
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
   if (triangles.size() >= MAX_TRIANGLES) {
     throw TriangleException("Max number of triangles exceeded");
@@ -28,8 +30,8 @@ IntersectableData IntersectableManager::build() {
   std::vector<FlatBVHNode> bvh_data = bvh.build();
 
   // BVH modifies the order of triangles, so we need to look up the meta data
-  // Separate triangle normals from triangle data, as we do not need the normal during intersection,
-  // and this reduces cache pressure
+  // Separate triangle normals from triangle data, as we do not need the normal during
+  // intersection, and this reduces cache pressure
   std::vector<TriangleData> triangle_data;
   std::vector<TriangleMetaData> triangle_meta_data;
   triangle_data.reserve(triangles.size());
@@ -78,4 +80,6 @@ IntersectableData IntersectableManager::build() {
   }
 
   return { triangle_data, triangle_meta_data, bvh_data };
+}
+
 }

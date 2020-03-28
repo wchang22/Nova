@@ -6,6 +6,8 @@
 
 #include "backend/cuda/types/error.hpp"
 
+namespace nova {
+
 template <typename T>
 class Buffer {
 public:
@@ -82,5 +84,7 @@ private:
   T* buffer;
   size_t length;
 };
+
+}
 
 #endif // CUDA_BUFFER_HPP

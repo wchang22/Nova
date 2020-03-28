@@ -10,6 +10,8 @@
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
+namespace nova {
+
 BVH::BVH(std::vector<Triangle>& triangles) : triangles(triangles) {}
 
 std::vector<FlatBVHNode> BVH::build() {
@@ -270,4 +272,6 @@ std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
     out << s[0] << " " << s[1] << " " << s[2] << " " << s[3] << " ";
   }
   return out;
+}
+
 }

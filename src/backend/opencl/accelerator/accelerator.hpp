@@ -22,6 +22,8 @@
 
 #define RESOLVE_KERNEL(kernel) #kernel
 
+namespace nova {
+
 class Accelerator {
 public:
   Accelerator();
@@ -204,5 +206,7 @@ private:
   cl::Program program;
   std::unordered_map<std::string, cl::Kernel> kernel_map;
 };
+
+}
 
 #endif // OPENCL_ACCELERATOR_HPP

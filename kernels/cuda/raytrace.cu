@@ -7,6 +7,8 @@
 #include "types.hpp"
 #include "vector_math.h"
 
+namespace nova {
+
 __device__ bool find_intersection(
   TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool fast) {
   /*
@@ -304,4 +306,6 @@ void kernel_fill_remaining(uint2 global_dims,
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
   fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh,
                                              materials, rem_pixels_counter, rem_coords);
+}
+
 }
