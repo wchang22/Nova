@@ -1,6 +1,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "camera.hpp"
+#include "vector/vector_conversions.hpp"
 
 namespace nova {
 
@@ -76,10 +77,10 @@ EyeCoords Camera::get_eye_coords() const {
   glm::vec3 v = glm::cross(w, u);
 
   return {
-    { coord_scale.x, coord_scale.y },
-    { coord_dims.x, coord_dims.y },
-    { position.x, position.y, position.z },
-    { { u.x, u.y, u.z }, { v.x, v.y, v.z }, { w.x, w.y, w.z } },
+    glm_to_float2(coord_scale),
+    glm_to_float2(coord_dims),
+    glm_to_float3(position),
+    { glm_to_float3(u), glm_to_float3(v), glm_to_float3(w) },
   };
 }
 

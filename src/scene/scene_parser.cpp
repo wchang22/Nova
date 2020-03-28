@@ -13,7 +13,8 @@ OutputSettings SceneParser::get_output_settings() const {
 }
 
 std::vector<std::string> SceneParser::get_model_paths() const {
-  std::vector<std::string> paths = toml::find<std::vector<std::string>>(parsed_data, "model", "paths");
+  std::vector<std::string> paths =
+    toml::find<std::vector<std::string>>(parsed_data, "model", "paths");
   for (auto& path : paths) {
     path.insert(0, ASSETS_PATH);
   }

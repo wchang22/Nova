@@ -21,6 +21,7 @@
 #endif
 
 #include <cstddef>
+#include <utility>
 
 constexpr char APP_DESCRIPTION[] = "High performance GPU accelerated ray tracer using OpenCL/CUDA";
 

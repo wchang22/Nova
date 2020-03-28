@@ -7,6 +7,7 @@
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
 #include "util/serialization/serialization.hpp"
+#include "vector/vector_conversions.hpp"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
@@ -217,8 +218,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   size_t flat_node_index = flat_nodes.size();
 
   // Build flat node and insert into list
-  FlatBVHNode flat_node { { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
-                          { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 } };
+  FlatBVHNode flat_node { glm_to_float4(glm::vec4(node->aabb.top, 0.0f)),
+                          glm_to_float4(glm::vec4(node->aabb.bottom, 0.0f)) };
   flat_nodes.emplace_back(std::move(flat_node));
 
   // Leaf node

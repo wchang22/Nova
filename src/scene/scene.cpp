@@ -1,10 +1,9 @@
-#include <glm/gtc/type_ptr.hpp>
-
-#include "constants.hpp"
 #include "scene.hpp"
+#include "constants.hpp"
 #include "scene/scene_parser.hpp"
 #include "util/image/imageutils.hpp"
 #include "util/profiling/profiling.hpp"
+#include "vector/vector_conversions.hpp"
 
 namespace nova {
 
@@ -20,9 +19,8 @@ Scene::Scene() {
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
-  Camera camera(glm::make_vec3(camera_position.data()), glm::make_vec3(camera_forward.data()),
-                glm::make_vec3(camera_up.data()), { output_dimensions[0], output_dimensions[1] },
-                camera_fovy);
+  Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
+                { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
   settings = { output_dimensions,
                output_file_path,
@@ -54,38 +52,29 @@ const std::string& Scene::set_model_path(const std::string& path) {
 const std::string& Scene::get_model_path() const { return settings.model_path; }
 
 vec3f Scene::set_camera_position(const vec3f& position) {
-  settings.camera.set_position(glm::make_vec3(position.data()));
+  settings.camera.set_position(vec_to_glm(position));
   return position;
 }
 
-vec3f Scene::get_camera_position() const {
-  const glm::vec3& position = settings.camera.get_position();
-  return { position.x, position.y, position.z };
-}
+vec3f Scene::get_camera_position() const { return glm_to_vec(settings.camera.get_position()); }
 
 vec3f Scene::set_camera_target(const vec3f& target) {
-  settings.camera.set_target(glm::make_vec3(target.data()));
+  settings.camera.set_target(vec_to_glm(target));
   return target;
 }
 
-vec3f Scene::get_camera_target() const {
-  const glm::vec3& target = settings.camera.get_target();
-  return { target.x, target.y, target.z };
-}
+vec3f Scene::get_camera_target() const { return glm_to_vec(settings.camera.get_target()); }
 
 vec3f Scene::set_camera_up(const vec3f& up) {
-  settings.camera.set_up(glm::make_vec3(up.data()));
+  settings.camera.set_up(vec_to_glm(up));
   return up;
 }
 
-vec3f Scene::get_camera_up() const {
-  const glm::vec3& up = settings.camera.get_up();
-  return { up.x, up.y, up.z };
-}
+vec3f Scene::get_camera_up() const { return glm_to_vec(settings.camera.get_up()); }
 
 float Scene::set_camera_fovy(float fovy) {
   float clamped_fovy = std::clamp(fovy, 1.0f, 45.0f);
-  settings.camera.set_fovy(fovy);
+  settings.camera.set_fovy(clamped_fovy);
   return clamped_fovy;
 }
 

@@ -1,9 +1,9 @@
 #include "raytracer.hpp"
-#include "camera/camera.hpp"
 #include "constants.hpp"
 #include "model/model.hpp"
 #include "scene/scene.hpp"
 #include "util/profiling/profiling.hpp"
+#include "vector/vector_conversions.hpp"
 
 namespace nova {
 
@@ -29,14 +29,9 @@ void Raytracer::set_scene(const Scene& scene) {
   const int ray_bounces = scene.get_ray_bounces();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { scene.get_camera_eye_coords(),
-                  { light_position[0], light_position[1], light_position[2] },
-                  { light_intensity[0], light_intensity[1], light_intensity[2] },
-                  { shading_diffuse[0], shading_diffuse[1], shading_diffuse[2] },
-                  shading_metallic,
-                  shading_roughness,
-                  shading_ambient_occlusion,
-                  ray_bounces });
+    SceneParams { scene.get_camera_eye_coords(), vec_to_float3(light_position),
+                  vec_to_float3(light_intensity), vec_to_float3(shading_diffuse), shading_metallic,
+                  shading_roughness, shading_ambient_occlusion, ray_bounces });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
@@ -55,7 +50,7 @@ void Raytracer::set_scene(const Scene& scene) {
     Model model(model_path, material_loader);
     intersectable_manager.add_model(model);
 
-    const auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
+    auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
     triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
     tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
     bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
@@ -82,6 +77,7 @@ void Raytracer::set_scene(const Scene& scene) {
 image_utils::image Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
+  accelerator.write_buffer(rem_pixels_buf, 0U);
   {
     PROFILE_SECTION_START("Raytrace kernel");
     uint2 global_dims { width, height / 2 };
