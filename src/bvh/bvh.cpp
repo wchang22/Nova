@@ -156,15 +156,15 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
                  [&](const auto& tri) {
                    AABB bounds = tri.get_bounds();
                    glm::vec3 center = bounds.get_center();
-                   glm::uvec3 split_index =
-                     min(static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
+                   glm::uvec3 split_index = glm::min(
+                     static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
                    return std::make_pair(bounds, split_index);
                  });
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
     // Don't want triangles to be concentrated on axis
-    if (abs(bin_end[axis] - bin_start[axis]) < 1e-4f) {
+    if (std::abs(bin_end[axis] - bin_start[axis]) < 1e-4f) {
       continue;
     }
 

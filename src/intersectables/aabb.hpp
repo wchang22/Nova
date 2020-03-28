@@ -11,7 +11,7 @@ struct AABB {
 
   inline float get_surface_area() const {
     glm::vec3 dims = top - bottom;
-    return dot(xyz(dims), yzx(dims)) * 2;
+    return glm::dot(glm::xyz(dims), glm::yzx(dims)) * 2;
   }
 
   inline float get_cost(size_t num_triangles) const { return get_surface_area() * num_triangles; }
@@ -19,13 +19,13 @@ struct AABB {
   inline glm::vec3 get_center() const { return (top + bottom) / 2.0f; }
 
   inline void grow(const AABB& other) {
-    top = max(top, other.top);
-    bottom = min(bottom, other.bottom);
+    top = glm::max(top, other.top);
+    bottom = glm::min(bottom, other.bottom);
   }
 
   inline void shrink(const AABB& other) {
-    top = min(top, other.top);
-    bottom = max(bottom, other.bottom);
+    top = glm::min(top, other.top);
+    bottom = glm::max(bottom, other.bottom);
   }
 
   inline bool operator==(const AABB& other) const {

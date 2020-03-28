@@ -90,7 +90,7 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
     glm::vec3& v2 = vertices[face.mIndices[1]];
     glm::vec3& v3 = vertices[face.mIndices[2]];
 
-    float lengths[] = { distance(v1, v2), distance(v2, v3), distance(v1, v3) };
+    float lengths[] = { glm::distance(v1, v2), glm::distance(v2, v3), glm::distance(v1, v3) };
     std::sort(lengths, lengths + 3);
 
     // Ignore degenerate triangles
@@ -98,9 +98,9 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
       continue;
     }
 
-    glm::vec3 n1 = normalize(normals[face.mIndices[0]]);
-    glm::vec3 n2 = normalize(normals[face.mIndices[1]]);
-    glm::vec3 n3 = normalize(normals[face.mIndices[2]]);
+    glm::vec3 n1 = glm::normalize(normals[face.mIndices[0]]);
+    glm::vec3 n2 = glm::normalize(normals[face.mIndices[1]]);
+    glm::vec3 n3 = glm::normalize(normals[face.mIndices[2]]);
     glm::vec3 tan1 = has_tangents ? tangents[face.mIndices[0]] : glm::vec3(0);
     glm::vec3 tan2 = has_tangents ? tangents[face.mIndices[1]] : glm::vec3(0);
     glm::vec3 tan3 = has_tangents ? tangents[face.mIndices[2]] : glm::vec3(0);
@@ -112,16 +112,16 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
     glm::vec2 t3 = has_textures ? textures[face.mIndices[2]] : glm::vec2(0);
 
     // Fixes models with symmetric uv coordinates
-    glm::vec3 fixed_bit1 = cross(n1, tan1);
-    glm::vec3 fixed_bit2 = cross(n2, tan2);
-    glm::vec3 fixed_bit3 = cross(n3, tan3);
-    if (dot(fixed_bit1, bit1) < 0.0) {
+    glm::vec3 fixed_bit1 = glm::cross(n1, tan1);
+    glm::vec3 fixed_bit2 = glm::cross(n2, tan2);
+    glm::vec3 fixed_bit3 = glm::cross(n3, tan3);
+    if (glm::dot(fixed_bit1, bit1) < 0.0) {
       fixed_bit1 *= -1.0f;
     }
-    if (dot(fixed_bit2, bit2) < 0.0) {
+    if (glm::dot(fixed_bit2, bit2) < 0.0) {
       fixed_bit2 *= -1.0f;
     }
-    if (dot(fixed_bit3, bit3) < 0.0) {
+    if (glm::dot(fixed_bit3, bit3) < 0.0) {
       fixed_bit3 *= -1.0f;
     }
 

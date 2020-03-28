@@ -39,7 +39,7 @@ IntersectableData IntersectableManager::build() {
     const auto& [v1, v2, v3] = tri;
     glm::vec3 e1 = v2 - v1;
     glm::vec3 e2 = v3 - v1;
-    glm::vec3 normal = normalize(cross(e1, e2));
+    glm::vec3 normal = glm::normalize(glm::cross(e1, e2));
 
     // Create woop transformation matrix to transform ray to unit triangle space
     // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
