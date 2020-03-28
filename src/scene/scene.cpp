@@ -142,24 +142,28 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-const std::array<int, 2>& Scene::set_dimensions(const std::array<int, 2>& dimensions) {
+const std::array<int, 2>& Scene::set_output_dimensions(const std::array<int, 2>& dimensions) {
   settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);
   settings.output_dimensions[1] = std::clamp(dimensions[1], 1, MAX_RESOLUTION.second);
   settings.camera.set_dimensions({ settings.output_dimensions[0], settings.output_dimensions[1] });
   return settings.output_dimensions;
 }
 
-const std::array<int, 2>& Scene::get_dimensions() const { return settings.output_dimensions; }
+const std::array<int, 2>& Scene::get_output_dimensions() const {
+  return settings.output_dimensions;
+}
 
-const std::string& Scene::set_file_path(const std::string& path) {
+const std::string& Scene::set_output_file_path(const std::string& path) {
   return settings.output_file_path = path;
 }
 
-const std::string& Scene::get_file_path() const { return settings.output_file_path; }
+const std::string& Scene::get_output_file_path() const { return settings.output_file_path; }
 
 void Scene::render_to_screen() {
   raytracer.set_scene(*this);
-  auto im = raytracer.raytrace();
+  image_utils::image im = raytracer.raytrace();
+
+  // Bind image data to OpenGL texture for rendering
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, im.width, im.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                im.data.data());

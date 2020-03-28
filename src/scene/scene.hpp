@@ -1,4 +1,3 @@
-#include <array>
 #include <glad/glad.h>
 
 #include "camera/camera.hpp"
@@ -52,10 +51,10 @@ public:
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
 
-  const std::array<int, 2>& set_dimensions(const std::array<int, 2>& dimensions);
-  const std::array<int, 2>& get_dimensions() const;
-  const std::string& set_file_path(const std::string& path);
-  const std::string& get_file_path() const;
+  const std::array<int, 2>& set_output_dimensions(const std::array<int, 2>& dimensions);
+  const std::array<int, 2>& get_output_dimensions() const;
+  const std::string& set_output_file_path(const std::string& path);
+  const std::string& get_output_file_path() const;
 
   void render_to_screen();
   void render_to_image();

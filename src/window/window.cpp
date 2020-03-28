@@ -29,6 +29,7 @@ constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowF
                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
 
 Window::Window(bool headless) : headless(headless) {
+  // Don't setup anything if no window needed
   if (headless) {
     return;
   }
@@ -46,8 +47,9 @@ Window::Window(bool headless) : headless(headless) {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-  width = glfwGetVideoMode(glfwGetPrimaryMonitor())->width;
-  height = glfwGetVideoMode(glfwGetPrimaryMonitor())->height;
+  const GLFWvidmode* vid_mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  width = vid_mode->width;
+  height = vid_mode->height;
   window = glfwCreateWindow(width, height, "Nova", nullptr, nullptr);
 
   if (!window) {
@@ -59,21 +61,21 @@ Window::Window(bool headless) : headless(headless) {
   glfwSwapInterval(1); // Enable vsync
 
   // Initialize OpenGL loader
-  if (gladLoadGL() == 0) {
+  if (!gladLoadGL()) {
     throw WindowException("Failed to initialize OpenGL loader");
   }
 
   // Setup Dear ImGui
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  auto& io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.Fonts->AddFontFromFileTTF(FONT_PATH, FONT_SIZE);
 
   // Default styles
   ImGui::StyleColorsClassic();
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-  ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
   ImGui::PushStyleColor(ImGuiCol_WindowBg, BG_COLOR);
   ImGui::PushStyleColor(ImGuiCol_Header, HEADER_COLOR);
   ImGui::PushStyleColor(ImGuiCol_Button, BUTTON_COLOR);
@@ -98,6 +100,7 @@ Window::~Window() {
 }
 
 void display_input_text_error(bool error_flag, const char* label, std::string& str) {
+  // Display border highlight if error
   if (error_flag) {
     ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
   }
@@ -112,17 +115,20 @@ void display_file_dialog(float button_indent,
                          const char* button_label,
                          const char* filters,
                          std::string& path) {
+  static ImGuiFileDialog* dialog_inst = ImGuiFileDialog::Instance();
+  std::string dialog_key = button_label + std::string("Key");
+
+  // Display button and file dialog popup on button click
   ImGui::Indent(button_indent);
-  if (ImGui::Button(button_label, { button_width, 0 })) {
-    ImGuiFileDialog::Instance()->OpenDialog(button_label + std::string("Key"), "Browse", filters,
-                                            ".");
+  if (ImGui::Button(button_label, { button_width, 0.0f })) {
+    dialog_inst->OpenDialog(dialog_key, "Browse", filters, ".");
   }
   ImGui::Indent(-button_indent);
-  if (ImGuiFileDialog::Instance()->FileDialog(button_label + std::string("Key"))) {
-    if (ImGuiFileDialog::Instance()->IsOk) {
-      path = ImGuiFileDialog::Instance()->GetFilepathName();
+  if (dialog_inst->FileDialog(dialog_key)) {
+    if (dialog_inst->IsOk) {
+      path = dialog_inst->GetFilepathName();
     }
-    ImGuiFileDialog::Instance()->CloseDialog(button_label + std::string("Key"));
+    dialog_inst->CloseDialog(dialog_key);
   }
 }
 
@@ -142,17 +148,18 @@ void Window::display_menu() {
 void Window::display_scene_settings() {
   float window_width = LEFT_PANEL_PERCENTAGE * width;
   float window_height = height - menu_height;
-  auto& io = ImGui::GetIO();
-  auto& style = ImGui::GetStyle();
+  ImGuiIO& io = ImGui::GetIO();
+  ImGuiStyle& style = ImGui::GetStyle();
 
   const float button_width =
     window_width * 0.5f - 1.5f * style.FramePadding.x - 4.0f * style.FrameBorderSize;
   const float button_indent =
     window_width - 2.0f * style.FramePadding.x - 4.0f * style.FrameBorderSize - button_width;
 
+  // UI element variables
   static bool real_time = false;
-  static std::array<int, 2> scene_dimensions = scene.get_dimensions();
-  static std::string file_path = scene.get_file_path();
+  static std::array<int, 2> output_dimensions = scene.get_output_dimensions();
+  static std::string output_file_path = scene.get_output_file_path();
   static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
@@ -168,6 +175,7 @@ void Window::display_scene_settings() {
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
 
+  // Render lambdas that check for errors
   const auto render_to_screen = [&]() {
     if (model_path_error) {
       return;
@@ -202,12 +210,13 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
-      ImGui::InputInt2("Resolution##Rendering", scene_dimensions.data());
+      ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
 
-      display_input_text_error(file_path_error, "Save Path##Rendering", file_path);
-      display_file_dialog(button_indent, button_width, "Browse##Rendering", ".jpg", file_path);
+      display_input_text_error(file_path_error, "Save Path##Rendering", output_file_path);
+      display_file_dialog(button_indent, button_width, "Browse##Rendering", IMAGE_EXTENSION,
+                          output_file_path);
 
-      scene_dimensions = scene.set_dimensions(scene_dimensions);
+      output_dimensions = scene.set_output_dimensions(output_dimensions);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -256,7 +265,7 @@ void Window::display_scene_settings() {
     }
 
     if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {
-      file_path = scene.set_file_path(file_path);
+      output_file_path = scene.set_output_file_path(output_file_path);
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
       file_path_error = false;
@@ -266,6 +275,7 @@ void Window::display_scene_settings() {
     if (ImGui::Button("Update##SceneSettings", { button_width, 0.0f })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
+      // No need to render on click if already rendering
       if (!real_time) {
         render_to_screen();
       }
@@ -274,10 +284,12 @@ void Window::display_scene_settings() {
     ImGui::End();
   }
 
+  // Handle IO events and render per frame if real time
   if (real_time) {
     handle_mouse_drag();
     handle_mouse_wheel();
     handle_keyboard();
+    // Update camera position due to IO events
     camera_position = scene.get_camera_position();
     render_to_screen();
   }
@@ -294,12 +306,14 @@ void Window::display_render() {
   ImGui::SetWindowPos({ width - window_width, menu_height }, true);
   ImGui::SetWindowSize({ window_width, window_height }, true);
 
+  // Display render as an image
   ImGui::SetCursorPos(image_margin);
   ImGui::Image(reinterpret_cast<ImTextureID>(scene.get_scene_texture_id()), image_size);
 
   ImGui::End();
 }
 
+// Checks if mouse is in render image
 bool Window::in_render_box() {
   float window_width = RIGHT_PANEL_PERCENTAGE * width;
   float window_height = height - menu_height;
@@ -318,7 +332,8 @@ void Window::handle_keyboard() {
   }
 
   constexpr float MOUSE_SENSITIVITY = 100.0f;
-  auto& io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
+  // Adjust camera speed according to frame rate
   float camera_speed = MOUSE_SENSITIVITY / io.Framerate;
 
   if (ImGui::IsKeyPressed(GLFW_KEY_W) || ImGui::IsKeyPressed(GLFW_KEY_UP)) {
@@ -342,6 +357,7 @@ void Window::handle_mouse_drag() {
 
   constexpr float MOUSE_SENSITIVITY = 0.5f;
   ImVec2 delta = ImGui::GetMouseDragDelta();
+
   scene.move_camera(Camera::Direction::LEFT, delta.x * MOUSE_SENSITIVITY);
   scene.move_camera(Camera::Direction::UP, delta.y * MOUSE_SENSITIVITY);
   ImGui::ResetMouseDragDelta();
@@ -352,8 +368,9 @@ void Window::handle_mouse_wheel() {
     return;
   }
 
-  constexpr float MOUSE_SENSITIVITY = 10.0f;
+  constexpr float MOUSE_SENSITIVITY = 20.0f;
   auto& io = ImGui::GetIO();
+  // Adjust camera speed according to frame rate
   float camera_speed = MOUSE_SENSITIVITY / io.Framerate * ImGui::GetIO().MouseWheel;
 
   scene.move_camera(Camera::Direction::FORWARD, camera_speed);

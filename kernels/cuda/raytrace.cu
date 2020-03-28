@@ -1,4 +1,4 @@
-#include "backend/cuda/types/types.hpp"
+#include "backend/cuda/types/error.hpp"
 #include "constants.hpp"
 #include "intersection.hpp"
 #include "raytrace.hpp"

@@ -1,7 +1,6 @@
 #ifndef SCENE_PARSER_HPP
 #define SCENE_PARSER_HPP
 
-#include <array>
 #include <toml.hpp>
 
 struct OutputSettings {

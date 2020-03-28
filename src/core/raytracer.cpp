@@ -14,8 +14,8 @@ Raytracer::Raytracer() {
 void Raytracer::set_scene(const Scene& scene) {
   PROFILE_SCOPE("Set Scene");
 
-  uint32_t width = static_cast<uint32_t>(scene.get_dimensions()[0]);
-  uint32_t height = static_cast<uint32_t>(scene.get_dimensions()[1]);
+  uint32_t width = static_cast<uint32_t>(scene.get_output_dimensions()[0]);
+  uint32_t height = static_cast<uint32_t>(scene.get_output_dimensions()[1]);
 
   // Update Scene Params
   const auto& shading_diffuse = scene.get_shading_diffuse();
@@ -24,7 +24,7 @@ void Raytracer::set_scene(const Scene& scene) {
   const auto& shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
   const auto& light_position = scene.get_light_position();
   const auto& light_intensity = scene.get_light_intensity();
-  const auto ray_bounces = scene.get_ray_bounces();
+  const int ray_bounces = scene.get_ray_bounces();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
     SceneParams { scene.get_camera_eye_coords(),
@@ -45,7 +45,7 @@ void Raytracer::set_scene(const Scene& scene) {
   }
 
   // Update Model
-  const auto model_path = scene.get_model_path();
+  const std::string& model_path = scene.get_model_path();
   if (model_path != loaded_model) {
     intersectable_manager.clear();
     material_loader.clear();
@@ -80,7 +80,6 @@ void Raytracer::set_scene(const Scene& scene) {
 image_utils::image Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
-  accelerator.write_buffer(rem_pixels_buf, 0U);
   {
     PROFILE_SECTION_START("Raytrace kernel");
     uint2 global_dims { width, height / 2 };

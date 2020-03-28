@@ -30,6 +30,8 @@ const glm::vec3& Camera::get_up() const { return up; }
 float Camera::get_fovy() const { return fovy; }
 
 void Camera::move(Direction direction, float speed) {
+  constexpr float rotate_threshold = 0.98f;
+
   glm::vec3 w = -glm::normalize(target - position);
   glm::vec3 u = glm::normalize(glm::cross(up, w));
   glm::vec3 v = glm::cross(w, u);
@@ -38,6 +40,7 @@ void Camera::move(Direction direction, float speed) {
 
   switch (direction) {
     case Direction::FORWARD:
+      // Prevent camera position from moving past target position
       if (speed <= glm::length(forward)) {
         position += -w * speed;
       }
@@ -52,12 +55,14 @@ void Camera::move(Direction direction, float speed) {
       position = glm::mat3(glm::rotate(glm::radians(speed), v)) * forward + target;
       break;
     case Direction::UP:
-      if (glm::dot(w, glm::normalize(up)) < 0.98f) {
+      // Prevent camera from moving past overhead position
+      if (glm::dot(w, glm::normalize(up)) < rotate_threshold) {
         position = glm::mat3(glm::rotate(-glm::radians(speed), u)) * forward + target;
       }
       break;
     case Direction::DOWN:
-      if (glm::dot(-w, glm::normalize(up)) < 0.98f) {
+      // Prevent camera from moving past underhead position
+      if (glm::dot(-w, glm::normalize(up)) < rotate_threshold) {
         position = glm::mat3(glm::rotate(glm::radians(speed), u)) * forward + target;
       }
       break;
@@ -66,8 +71,8 @@ void Camera::move(Direction direction, float speed) {
 
 EyeCoords Camera::get_eye_coords() const {
   const auto& [width, height] = dimensions;
-  glm::vec2 half_fov(glm::vec2(fovy * width / height, fovy) / 2.0f);
-  glm::vec2 coord_dims(glm::vec2(width, height) / 2.0f);
+  glm::vec2 half_fov(glm::vec2(fovy * width / height, fovy) * 0.5f);
+  glm::vec2 coord_dims(glm::vec2(width, height) * 0.5f);
   glm::vec2 coord_scale(glm::tan(glm::radians(half_fov)) / coord_dims);
 
   glm::vec3 w = -glm::normalize(target - position);

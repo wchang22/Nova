@@ -29,8 +29,8 @@ public:
   //   }
   // }
   Buffer(Buffer&& other)
-    : length(other.length),
-  buffer(other.buffer) {
+    : buffer(other.buffer),
+  length(other.length) {
     other.length = 0;
     other.buffer = nullptr;
   }
