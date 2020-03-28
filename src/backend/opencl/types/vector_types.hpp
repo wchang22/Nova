@@ -11,8 +11,6 @@
   #endif
 #endif
 
-namespace nova {
-
 using float2 = cl_float2;
 using float3 = cl_float3;
 using float4 = cl_float4;
@@ -63,8 +61,6 @@ inline auto& w(vec_type& f) {
 template <typename vec_type>
 inline const auto& w(const vec_type& f) {
   return f.s[3];
-}
-
 }
 
 #endif // OPENCL_VECTOR_TYPES_HPP

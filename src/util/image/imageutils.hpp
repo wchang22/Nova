@@ -8,7 +8,7 @@
 
 namespace image_utils {
 struct image {
-  std::vector<nova::uchar4> data;
+  std::vector<uchar4> data;
   uint32_t width;
   uint32_t height;
 };
