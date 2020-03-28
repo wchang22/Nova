@@ -112,7 +112,7 @@ image_utils::image Raytracer::raytrace() {
   PROFILE_SECTION_END();
 
   return {
-    pixels,
+    std::move(pixels),
     width,
     height,
   };
