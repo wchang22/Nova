@@ -258,9 +258,9 @@ void kernel_raytrace(uint2 global_dims,
                      cudaTextureObject_t materials) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
-                                cudaMemcpyHostToDevice));
-  CUDA_CHECK(
+  CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                          cudaMemcpyHostToDevice));
+  CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
   raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials);
 }
@@ -278,8 +278,8 @@ void kernel_interpolate(uint2 global_dims,
                         uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
-                                cudaMemcpyHostToDevice));
+  CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                          cudaMemcpyHostToDevice));
   interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials,
                                           rem_pixels_counter, rem_coords);
 }
@@ -298,9 +298,9 @@ void kernel_fill_remaining(uint2 global_dims,
                            uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
-  CUDA_CHECK(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
-                                cudaMemcpyHostToDevice));
-  CUDA_CHECK(
+  CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                          cudaMemcpyHostToDevice));
+  CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
   fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh,
                                              materials, rem_pixels_counter, rem_coords);

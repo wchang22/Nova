@@ -20,11 +20,11 @@ public:
               const std::vector<T>& data = {})
     : Image2D<T>(width, height) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
-    CUDA_CHECK(cudaMallocArray(&this->buffer, &channel_desc, width, height))
+    CUDA_CHECK_AND_THROW(cudaMallocArray(&this->buffer, &channel_desc, width, height))
 
     if (!data.empty()) {
-      CUDA_CHECK(cudaMemcpy2DToArray(this->buffer, 0, 0, data.data(), width * sizeof(T),
-                                     width * sizeof(T), height, cudaMemcpyHostToDevice))
+      CUDA_CHECK_AND_THROW(cudaMemcpy2DToArray(this->buffer, 0, 0, data.data(), width * sizeof(T),
+                                               width * sizeof(T), height, cudaMemcpyHostToDevice))
     }
 
     cudaResourceDesc res_desc;
@@ -40,15 +40,15 @@ public:
     tex_desc.filterMode = static_cast<cudaTextureFilterMode>(filter_mode);
     tex_desc.readMode = cudaReadModeElementType;
     tex_desc.normalizedCoords = normalized_coords;
-    CUDA_CHECK(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
+    CUDA_CHECK_AND_THROW(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
   }
 
-  ~Image2DRead() {
-    cudaDestroyTextureObject(tex);
-    cudaFreeArray(this->buffer);
-  }
+  ~Image2DRead() { CUDA_CHECK(cudaDestroyTextureObject(tex))
+                     CUDA_CHECK(cudaFreeArray(this->buffer)) }
 
-  cudaTextureObject_t& data() { return tex; };
+  cudaTextureObject_t& data() {
+    return tex;
+  };
 
 private:
   cudaTextureObject_t tex;

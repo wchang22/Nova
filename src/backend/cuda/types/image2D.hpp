@@ -13,8 +13,8 @@ public:
   virtual ~Image2D() {}
 
   void copy_from(const Image2D& image) {
-    CUDA_CHECK(cudaMemcpy2DArrayToArray(buffer, 0, 0, image.buffer, 0, 0, width * sizeof(T), height,
-                                        cudaMemcpyDeviceToDevice))
+    CUDA_CHECK_AND_THROW(cudaMemcpy2DArrayToArray(
+      buffer, 0, 0, image.buffer, 0, 0, width * sizeof(T), height, cudaMemcpyDeviceToDevice))
   }
 
 protected:

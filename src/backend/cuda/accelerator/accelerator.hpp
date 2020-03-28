@@ -21,8 +21,8 @@ public:
   void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
     align_dims(global_dims, local_dims);
     kernel(global_dims, local_dims, kernel_constants, std::forward<Args>(args).data()...);
-    CUDA_CHECK(cudaPeekAtLastError())
-    CUDA_CHECK(cudaDeviceSynchronize())
+    CUDA_CHECK_AND_THROW(cudaPeekAtLastError())
+    CUDA_CHECK_AND_THROW(cudaDeviceSynchronize())
   }
 
   template <typename T>

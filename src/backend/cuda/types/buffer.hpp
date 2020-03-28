@@ -9,34 +9,38 @@
 template <typename T>
 class Buffer {
 public:
-  Buffer() = default;
+  Buffer() : buffer(nullptr), length(0) {}
 
   Buffer(size_t length, const T* data = nullptr) : length(length) {
-    CUDA_CHECK(cudaMalloc(&buffer, length * sizeof(T)))
+    CUDA_CHECK_AND_THROW(cudaMalloc(&buffer, length * sizeof(T)))
 
     if (data) {
-      CUDA_CHECK(cudaMemcpy(buffer, data, length * sizeof(T), cudaMemcpyHostToDevice))
+      CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, data, length * sizeof(T), cudaMemcpyHostToDevice))
     }
   }
 
-  ~Buffer() { cudaFree(buffer); }
+  ~Buffer() { CUDA_CHECK(cudaFree(buffer)) }
 
   // Buffer(const Buffer& other) : length(other.length) {
-  //   CUDA_CHECK(cudaMalloc(&buffer, length * sizeof(T)))
+  //   CUDA_CHECK_AND_THROW(cudaMalloc(&buffer, length * sizeof(T)))
   //   if (other.buffer) {
-  //     CUDA_CHECK(cudaMemcpy(buffer, other.buffer, length * sizeof(T), cudaMemcpyDeviceToDevice))
+  //     CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, other.buffer, length * sizeof(T),
+  //     cudaMemcpyDeviceToDevice))
   //   }
   // }
-  Buffer(Buffer&& other) : length(other.length), buffer(other.buffer) {
+  Buffer(Buffer&& other)
+    : length(other.length),
+  buffer(other.buffer) {
     other.length = 0;
     other.buffer = nullptr;
   }
   // Buffer& operator=(const Buffer& other) {
   //   length = other.length;
   //   cudaFree(buffer);
-  //   CUDA_CHECK(cudaMalloc(&buffer, length * sizeof(T)))
+  //   CUDA_CHECK_AND_THROW(cudaMalloc(&buffer, length * sizeof(T)))
   //   if (other.buffer) {
-  //     CUDA_CHECK(cudaMemcpy(buffer, other.buffer, length * sizeof(T), cudaMemcpyDeviceToDevice))
+  //     CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, other.buffer, length * sizeof(T),
+  //     cudaMemcpyDeviceToDevice))
   //   }
   //   return *this;
   // }
@@ -48,24 +52,26 @@ public:
 
   void fill(size_t length, const T& t) {
     std::vector<T> buf(length, t);
-    CUDA_CHECK(cudaMemcpy(buffer, buf.data(), length * sizeof(T), cudaMemcpyHostToDevice))
+    CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, buf.data(), length * sizeof(T), cudaMemcpyHostToDevice))
   }
 
   void write(const std::vector<T>& v) {
-    CUDA_CHECK(cudaMemcpy(buffer, v.data(), v.size() * sizeof(T), cudaMemcpyHostToDevice))
+    CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, v.data(), v.size() * sizeof(T), cudaMemcpyHostToDevice))
   }
 
-  void write(const T& t) { CUDA_CHECK(cudaMemcpy(buffer, &t, sizeof(T), cudaMemcpyHostToDevice)) }
+  void write(const T& t) {
+    CUDA_CHECK_AND_THROW(cudaMemcpy(buffer, &t, sizeof(T), cudaMemcpyHostToDevice))
+  }
 
   std::vector<T> read(size_t length) const {
     std::vector<T> buf(length);
-    CUDA_CHECK(cudaMemcpy(buf.data(), buffer, length * sizeof(T), cudaMemcpyDeviceToHost))
+    CUDA_CHECK_AND_THROW(cudaMemcpy(buf.data(), buffer, length * sizeof(T), cudaMemcpyDeviceToHost))
     return buf;
   }
 
   T read() const {
     T t;
-    CUDA_CHECK(cudaMemcpy(&t, buffer, sizeof(T), cudaMemcpyDeviceToHost))
+    CUDA_CHECK_AND_THROW(cudaMemcpy(&t, buffer, sizeof(T), cudaMemcpyDeviceToHost))
     return t;
   }
 
