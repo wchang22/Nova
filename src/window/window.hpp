@@ -4,7 +4,7 @@ struct GLFWwindow;
 
 class Window {
 public:
-  Window();
+  Window(bool headless = false);
   ~Window();
 
   void main_loop();
@@ -19,6 +19,7 @@ private:
   void handle_mouse_wheel();
   bool in_render_box();
 
+  bool headless;
   GLFWwindow* window;
   Scene scene;
   int width;

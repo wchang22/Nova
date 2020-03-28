@@ -28,7 +28,11 @@ constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowF
                                           ImGuiWindowFlags_NoCollapse |
                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-Window::Window() {
+Window::Window(bool headless) : headless(headless) {
+  if (headless) {
+    return;
+  }
+
   // Setup GLFW and window
   glfwSetErrorCallback([](int error, const char* description) {
     std::cerr << "GLFW Error: " << error << ": " << description << std::endl;
@@ -83,12 +87,14 @@ Window::Window() {
 }
 
 Window::~Window() {
-  scene.cleanup_texture();
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  if (!headless) {
+    scene.cleanup_texture();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+  }
 }
 
 void Window::display_menu() {
@@ -111,6 +117,9 @@ void Window::display_scene_settings() {
   auto& style = ImGui::GetStyle();
 
   static bool real_time = false;
+  static std::array<int, 2> scene_dimensions = scene.get_dimensions();
+  static std::string file_path = scene.get_file_path();
+  static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
   static std::array<float, 3> camera_position = scene.get_camera_position();
@@ -125,18 +134,29 @@ void Window::display_scene_settings() {
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
 
-  const auto render = [&]() {
+  const auto render_to_screen = [&]() {
     if (model_path_error) {
       return;
     }
-
-    scene.set_width(width);
-    scene.set_height(height);
     try {
-      scene.render();
+      scene.render_to_screen();
       model_path_error = false;
     } catch (const ModelException& e) {
       model_path_error = true;
+    }
+  };
+  const auto render_to_image = [&]() {
+    if (model_path_error || file_path_error) {
+      return;
+    }
+    try {
+      scene.render_to_image();
+      model_path_error = false;
+      file_path_error = false;
+    } catch (const ModelException& e) {
+      model_path_error = true;
+    } catch (const ImageException& e) {
+      file_path_error = true;
     }
   };
 
@@ -148,6 +168,30 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
+      ImGui::InputInt2("Resolution##Rendering", scene_dimensions.data());
+
+      if (file_path_error) {
+        ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
+      }
+      ImGui::InputText("Save Path##Rendering", &file_path);
+      if (file_path_error) {
+        ImGui::PopStyleColor();
+      }
+      ImGui::Indent(window_width / 2.0f -
+                    2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
+      if (ImGui::Button("Browse##Rendering", { window_width * 0.5f, 0 })) {
+        ImGuiFileDialog::Instance()->OpenDialog("BrowseFilePathKey", "Browse", ".jpg", ".");
+      }
+      ImGui::Indent(
+        -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
+      if (ImGuiFileDialog::Instance()->FileDialog("BrowseFilePathKey")) {
+        if (ImGuiFileDialog::Instance()->IsOk) {
+          file_path = ImGuiFileDialog::Instance()->GetFilepathName();
+        }
+        ImGuiFileDialog::Instance()->CloseDialog("BrowseFilePathKey");
+      }
+
+      scene_dimensions = scene.set_dimensions(scene_dimensions);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -212,13 +256,20 @@ void Window::display_scene_settings() {
       shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
+    if (ImGui::Button("Save Image##SceneSettings", { window_width * 0.5f, 0 })) {
+      file_path = scene.set_file_path(file_path);
+      model_path_error = false;
+      file_path_error = false;
+      render_to_image();
+    }
+    ImGui::SameLine();
     ImGui::Indent(window_width / 2.0f -
                   2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
     if (ImGui::Button("Update##SceneSettings", { window_width * 0.5f, 0 })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
       if (!real_time) {
-        render();
+        render_to_screen();
       }
     }
     ImGui::Indent(
@@ -232,7 +283,7 @@ void Window::display_scene_settings() {
     handle_mouse_wheel();
     handle_keyboard();
     camera_position = scene.get_camera_position();
-    render();
+    render_to_screen();
   }
 }
 
@@ -313,28 +364,33 @@ void Window::handle_mouse_wheel() {
 }
 
 void Window::main_loop() {
-  while (!glfwWindowShouldClose(window)) {
+  if (headless) {
     PROFILE_SCOPE("Main Loop");
+    scene.render_to_image();
+  } else {
+    while (!glfwWindowShouldClose(window)) {
+      PROFILE_SCOPE("Main Loop");
 
-    glfwPollEvents();
+      glfwPollEvents();
 
-    // New frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+      // New frame
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
 
-    // Displays
-    display_menu();
-    display_scene_settings();
-    display_render();
+      // Displays
+      display_menu();
+      display_scene_settings();
+      display_render();
 
-    // Rendering
-    ImGui::Render();
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+      // Rendering
+      ImGui::Render();
+      glfwGetFramebufferSize(window, &width, &height);
+      glViewport(0, 0, width, height);
+      glClear(GL_COLOR_BUFFER_BIT);
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    glfwSwapBuffers(window);
+      glfwSwapBuffers(window);
+    }
   }
 }

@@ -12,7 +12,7 @@ class Raytracer {
 public:
   Raytracer();
 
-  void set_scene(const Scene& scene, uint32_t width, uint32_t height);
+  void set_scene(const Scene& scene);
   image_utils::image raytrace();
 
 private:

@@ -5,10 +5,9 @@
 Camera::Camera(const glm::vec3& position,
                const glm::vec3& target,
                const glm::vec3& up,
-               uint32_t width,
-               uint32_t height,
+               const std::pair<uint32_t, uint32_t>& dimensions,
                float fovy)
-  : position(position), target(target), up(up), width(width), height(height), fovy(fovy) {}
+  : position(position), target(target), up(up), dimensions(dimensions), fovy(fovy) {}
 
 void Camera::set_position(const glm::vec3& position) { this->position = position; }
 
@@ -16,9 +15,9 @@ void Camera::set_target(const glm::vec3& target) { this->target = target; }
 
 void Camera::set_up(const glm::vec3& up) { this->up = up; }
 
-void Camera::set_width(uint32_t width) { this->width = width; }
-
-void Camera::set_height(uint32_t height) { this->height = height; }
+void Camera::set_dimensions(const std::pair<uint32_t, uint32_t>& dimensions) {
+  this->dimensions = dimensions;
+}
 
 void Camera::set_fovy(float fovy) { this->fovy = fovy; }
 
@@ -66,6 +65,7 @@ void Camera::move(Direction direction, float speed) {
 }
 
 EyeCoords Camera::get_eye_coords() const {
+  const auto& [width, height] = dimensions;
   glm::vec2 half_fov(glm::vec2(fovy * width / height, fovy) / 2.0f);
   glm::vec2 coord_dims(glm::vec2(width, height) / 2.0f);
   glm::vec2 coord_scale(glm::tan(glm::radians(half_fov)) / coord_dims);

@@ -3,6 +3,13 @@
 
 SceneParser::SceneParser() : parsed_data(toml::parse(SCENE_PATH)) {}
 
+OutputSettings SceneParser::get_output_settings() const {
+  const auto dimensions = toml::find<std::array<int, 2>>(parsed_data, "output", "dimensions");
+  const auto file_path = toml::find<std::string>(parsed_data, "output", "file_path");
+
+  return { dimensions, file_path };
+}
+
 std::vector<std::string> SceneParser::get_model_paths() const {
   auto paths = toml::find<std::vector<std::string>>(parsed_data, "model", "paths");
   for (auto& path : paths) {

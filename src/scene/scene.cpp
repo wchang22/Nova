@@ -1,9 +1,13 @@
 #include "scene.hpp"
+#include "constants.hpp"
 #include "scene/scene_parser.hpp"
+#include "util/image/imageutils.hpp"
+#include "util/profiling/profiling.hpp"
 
 Scene::Scene() {
   SceneParser scene_parser;
 
+  const auto [output_dimensions, output_file_path] = scene_parser.get_output_settings();
   const auto model_paths = scene_parser.get_model_paths();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
@@ -14,12 +18,20 @@ Scene::Scene() {
 
   Camera camera({ camera_position[0], camera_position[1], camera_position[2] },
                 { camera_forward[0], camera_forward[1], camera_forward[2] },
-                { camera_up[0], camera_up[1], camera_up[2] }, width, height, camera_fovy);
+                { camera_up[0], camera_up[1], camera_up[2] },
+                { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
-  settings = {
-    model_paths.front(), camera,           light_position,    light_intensity,          ray_bounces,
-    default_diffuse,     default_metallic, default_roughness, default_ambient_occlusion
-  };
+  settings = { output_dimensions,
+               output_file_path,
+               model_paths.front(),
+               camera,
+               light_position,
+               light_intensity,
+               ray_bounces,
+               default_diffuse,
+               default_metallic,
+               default_roughness,
+               default_ambient_occlusion };
 }
 
 void Scene::init_texture() {
@@ -130,27 +142,45 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-void Scene::set_width(uint32_t width) {
-  settings.camera.set_width(width);
-  this->width = width;
+const std::array<int, 2>& Scene::set_dimensions(const std::array<int, 2>& dimensions) {
+  settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);
+  settings.output_dimensions[1] = std::clamp(dimensions[1], 1, MAX_RESOLUTION.second);
+  settings.camera.set_dimensions({ settings.output_dimensions[0], settings.output_dimensions[1] });
+  return settings.output_dimensions;
 }
 
-uint32_t Scene::get_width() const { return width; }
+const std::array<int, 2>& Scene::get_dimensions() const { return settings.output_dimensions; }
 
-void Scene::set_height(uint32_t height) {
-  settings.camera.set_height(height);
-  this->height = height;
+const std::string& Scene::set_file_path(const std::string& path) {
+  return settings.output_file_path = path;
 }
 
-uint32_t Scene::get_height() const { return height; }
+const std::string& Scene::get_file_path() const { return settings.output_file_path; }
 
-void Scene::render() {
-  raytracer.set_scene(*this, width, height);
+void Scene::render_to_screen() {
+  raytracer.set_scene(*this);
   auto im = raytracer.raytrace();
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, im.width, im.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                im.data.data());
   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Scene::render_to_image() {
+  PROFILE_SCOPE("Render to Image");
+
+  raytracer.set_scene(*this);
+  image_utils::image im;
+
+  PROFILE_SECTION_START("Profile Loop");
+  for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
+    im = raytracer.raytrace();
+  }
+  PROFILE_SECTION_END();
+
+  PROFILE_SECTION_START("Write Image");
+  image_utils::write_image(settings.output_file_path.c_str(), im);
+  PROFILE_SECTION_END();
 }
 
 GLuint Scene::get_scene_texture_id() const { return scene_texture_id; }

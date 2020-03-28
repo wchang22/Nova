@@ -1,3 +1,7 @@
+[output]
+dimensions = [1280, 720]
+file_path = "nova.jpg"
+
 [model]
 paths = ["aircraft/aircraft.obj"]
 # paths = ["dragon/dragon.obj"]

@@ -22,7 +22,10 @@
 
 #include <cstddef>
 
+constexpr char APP_DESCRIPTION[] = "High performance GPU accelerated ray tracer using OpenCL/CUDA";
+
 // Window constants
+constexpr std::pair<int, int> MAX_RESOLUTION(7680, 4320);
 constexpr char FONT_PATH[] = ASSETS_PATH "/fonts/SourceCodePro-Bold.ttf";
 constexpr float FONT_SIZE = 14.0f;
 

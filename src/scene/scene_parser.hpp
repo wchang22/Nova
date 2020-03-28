@@ -4,6 +4,11 @@
 #include <array>
 #include <toml.hpp>
 
+struct OutputSettings {
+  std::array<int, 2> dimensions;
+  std::string file_path;
+};
+
 struct CameraSettings {
   std::array<float, 3> position;
   std::array<float, 3> target;
@@ -27,6 +32,7 @@ class SceneParser {
 public:
   SceneParser();
 
+  OutputSettings get_output_settings() const;
   std::vector<std::string> get_model_paths() const;
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;

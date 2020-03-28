@@ -11,8 +11,11 @@ Raytracer::Raytracer() {
   accelerator.add_kernel("kernel_fill_remaining");
 }
 
-void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
+void Raytracer::set_scene(const Scene& scene) {
   PROFILE_SCOPE("Set Scene");
+
+  uint32_t width = static_cast<uint32_t>(scene.get_dimensions()[0]);
+  uint32_t height = static_cast<uint32_t>(scene.get_dimensions()[1]);
 
   // Update Scene Params
   const auto& shading_diffuse = scene.get_shading_diffuse();
@@ -37,7 +40,8 @@ void Raytracer::set_scene(const Scene& scene, uint32_t width, uint32_t height) {
   if (this->width != width || this->height != height) {
     pixel_buf = accelerator.create_buffer<uchar4>(MemFlags::READ_WRITE, width * height);
     pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
-    rem_coords_buf = accelerator.create_buffer<uint2>(MemFlags::READ_WRITE, width * height / 2);
+    rem_coords_buf =
+      accelerator.create_buffer<uint2>(MemFlags::READ_WRITE, std::max(width * height / 2, 1U));
   }
 
   // Update Model

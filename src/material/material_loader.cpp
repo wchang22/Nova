@@ -2,6 +2,7 @@
 #include <stb_image.h>
 
 #include "material_loader.hpp"
+#include "util/profiling/profiling.hpp"
 
 MaterialLoader::MaterialLoader() { stbi_set_flip_vertically_on_load(true); }
 
@@ -13,6 +14,8 @@ int MaterialLoader::load_material(const char* path) {
 void MaterialLoader::clear() { materials.clear(); }
 
 MaterialData MaterialLoader::build() const {
+  PROFILE_SCOPE("Resize Materials");
+
   if (materials.empty()) {
     return {};
   }

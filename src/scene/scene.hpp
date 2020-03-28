@@ -9,6 +9,8 @@ public:
   Scene();
 
   struct Settings {
+    std::array<int, 2> output_dimensions;
+    std::string output_file_path;
     std::string model_path;
     Camera camera;
     std::array<float, 3> light_position;
@@ -50,17 +52,16 @@ public:
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
 
-  void set_width(uint32_t width);
-  uint32_t get_width() const;
-  void set_height(uint32_t height);
-  uint32_t get_height() const;
+  const std::array<int, 2>& set_dimensions(const std::array<int, 2>& dimensions);
+  const std::array<int, 2>& get_dimensions() const;
+  const std::string& set_file_path(const std::string& path);
+  const std::string& get_file_path() const;
 
-  void render();
+  void render_to_screen();
+  void render_to_image();
   GLuint get_scene_texture_id() const;
 
 private:
-  uint32_t width;
-  uint32_t height;
   Settings settings;
   Raytracer raytracer;
   GLuint scene_texture_id;

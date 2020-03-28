@@ -1,5 +1,6 @@
 #include "model.hpp"
 #include "util/exception/exception.hpp"
+#include "util/profiling/profiling.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -8,6 +9,8 @@
 
 Model::Model(const std::string& path, MaterialLoader& material_loader)
   : material_loader(material_loader) {
+  PROFILE_SCOPE("Load model");
+
   Assimp::Importer importer;
   const aiScene* scene =
     importer.ReadFile(path.c_str(), aiProcess_Triangulate | aiProcess_OptimizeGraph |
