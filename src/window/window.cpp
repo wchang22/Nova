@@ -97,6 +97,35 @@ Window::~Window() {
   }
 }
 
+void display_input_text_error(bool error_flag, const char* label, std::string& str) {
+  if (error_flag) {
+    ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
+  }
+  ImGui::InputText(label, &str);
+  if (error_flag) {
+    ImGui::PopStyleColor();
+  }
+}
+
+void display_file_dialog(float button_indent,
+                         float button_width,
+                         const char* button_label,
+                         const char* filters,
+                         std::string& path) {
+  ImGui::Indent(button_indent);
+  if (ImGui::Button(button_label, { button_width, 0 })) {
+    ImGuiFileDialog::Instance()->OpenDialog(button_label + std::string("Key"), "Browse", filters,
+                                            ".");
+  }
+  ImGui::Indent(-button_indent);
+  if (ImGuiFileDialog::Instance()->FileDialog(button_label + std::string("Key"))) {
+    if (ImGuiFileDialog::Instance()->IsOk) {
+      path = ImGuiFileDialog::Instance()->GetFilepathName();
+    }
+    ImGuiFileDialog::Instance()->CloseDialog(button_label + std::string("Key"));
+  }
+}
+
 void Window::display_menu() {
   if (ImGui::BeginMainMenuBar()) {
     menu_height = ImGui::GetWindowHeight();
@@ -115,6 +144,11 @@ void Window::display_scene_settings() {
   float window_height = height - menu_height;
   auto& io = ImGui::GetIO();
   auto& style = ImGui::GetStyle();
+
+  const float button_width =
+    window_width * 0.5f - 1.5f * style.FramePadding.x - 4.0f * style.FrameBorderSize;
+  const float button_indent =
+    window_width - 2.0f * style.FramePadding.x - 4.0f * style.FrameBorderSize - button_width;
 
   static bool real_time = false;
   static std::array<int, 2> scene_dimensions = scene.get_dimensions();
@@ -170,51 +204,16 @@ void Window::display_scene_settings() {
       ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
       ImGui::InputInt2("Resolution##Rendering", scene_dimensions.data());
 
-      if (file_path_error) {
-        ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
-      }
-      ImGui::InputText("Save Path##Rendering", &file_path);
-      if (file_path_error) {
-        ImGui::PopStyleColor();
-      }
-      ImGui::Indent(window_width / 2.0f -
-                    2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
-      if (ImGui::Button("Browse##Rendering", { window_width * 0.5f, 0 })) {
-        ImGuiFileDialog::Instance()->OpenDialog("BrowseFilePathKey", "Browse", ".jpg", ".");
-      }
-      ImGui::Indent(
-        -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
-      if (ImGuiFileDialog::Instance()->FileDialog("BrowseFilePathKey")) {
-        if (ImGuiFileDialog::Instance()->IsOk) {
-          file_path = ImGuiFileDialog::Instance()->GetFilepathName();
-        }
-        ImGuiFileDialog::Instance()->CloseDialog("BrowseFilePathKey");
-      }
+      display_input_text_error(file_path_error, "Save Path##Rendering", file_path);
+      display_file_dialog(button_indent, button_width, "Browse##Rendering", ".jpg", file_path);
 
       scene_dimensions = scene.set_dimensions(scene_dimensions);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      if (model_path_error) {
-        ImGui::PushStyleColor(ImGuiCol_Border, ERROR_COLOR);
-      }
-      ImGui::InputText("Path##Model", &model_path);
-      if (model_path_error) {
-        ImGui::PopStyleColor();
-      }
-      ImGui::Indent(window_width / 2.0f -
-                    2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
-      if (ImGui::Button("Browse##Model", { window_width * 0.5f, 0 })) {
-        ImGuiFileDialog::Instance()->OpenDialog("BrowseModelKey", "Browse", MODEL_FILE_TYPES, ".");
-      }
-      ImGui::Indent(
-        -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
-      if (ImGuiFileDialog::Instance()->FileDialog("BrowseModelKey")) {
-        if (ImGuiFileDialog::Instance()->IsOk) {
-          model_path = ImGuiFileDialog::Instance()->GetFilepathName();
-        }
-        ImGuiFileDialog::Instance()->CloseDialog("BrowseModelKey");
-      }
+      display_input_text_error(model_path_error, "Path##Model", model_path);
+      display_file_dialog(button_indent, button_width, "Browse##Model", MODEL_FILE_TYPES,
+                          model_path);
     }
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -256,24 +255,21 @@ void Window::display_scene_settings() {
       shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
-    if (ImGui::Button("Save Image##SceneSettings", { window_width * 0.5f, 0 })) {
+    if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {
       file_path = scene.set_file_path(file_path);
+      model_path = scene.set_model_path(model_path);
       model_path_error = false;
       file_path_error = false;
       render_to_image();
     }
     ImGui::SameLine();
-    ImGui::Indent(window_width / 2.0f -
-                  2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize));
-    if (ImGui::Button("Update##SceneSettings", { window_width * 0.5f, 0 })) {
+    if (ImGui::Button("Update##SceneSettings", { button_width, 0.0f })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
       if (!real_time) {
         render_to_screen();
       }
     }
-    ImGui::Indent(
-      -(window_width / 2.0f - 2.0f * (style.FramePadding.x + 2.0f * style.FrameBorderSize)));
 
     ImGui::End();
   }
