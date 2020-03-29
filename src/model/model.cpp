@@ -1,13 +1,19 @@
 #include "model.hpp"
 #include "util/exception/exception.hpp"
+#include "util/profiling/profiling.hpp"
+#include "vector/vector_conversions.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <cassert>
 #include <glm/glm.hpp>
 
+namespace nova {
+
 Model::Model(const std::string& path, MaterialLoader& material_loader)
   : material_loader(material_loader) {
+  PROFILE_SCOPE("Load model");
+
   Assimp::Importer importer;
   const aiScene* scene =
     importer.ReadFile(path.c_str(), aiProcess_Triangulate | aiProcess_OptimizeGraph |
@@ -66,16 +72,15 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   }
 
   for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-    vertices.emplace_back(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-    normals.emplace_back(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+    vertices.emplace_back(ai_to_glm(mesh->mVertices[i]));
+    normals.emplace_back(ai_to_glm(mesh->mNormals[i]));
     if (has_textures) {
       // TODO: Support more than one texture coord
-      textures.emplace_back(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+      textures.emplace_back(ai_to_glm(make_aiVector2D(mesh->mTextureCoords[0][i])));
     }
     if (has_tangents) {
-      tangents.emplace_back(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
-      bitangents.emplace_back(mesh->mBitangents[i].x, mesh->mBitangents[i].y,
-                              mesh->mBitangents[i].z);
+      tangents.emplace_back(ai_to_glm(mesh->mTangents[i]));
+      bitangents.emplace_back(ai_to_glm(mesh->mBitangents[i]));
     }
   }
 
@@ -87,7 +92,7 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
     glm::vec3& v2 = vertices[face.mIndices[1]];
     glm::vec3& v3 = vertices[face.mIndices[2]];
 
-    float lengths[] = { distance(v1, v2), distance(v2, v3), distance(v1, v3) };
+    float lengths[] = { glm::distance(v1, v2), glm::distance(v2, v3), glm::distance(v1, v3) };
     std::sort(lengths, lengths + 3);
 
     // Ignore degenerate triangles
@@ -95,9 +100,9 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
       continue;
     }
 
-    glm::vec3 n1 = normalize(normals[face.mIndices[0]]);
-    glm::vec3 n2 = normalize(normals[face.mIndices[1]]);
-    glm::vec3 n3 = normalize(normals[face.mIndices[2]]);
+    glm::vec3 n1 = glm::normalize(normals[face.mIndices[0]]);
+    glm::vec3 n2 = glm::normalize(normals[face.mIndices[1]]);
+    glm::vec3 n3 = glm::normalize(normals[face.mIndices[2]]);
     glm::vec3 tan1 = has_tangents ? tangents[face.mIndices[0]] : glm::vec3(0);
     glm::vec3 tan2 = has_tangents ? tangents[face.mIndices[1]] : glm::vec3(0);
     glm::vec3 tan3 = has_tangents ? tangents[face.mIndices[2]] : glm::vec3(0);
@@ -109,16 +114,16 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
     glm::vec2 t3 = has_textures ? textures[face.mIndices[2]] : glm::vec2(0);
 
     // Fixes models with symmetric uv coordinates
-    glm::vec3 fixed_bit1 = cross(n1, tan1);
-    glm::vec3 fixed_bit2 = cross(n2, tan2);
-    glm::vec3 fixed_bit3 = cross(n3, tan3);
-    if (dot(fixed_bit1, bit1) < 0.0) {
+    glm::vec3 fixed_bit1 = glm::cross(n1, tan1);
+    glm::vec3 fixed_bit2 = glm::cross(n2, tan2);
+    glm::vec3 fixed_bit3 = glm::cross(n3, tan3);
+    if (glm::dot(fixed_bit1, bit1) < 0.0) {
       fixed_bit1 *= -1.0f;
     }
-    if (dot(fixed_bit2, bit2) < 0.0) {
+    if (glm::dot(fixed_bit2, bit2) < 0.0) {
       fixed_bit2 *= -1.0f;
     }
-    if (dot(fixed_bit3, bit3) < 0.0) {
+    if (glm::dot(fixed_bit3, bit3) < 0.0) {
       fixed_bit3 *= -1.0f;
     }
 
@@ -145,4 +150,6 @@ int Model::load_materials(aiMaterial* material, aiTextureType type) {
 
 const std::vector<std::pair<Triangle, TriangleMeta>>& Model::get_triangles() const {
   return triangles;
+}
+
 }

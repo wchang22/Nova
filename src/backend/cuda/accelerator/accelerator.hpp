@@ -7,14 +7,15 @@
 #include "backend/common/utils/utils.hpp"
 #include "backend/cuda/entry.hpp"
 #include "backend/cuda/types/types.hpp"
-#include "core/scene_parser.hpp"
 #include "util/exception/exception.hpp"
 
 #define RESOLVE_KERNEL(kernel) kernel
 
+namespace nova {
+
 class Accelerator {
 public:
-  Accelerator(const SceneParser& scene_parser);
+  Accelerator();
 
   void add_kernel(const std::string& kernel_name) { (void) kernel_name; }
 
@@ -22,8 +23,8 @@ public:
   void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
     align_dims(global_dims, local_dims);
     kernel(global_dims, local_dims, kernel_constants, std::forward<Args>(args).data()...);
-    CUDA_CHECK(cudaPeekAtLastError())
-    CUDA_CHECK(cudaDeviceSynchronize())
+    CUDA_CHECK_AND_THROW(cudaPeekAtLastError())
+    CUDA_CHECK_AND_THROW(cudaDeviceSynchronize())
   }
 
   template <typename T>
@@ -161,5 +162,7 @@ public:
 private:
   KernelConstants kernel_constants;
 };
+
+}
 
 #endif // CUDA_ACCELERATOR_HPP

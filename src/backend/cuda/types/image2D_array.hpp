@@ -8,6 +8,8 @@
 #include "backend/cuda/types/error.hpp"
 #include "backend/cuda/types/flags.hpp"
 
+namespace nova {
+
 template <typename T>
 class Image2DArray {
 public:
@@ -22,7 +24,7 @@ public:
                std::vector<T>& data) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
     cudaExtent extent = make_cudaExtent(width, height, array_size);
-    CUDA_CHECK(cudaMalloc3DArray(&buffer, &channel_desc, extent, cudaArrayLayered))
+    CUDA_CHECK_AND_THROW(cudaMalloc3DArray(&buffer, &channel_desc, extent, cudaArrayLayered))
 
     cudaMemcpy3DParms copy_params;
     memset(&copy_params, 0, sizeof(copy_params));
@@ -32,7 +34,7 @@ public:
     copy_params.dstArray = buffer;
     copy_params.extent = extent;
     copy_params.kind = cudaMemcpyHostToDevice;
-    CUDA_CHECK(cudaMemcpy3D(&copy_params))
+    CUDA_CHECK_AND_THROW(cudaMemcpy3D(&copy_params))
 
     cudaResourceDesc res_desc;
     memset(&res_desc, 0, sizeof(res_desc));
@@ -47,12 +49,21 @@ public:
     tex_desc.filterMode = static_cast<cudaTextureFilterMode>(filter_mode);
     tex_desc.readMode = cudaReadModeElementType;
     tex_desc.normalizedCoords = normalized_coords;
-    CUDA_CHECK(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
+    CUDA_CHECK_AND_THROW(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
   }
 
-  ~Image2DArray() {
-    cudaDestroyTextureObject(tex);
-    cudaFreeArray(buffer);
+  ~Image2DArray() { CUDA_CHECK(cudaDestroyTextureObject(tex)) CUDA_CHECK(cudaFreeArray(buffer)) }
+
+  Image2DArray(Image2DArray&& other)
+    : tex(other.tex),
+  buffer(other.buffer) {
+    other.tex = 0;
+    other.buffer = 0;
+  }
+  Image2DArray& operator=(Image2DArray&& other) {
+    std::swap(tex, other.tex);
+    std::swap(buffer, other.buffer);
+    return *this;
   }
 
   cudaTextureObject_t& data() { return tex; };
@@ -61,5 +72,7 @@ private:
   cudaTextureObject_t tex;
   cudaArray_t buffer;
 };
+
+}
 
 #endif // CUDA_IMAGE2D_ARRAY_HPP

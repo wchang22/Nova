@@ -1,2 +1,3 @@
+dependencies/* linguist-vendored
 include/* linguist-vendored
 tests/include/* linguist-vendored

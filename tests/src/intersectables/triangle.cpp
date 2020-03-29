@@ -3,6 +3,8 @@
 
 #include "intersectables/triangle.hpp"
 
+using namespace nova;
+
 TEST_CASE("Triangle bounds", "[triangle]") {
   Triangle t1 {
     glm::vec3(1.32f, 3.56f, -4.12f),

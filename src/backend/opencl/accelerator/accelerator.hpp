@@ -18,14 +18,15 @@
 #include "backend/opencl/types/types.hpp"
 #include "backend/opencl/utils/compatibility.hpp"
 #include "backend/opencl/utils/kernel.hpp"
-#include "core/scene_parser.hpp"
 #include "util/exception/exception.hpp"
 
 #define RESOLVE_KERNEL(kernel) #kernel
 
+namespace nova {
+
 class Accelerator {
 public:
-  Accelerator(const SceneParser& scene_parser);
+  Accelerator();
   void add_kernel(const std::string& kernel_name);
 
   template <typename... Args>
@@ -205,5 +206,7 @@ private:
   cl::Program program;
   std::unordered_map<std::string, cl::Kernel> kernel_map;
 };
+
+}
 
 #endif // OPENCL_ACCELERATOR_HPP

@@ -33,6 +33,17 @@ typedef struct {
   Mat3x3 eye_coord_frame;
 } EyeCoords;
 
+typedef struct {
+  EyeCoords eye_coords;
+  float3 light_position;
+  float3 light_intensity;
+  float3 shading_diffuse;
+  float shading_metallic;
+  float shading_roughness;
+  float shading_ambient_occlusion;
+  int ray_bounces;
+} SceneParams;
+
 // Woop 4x3 affine transform matrix
 typedef struct {
   Mat3x4 transform;

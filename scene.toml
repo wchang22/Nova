@@ -1,3 +1,7 @@
+[output]
+dimensions = [1280, 720]
+file_path = "nova.jpg"
+
 [model]
 paths = ["aircraft/aircraft.obj"]
 # paths = ["dragon/dragon.obj"]
@@ -6,36 +10,39 @@ paths = ["aircraft/aircraft.obj"]
 
 [camera]
 # Aircraft
-position = [-4.0, 2.8, 5.0]
-forward = [1.0, -0.5, -1.0]
+position = [-4.5, 2.8, 4.5]
+target = [0.5, 0.4, 0.0]
 
 # Dragon
 # position = [-1.0, 0.0, 0.0]
-# forward = [1.0, 0.0, 0.0]
+# target = [0.0, 0.0, 0.0]
 
 # Fireplace
-# position = [4.0, 2.0, -0.2]
-# forward = [-1.0, -0.4, -1.0]
+# position = [4.5, 2.0, -3.0]
+# target = [2.5, 1.0, -1.75]
 
 # Gun
 # position = [0.5, 0.2, -1.5]
-# forward = [-0.75, -0.25, 1.0]
+# target = [-0.5, -0.1, 0.0]
 
 up = [0.0, 1.0, 0.0]
 fovy = 45.0
 
 [light]
+# Aircraft
 position = [-4.0, 2.8, 7.0]
 intensity = [500.0, 500.0, 500.0]
 
+# Fireplace
+# position = [4.5, 2.85, -3.0]
+# intensity = [50.0, 50.0, 50.0]
+
 # Gun
 # position = [3.0, 1.0, 4.5]
+# intensity = [500.0, 500.0, 500.0]
 
-# Fireplace
-# position = [3.0, 2.87, -0.5]
-
-[ray_recursion]
-depth = 5
+[ray_bounces]
+number = 5
 
 [shading_defaults]
 diffuse = [1.0, 1.0, 1.0]

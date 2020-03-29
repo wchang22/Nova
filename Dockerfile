@@ -22,9 +22,11 @@ RUN apt-get install -yy \
   clinfo \
   ocl-icd-opencl-dev \
   intel-opencl-icd \
-  nvidia-opencl-dev
+  nvidia-opencl-dev \
+  xorg-dev
 
 RUN ln -sf /usr/bin/g++-8 /usr/bin/g++
+RUN ln -sf /usr/bin/gcc-8 /usr/bin/gcc
 
 WORKDIR /root
 ENTRYPOINT bash

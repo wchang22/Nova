@@ -4,6 +4,8 @@
 #include "math_constants.h"
 #include "vector_math.h"
 
+namespace nova {
+
 struct Ray {
   float3 origin;
   float3 direction;
@@ -27,5 +29,7 @@ struct Intersection {
 __device__ inline Intersection no_intersection() {
   return { make_float3(0.0f), CUDART_NORM_HUGE_F, -1 };
 };
+
+}
 
 #endif // CUDA_KERNEL_TYPES_HPP

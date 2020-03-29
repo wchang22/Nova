@@ -7,63 +7,29 @@
 #include "util/exception/exception.hpp"
 #include "util/profiling/profiling.hpp"
 #include "util/serialization/serialization.hpp"
+#include "vector/vector_conversions.hpp"
 
 // Algorithm from https://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
 
-BVH::BVH(const std::string& name, std::vector<Triangle>& triangles)
-  : name(name), triangles(triangles) {}
+namespace nova {
+
+BVH::BVH(std::vector<Triangle>& triangles) : triangles(triangles) {}
 
 std::vector<FlatBVHNode> BVH::build() {
-  std::string bvh_file_name = name + ".bvh";
-  std::string tri_file_name = name + ".tri";
-  std::fstream bvh_file(bvh_file_name);
-  std::fstream tri_file(tri_file_name);
+  PROFILE_SCOPE("Build BVH");
 
-  std::vector<FlatBVHNode> flat_bvh;
+  PROFILE_SECTION_START("Build BVH Tree");
+  std::unique_ptr<BVHNode> bvh = build_bvh();
+  PROFILE_SECTION_END();
 
-  // If cached files do not exist
-  if (!bvh_file.is_open() || !tri_file.is_open()) {
-    bvh_file.open(bvh_file_name, std::ios::out);
-    tri_file.open(tri_file_name, std::ios::out);
-    if (!bvh_file.is_open()) {
-      throw FileException("Cannot create " + bvh_file_name);
-    }
-    if (!tri_file.is_open()) {
-      throw FileException("Cannot create " + tri_file_name);
-    }
-
-    // Build bvh and serialize them into files
-    std::unique_ptr<BVHNode> bvh = build_bvh();
-    flat_bvh = build_flat_bvh(bvh);
-
-    bvh_file << flat_bvh;
-    tri_file << triangles;
-  } else {
-    size_t triangles_size = triangles.size();
-
-    // Each line is a bvh node
-    std::string line;
-    getline(bvh_file, line);
-    if (line.empty()) {
-      throw FileException("Invalid bvh file " + bvh_file_name);
-    }
-    bvh_file.seekg(0);
-    size_t bvh_size = std::filesystem::file_size(bvh_file_name) / line.length();
-
-    triangles.clear();
-    triangles.reserve(triangles_size);
-    flat_bvh.reserve(bvh_size);
-
-    // Deserialize bvh and triangles from file
-    bvh_file >> flat_bvh;
-    tri_file >> triangles;
-  }
+  PROFILE_SECTION_START("Build Flat BVH");
+  std::vector<FlatBVHNode> flat_bvh = build_flat_bvh(bvh);
+  PROFILE_SECTION_END();
 
   return flat_bvh;
 }
 
 std::unique_ptr<BVHNode> BVH::build_bvh() {
-  PROFILE_SCOPE("Build BVH");
   auto root = std::make_unique<BVHNode>();
 
   root->triangles.reserve(triangles.size());
@@ -193,15 +159,15 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
                  [&](const auto& tri) {
                    AABB bounds = tri.get_bounds();
                    glm::vec3 center = bounds.get_center();
-                   glm::uvec3 split_index =
-                     min(static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
+                   glm::uvec3 split_index = glm::min(
+                     static_cast<glm::uvec3>((center - bin_start) * inv_bin_step), num_splits);
                    return std::make_pair(bounds, split_index);
                  });
 
   // Find best axis to split
   for (int axis = 0; axis < 3; axis++) {
     // Don't want triangles to be concentrated on axis
-    if (abs(bin_end[axis] - bin_start[axis]) < 1e-4f) {
+    if (std::abs(bin_end[axis] - bin_start[axis]) < 1e-4f) {
       continue;
     }
 
@@ -252,8 +218,8 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   size_t flat_node_index = flat_nodes.size();
 
   // Build flat node and insert into list
-  FlatBVHNode flat_node { { node->aabb.top.x, node->aabb.top.y, node->aabb.top.z, 0 },
-                          { node->aabb.bottom.x, node->aabb.bottom.y, node->aabb.bottom.z, 0 } };
+  FlatBVHNode flat_node { glm_to_float4(glm::vec4(node->aabb.top, 0.0f)),
+                          glm_to_float4(glm::vec4(node->aabb.bottom, 0.0f)) };
   flat_nodes.emplace_back(std::move(flat_node));
 
   // Leaf node
@@ -307,4 +273,6 @@ std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node) {
     out << s[0] << " " << s[1] << " " << s[2] << " " << s[3] << " ";
   }
   return out;
+}
+
 }

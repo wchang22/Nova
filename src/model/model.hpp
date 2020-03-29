@@ -7,6 +7,8 @@
 #include "intersectables/triangle.hpp"
 #include "material/material_loader.hpp"
 
+namespace nova {
+
 class Model {
 public:
   Model(const std::string& path, MaterialLoader& material_loader);
@@ -21,5 +23,7 @@ private:
   std::string directory;
   std::vector<std::pair<Triangle, TriangleMeta>> triangles;
 };
+
+}
 
 #endif // MODEL_HPP

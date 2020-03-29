@@ -2,6 +2,8 @@
 
 #include "triangle.hpp"
 
+namespace nova {
+
 // https://stackoverflow.com/questions/19195183/how-to-properly-hash-the-custom-struct
 template <class T>
 inline void hash_combine(size_t& s, const T& v) {
@@ -50,4 +52,6 @@ std::ostream& operator<<(std::ostream& out, const Triangle& tri) {
     }
   }
   return out;
+}
+
 }

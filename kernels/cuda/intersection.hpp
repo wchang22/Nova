@@ -5,6 +5,8 @@
 #include "matrix.hpp"
 #include "types.hpp"
 
+namespace nova {
+
 // Use woop transformation to transform ray to unit triangle space
 // http://www.sven-woop.de/papers/2004-GH-SaarCOR.pdf
 __device__ inline bool
@@ -46,6 +48,8 @@ __device__ inline bool intersects_aabb(const Ray& ray, float3 top, float3 bottom
   float tmax = min(tvmax.x, min(tvmax.y, tvmax.z));
 
   return tmin <= tmax;
+}
+
 }
 
 #endif // CUDA_KERNEL_INTERSECTION_HPP

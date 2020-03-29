@@ -11,8 +11,12 @@
   #endif
 #endif
 
+namespace nova {
+
 using Error = cl::Error;
 
 const char* get_error_string(cl_int error);
+
+}
 
 #endif // OPENCL_ERROR_HPP

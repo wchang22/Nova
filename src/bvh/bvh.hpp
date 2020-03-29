@@ -11,6 +11,8 @@
 #include "intersectables/triangle.hpp"
 #include "kernel_types/bvh_node.hpp"
 
+namespace nova {
+
 struct BVHNode {
   AABB aabb;
   std::vector<Triangle> triangles;
@@ -26,7 +28,7 @@ std::ostream& operator<<(std::ostream& out, const FlatBVHNode& node);
 
 class BVH {
 public:
-  BVH(const std::string& name, std::vector<Triangle>& triangles);
+  BVH(std::vector<Triangle>& triangles);
 
   // Note: Modifies `triangles`
   std::vector<FlatBVHNode> build();
@@ -68,8 +70,9 @@ private:
              SplitParams&& best_params,
              const std::vector<std::pair<AABB, glm::uvec3>>& bound_centers);
 
-  std::string name;
   std::vector<Triangle>& triangles;
 };
+
+}
 
 #endif

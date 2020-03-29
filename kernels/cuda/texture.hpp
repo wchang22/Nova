@@ -8,6 +8,8 @@
 #include "transforms.hpp"
 #include "vector_math.h"
 
+namespace nova {
+
 __device__ inline float3 read_material(cudaTextureObject_t materials,
                                        const TriangleMetaData& meta,
                                        float2 texture_coord,
@@ -112,9 +114,11 @@ __device__ inline float3 shade(float3 light_dir,
   float3 kD = (1.0f - kS) * (1.0f - metallic);
 
   float3 brdf = kD * diffuse * CUDART_INV_PI + d * kS * g / fmaxf(4.0f * nvl, 1e-3f);
-  float3 radiance = constants.light_intensity / fmaxf(light_distance * light_distance, 1.0f);
+  float3 radiance = params.light_intensity / fmaxf(light_distance * light_distance, 1.0f);
 
   return brdf * radiance * n_dot_l;
+}
+
 }
 
 #endif // CUDA_KERNEL_TEXTURE_HPP

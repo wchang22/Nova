@@ -8,14 +8,16 @@
 #include "intersectables/aabb.hpp"
 #include "kernel_types/triangle.hpp"
 
+namespace nova {
+
 struct Triangle {
   glm::vec3 v1;
   glm::vec3 v2;
   glm::vec3 v3;
 
   inline AABB get_bounds() const {
-    glm::vec3 top = max(v1, v2, v3);
-    glm::vec3 bottom = min(v1, v2, v3);
+    glm::vec3 top = glm::max(v1, v2, v3);
+    glm::vec3 bottom = glm::min(v1, v2, v3);
 
     return { top, bottom };
   }
@@ -49,5 +51,7 @@ struct TriangleMeta {
   int ambient_occlusion_index;
   int normal_index;
 };
+
+}
 
 #endif // TRIANGLE_HPP

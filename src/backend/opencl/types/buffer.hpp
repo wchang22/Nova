@@ -11,6 +11,8 @@
   #endif
 #endif
 
+namespace nova {
+
 template <typename T>
 class Buffer {
 public:
@@ -45,5 +47,7 @@ public:
 private:
   cl::Buffer buffer;
 };
+
+}
 
 #endif // OPENCL_BUFFER_HPP

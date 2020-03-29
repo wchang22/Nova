@@ -10,5 +10,6 @@ target_include_directories(${TEST_NAME} PRIVATE
     include
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${CMAKE_SOURCE_DIR}/kernels
+    ${GLFW_INCLUDE_PATH}
 )
 set_backend_defines(${TEST_NAME})

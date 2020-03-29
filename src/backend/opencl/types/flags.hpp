@@ -11,6 +11,8 @@
   #endif
 #endif
 
+namespace nova {
+
 enum class MemFlags {
   READ_ONLY = CL_MEM_READ_ONLY,
   WRITE_ONLY = CL_MEM_WRITE_ONLY,
@@ -38,5 +40,7 @@ enum class FilterMode {
   NEAREST,
   LINEAR,
 };
+
+}
 
 #endif // OPENCL_FLAGS_HPP

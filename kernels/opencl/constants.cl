@@ -11,27 +11,6 @@
 #ifndef TRIANGLE_OFFSET_MASK
   #define TRIANGLE_OFFSET_MASK 0x3FFFFFF
 #endif
-#ifndef LIGHT_POSITION
-  #define LIGHT_POSITION (float3)(-4.0, 2.8, 7.0)
-#endif
-#ifndef LIGHT_INTENSITY
-  #define LIGHT_INTENSITY (float3)(500.0)
-#endif
-#ifndef DEFAULT_DIFFUSE
-  #define DEFAULT_DIFFUSE (float3)(1.0, 1.0, 1.0)
-#endif
-#ifndef DEFAULT_METALLIC
-  #define DEFAULT_METALLIC 0.5
-#endif
-#ifndef DEFAULT_ROUGHNESS
-  #define DEFAULT_ROUGHNESS 0.1
-#endif
-#ifndef DEFAULT_AMBIENT_OCCLUSION
-  #define DEFAULT_AMBIENT_OCCLUSION 0.1
-#endif
-#ifndef RAY_RECURSION_DEPTH
-  #define RAY_RECURSION_DEPTH 5
-#endif
 
 #define STACK_SIZE 96
 #define SQRT3_3 0.577350269f

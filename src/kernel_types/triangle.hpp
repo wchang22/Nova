@@ -4,6 +4,8 @@
 #include "backend/types.hpp"
 #include "kernel_types/matrix.hpp"
 
+namespace nova {
+
 // Woop 4x3 affine transform matrix
 struct TriangleData {
   Mat3x4 transform;
@@ -28,5 +30,7 @@ struct TriangleMetaData {
   int ambient_occlusion_index;
   int normal_index;
 };
+
+}
 
 #endif // KERNEL_TYPE_TRIANGLE_HPP
