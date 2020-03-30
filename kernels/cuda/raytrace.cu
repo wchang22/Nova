@@ -134,16 +134,21 @@ __device__ float3 trace_ray(uint2 pixel_coords,
     float light_distance = distance(params.light_position, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
 
-    // Cast a shadow ray to the light
-    Ray shadow_ray = create_ray(intrs_point, light_dir, RAY_EPSILON);
-    Intersection light_intrs = no_intersection();
-    // Ensure objects blocking light are not behind the light
-    light_intrs.length = light_distance;
+    float3 local_illum = shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
+                               metallic, roughness);
 
-    // Shade the pixel if ray is not blocked
-    if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-      intrs_color += shade(light_dir, view_dir, half_dir, light_distance, normal, diffuse, kS,
-                           metallic, roughness);
+    // Only cast a shadow ray if it will produce a color change
+    if (any(isgreaterequal(local_illum, COLOR_EPSILON))) {
+      // Cast a shadow ray to the light
+      Ray shadow_ray = create_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs = no_intersection();
+      // Ensure objects blocking light are not behind the light
+      light_intrs.length = light_distance;
+
+      // Shade the pixel if ray is not blocked
+      if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
+        intrs_color += local_illum;
+      }
     }
 
     /*

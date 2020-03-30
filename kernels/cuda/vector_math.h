@@ -1063,6 +1063,9 @@ inline __device__ __host__ float3 mix(float3 a, float3 b, float w) { return (1.0
 inline __device__ __host__ uchar3 isless(float3 a, float b) {
   return make_uchar3(a.x < b, a.y < b, a.z < b);
 }
+inline __device__ __host__ uchar3 isgreaterequal(float3 a, float b) {
+  return make_uchar3(a.x >= b, a.y >= b, a.z >= b);
+}
 
 inline __device__ __host__ bool any(uchar3 a) { return a.x || a.y || a.z; }
 inline __device__ __host__ bool all(uchar3 a) { return a.x && a.y && a.z; }

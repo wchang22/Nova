@@ -90,8 +90,11 @@ float3 shade(SceneParams scene_params,
              float3 kS,
              float metallic,
              float roughness) {
-  float n_dot_v = max(dot(normal, view_dir), 0.0f);
   float n_dot_l = max(dot(normal, light_dir), 0.0f);
+  if (n_dot_l == 0.0f) {
+    return 0.0f;
+  }
+  float n_dot_v = max(dot(normal, view_dir), 0.0f);
   float n_dot_h = max(dot(normal, half_dir), 0.0f);
 
   float nvl = n_dot_v * n_dot_l;

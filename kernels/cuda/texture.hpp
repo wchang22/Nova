@@ -99,8 +99,11 @@ __device__ inline float3 shade(float3 light_dir,
                                float3 kS,
                                float metallic,
                                float roughness) {
-  float n_dot_v = max(dot(normal, view_dir), 0.0f);
   float n_dot_l = max(dot(normal, light_dir), 0.0f);
+  if (n_dot_l == 0.0f) {
+    return make_float3(0.0f);
+  }
+  float n_dot_v = max(dot(normal, view_dir), 0.0f);
   float n_dot_h = max(dot(normal, half_dir), 0.0f);
 
   float nvl = n_dot_v * n_dot_l;
