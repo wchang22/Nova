@@ -1057,6 +1057,18 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x) {
 inline __device__ __host__ float3 mix(float3 a, float3 b, float w) { return (1.0 - w) * a + w * b; }
 
 ////////////////////////////////////////////////////////////////////////////////
+// pw
+////////////////////////////////////////////////////////////////////////////////
+
+inline __host__ __device__ float3 pow(float3 a, float3 b) {
+  return make_float3(pow(a.x, b.x), pow(a.y, b.y), pow(a.z, b.z));
+}
+
+inline __host__ __device__ float3 pow(float3 a, float b) {
+  return make_float3(pow(a.x, b), pow(a.y, b), pow(a.z, b));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // comparisons and conditionals
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -161,7 +161,7 @@ float3 trace_ray(uint2 pixel_coords,
     ray_dir = reflect(ray_dir, normal);
   }
 
-  return clamp(color, 0.0f, 1.0f);
+  return gamma_correct(tone_map(color));
 }
 
 kernel void kernel_raytrace(SceneParams scene_params,

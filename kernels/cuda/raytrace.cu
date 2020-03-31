@@ -169,7 +169,7 @@ __device__ float3 trace_ray(uint2 pixel_coords,
     ray_dir = reflect(ray_dir, normal);
   }
 
-  return clamp(color, 0.0f, 1.0f);
+  return gamma_correct(tone_map(color));
 }
 
 __global__ void raytrace(uchar4* pixels,

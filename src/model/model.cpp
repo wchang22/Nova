@@ -191,7 +191,8 @@ int Model::load_materials(aiMaterial* material, aiTextureType type) {
   // TODO: Support more than one texture
   aiString path;
   material->GetTexture(type, 0, &path);
-  return material_loader.load_material((directory + path.C_Str()).c_str());
+  bool srgb = type == aiTextureType_DIFFUSE;
+  return material_loader.load_material((directory + path.C_Str()).c_str(), srgb);
 }
 
 const std::vector<std::pair<Triangle, TriangleMeta>>& Model::get_triangles() const {

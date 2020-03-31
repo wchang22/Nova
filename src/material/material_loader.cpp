@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cmath>
 #include <numeric>
 #include <stb_image.h>
 
@@ -8,8 +10,18 @@ namespace nova {
 
 MaterialLoader::MaterialLoader() { stbi_set_flip_vertically_on_load(true); }
 
-int MaterialLoader::load_material(const char* path) {
-  materials.emplace_back(image_utils::read_image(path));
+int MaterialLoader::load_material(const char* path, bool srgb) {
+  image_utils::image im = image_utils::read_image(path);
+  if (srgb) {
+    constexpr auto gamma_correct = [](uint8_t x) -> uint8_t {
+      return std::pow(x / 255.0f, 2.2f) * 255.0f;
+    };
+    std::for_each(im.data.begin(), im.data.end(), [&](uchar4& pixel) {
+      pixel = { gamma_correct(x(pixel)), gamma_correct(y(pixel)), gamma_correct(z(pixel)),
+                w(pixel) };
+    });
+  }
+  materials.emplace_back(im);
   return static_cast<int>(materials.size() - 1);
 }
 

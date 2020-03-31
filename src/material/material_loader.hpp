@@ -16,7 +16,7 @@ class MaterialLoader {
 public:
   MaterialLoader();
 
-  int load_material(const char* path);
+  int load_material(const char* path, bool srgb = false);
   void clear();
   MaterialData build() const;
 

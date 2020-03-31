@@ -2,50 +2,93 @@
 dimensions = [1280, 720]
 file_path = "nova.jpg"
 
+[ray_bounces]
+number = 5
+
+#---------------------------------------------------------------------------------------------------
+# Aircraft
+#---------------------------------------------------------------------------------------------------
 [model]
 paths = ["aircraft/aircraft.obj"]
-# paths = ["dragon/dragon.obj"]
-# paths = ["fireplace_room/fireplace_room.obj"]
-# paths = ["gun/gun.obj"]
 
 [camera]
-# Aircraft
 position = [-4.5, 2.8, 4.5]
 target = [0.5, 0.4, 0.0]
-
-# Dragon
-# position = [-1.0, 0.0, 0.0]
-# target = [0.0, 0.0, 0.0]
-
-# Fireplace
-# position = [4.5, 2.0, -3.0]
-# target = [2.5, 1.0, -1.75]
-
-# Gun
-# position = [0.5, 0.2, -1.5]
-# target = [-0.5, -0.1, 0.0]
-
 up = [0.0, 1.0, 0.0]
 fovy = 45.0
 
 [light]
-# Aircraft
 position = [-4.0, 2.8, 7.0]
 intensity = [500.0, 500.0, 500.0]
 
+[shading_defaults]
+diffuse = [1.0, 1.0, 1.0]
+metallic = 0.8
+roughness = 0.5
+ambient_occlusion = 1.0
+
+#---------------------------------------------------------------------------------------------------
+# Dragon
+#---------------------------------------------------------------------------------------------------
+# [model]
+# paths = ["dragon/dragon.obj"]
+
+# [camera]
+# position = [-0.7, 0.7, -0.5]
+# target = [0.0, 0.0, 0.0]
+# up = [0.0, 1.0, 0.0]
+# fovy = 45.0
+
+# [light]
+# position = [-4.0, 5.0, -6.0]
+# intensity = [500.0, 500.0, 500.0]
+
+# [shading_defaults]
+# diffuse = [1.0, 1.0, 1.0]
+# metallic = 0.8
+# roughness = 0.1
+# ambient_occlusion = 1.0
+
+#---------------------------------------------------------------------------------------------------
 # Fireplace
+#---------------------------------------------------------------------------------------------------
+# [model]
+# paths = ["fireplace_room/fireplace_room.obj"]
+
+# [camera]
+# position = [5.0, 2.0, -2.7]
+# target = [2.5, 1.0, -1.75]
+# up = [0.0, 1.0, 0.0]
+# fovy = 45.0
+
+# [light]
 # position = [4.5, 2.85, -3.0]
 # intensity = [50.0, 50.0, 50.0]
 
+# [shading_defaults]
+# diffuse = [1.0, 1.0, 1.0]
+# metallic = 0.75
+# roughness = 0.1
+# ambient_occlusion = 1.0
+
+#---------------------------------------------------------------------------------------------------
 # Gun
+#---------------------------------------------------------------------------------------------------
+# [model]
+# paths = ["gun/gun.obj"]
+
+# [camera]
+# position = [0.5, 0.2, -1.5]
+# target = [-0.5, -0.1, 0.0]
+# up = [0.0, 1.0, 0.0]
+# fovy = 45.0
+
+# [light]
 # position = [3.0, 1.0, 4.5]
 # intensity = [500.0, 500.0, 500.0]
 
-[ray_bounces]
-number = 5
-
-[shading_defaults]
-diffuse = [1.0, 1.0, 1.0]
-metallic = 0.5
-roughness = 0.1
-ambient_occlusion = 1.0
+# [shading_defaults]
+# diffuse = [1.0, 1.0, 1.0]
+# metallic = 0.5
+# roughness = 0.1
+# ambient_occlusion = 1.0
