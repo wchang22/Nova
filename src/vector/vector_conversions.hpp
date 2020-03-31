@@ -2,9 +2,9 @@
 #define VECTOR_CONVERSIONS_HPP
 
 #include <array>
+#include <assimp/types.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <assimp/types.h>
 
 #include "backend/types.hpp"
 #include "vector/vector_types.hpp"
@@ -35,16 +35,11 @@ inline float2 glm_to_float2(const glm::vec2& in) { return { in.x, in.y }; }
 
 inline aiVector2D make_aiVector2D(const aiVector3D& in) { return { in.x, in.y }; }
 
-inline float3 ai_to_float3(const aiColor3D& in) { return { in.r, in.g, in.b }; }
-
-inline float3 ai_to_float3(const aiVector3D& in) { return { in.x, in.y, in.z }; }
-
 inline glm::vec3 ai_to_glm(const aiColor3D& in) { return { in.r, in.g, in.b }; }
 
 inline glm::vec2 ai_to_glm(const aiVector2D& in) { return { in.x, in.y }; }
 
 inline glm::vec3 ai_to_glm(const aiVector3D& in) { return { in.x, in.y, in.z }; }
-
 
 }
 

@@ -105,7 +105,7 @@ float3 trace_ray(uint2 pixel_coords,
     // Look up materials
     // clang-format off
     float3 diffuse = read_material(materials, meta, texture_coord,
-      meta.diffuse_index, scene_params.shading_diffuse);
+      meta.diffuse_index, scene_params.shading_diffuse) * meta.kD;
     float metallic = read_material(materials, meta, texture_coord,
       meta.metallic_index, scene_params.shading_metallic).x;
     float roughness = read_material(materials, meta, texture_coord,
@@ -117,14 +117,14 @@ float3 trace_ray(uint2 pixel_coords,
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
     // Add ambient color even if pixel is in shadow
-    float3 intrs_color = diffuse * ambient_occlusion * 0.03f;
+    float3 intrs_color = diffuse * ambient_occlusion * 0.03f * meta.kA + meta.kE;
 
     // Calculate lighting params
     float3 light_dir = fast_normalize(scene_params.light_position - intrs_point);
     float3 view_dir = -ray.direction;
     float3 half_dir = fast_normalize(light_dir + view_dir);
     float light_distance = fast_distance(scene_params.light_position, intrs_point);
-    float3 kS = specularity(view_dir, half_dir, diffuse, metallic);
+    float3 kS = specularity(view_dir, half_dir, diffuse, metallic) * meta.kS;
 
     float3 local_illum = shade(scene_params, light_dir, view_dir, half_dir, light_distance, normal,
                                diffuse, kS, metallic, roughness);

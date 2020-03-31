@@ -7,6 +7,8 @@
 #include <assimp/postprocess.h>
 #include <cassert>
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <iostream>
 
 namespace nova {
 
@@ -57,6 +59,20 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   }
 
   aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+  aiColor3D aikA, aikD, aikS, aikE, aikR, aikT;
+  material->Get(AI_MATKEY_COLOR_AMBIENT, aikA);
+  material->Get(AI_MATKEY_COLOR_DIFFUSE, aikD);
+  material->Get(AI_MATKEY_COLOR_SPECULAR, aikS);
+  material->Get(AI_MATKEY_COLOR_EMISSIVE, aikE);
+  material->Get(AI_MATKEY_COLOR_TRANSPARENT, aikT);
+
+  glm::vec3 kA = ai_to_glm(aikA);
+  glm::vec3 kD = ai_to_glm(aikD);
+  glm::vec3 kS = ai_to_glm(aikS);
+  glm::vec3 kE = ai_to_glm(aikE);
+  glm::vec3 kT = ai_to_glm(aikT);
+
   int diffuse_index = load_materials(material, aiTextureType_DIFFUSE);
   int metallic_index = load_materials(material, aiTextureType_METALNESS);
   int roughness_index = load_materials(material, aiTextureType_DIFFUSE_ROUGHNESS);
@@ -69,6 +85,19 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   // If no normal map, no need for tangents
   if (normal_index == -1) {
     has_tangents = false;
+  }
+
+  // TODO: Improve this
+  // Fix some params to allow for better raytracing
+  if (diffuse_index != -1 && kD == glm::vec3(0.0f)) {
+    kD = glm::vec3(1.0f);
+  }
+  if (glm::all(glm::lessThan(kS, glm::vec3(0.15f)))) {
+    kS += 0.15f;
+  }
+  // TODO: Don't ignore transparency
+  if (glm::any(glm::notEqual(kT, glm::vec3(0.0f))) && kD == glm::vec3(0.0f)) {
+    kD = glm::vec3(1.0f);
   }
 
   for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
@@ -127,11 +156,28 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
       fixed_bit3 *= -1.0f;
     }
 
-    triangles.emplace_back<std::pair<Triangle, TriangleMeta>>(
-      { { v1, v2, v3 },
-        { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3,
-          diffuse_index, metallic_index, roughness_index, ambient_occlusion_index,
-          normal_index } });
+    triangles.emplace_back<std::pair<Triangle, TriangleMeta>>({ { v1, v2, v3 },
+                                                                { n1,
+                                                                  n2,
+                                                                  n3,
+                                                                  tan1,
+                                                                  tan2,
+                                                                  tan3,
+                                                                  fixed_bit1,
+                                                                  fixed_bit2,
+                                                                  fixed_bit3,
+                                                                  t1,
+                                                                  t2,
+                                                                  t3,
+                                                                  kA,
+                                                                  kD,
+                                                                  kS,
+                                                                  kE,
+                                                                  diffuse_index,
+                                                                  metallic_index,
+                                                                  roughness_index,
+                                                                  ambient_occlusion_index,
+                                                                  normal_index } });
   }
 }
 
