@@ -186,7 +186,7 @@ kernel void kernel_raytrace(SceneParams scene_params,
   float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
+  pixels[pixel_index] = (uchar4)(float3_to_uchar3(color), 255);
 }
 
 kernel void kernel_interpolate(global uchar4* pixels,
@@ -212,7 +212,7 @@ kernel void kernel_interpolate(global uchar4* pixels,
   // Check color differences in the neighbours
   uint3 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
   uint3 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
-  float3 color_range = convert_float3(color_max - color_min) / 255.0f;
+  float3 color_range = uint3_to_float3(color_max - color_min);
 
   // If difference is large, store coords to raytrace later
   if (length(color_range) > INTERP_THRESHOLD) {
@@ -245,5 +245,5 @@ kernel void kernel_fill_remaining(SceneParams scene_params,
   float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
+  pixels[pixel_index] = (uchar4)(float3_to_uchar3(color), 255);
 }

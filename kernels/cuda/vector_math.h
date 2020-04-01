@@ -50,6 +50,10 @@ inline float rsqrtf(float x) { return 1.0f / sqrtf(x); }
 
 inline __host__ __device__ uchar4 make_uchar4(float4 a) { return make_uchar4(a.x, a.y, a.z, a.w); }
 inline __host__ __device__ uchar4 make_uchar4(uint4 a) { return make_uchar4(a.x, a.y, a.z, a.w); }
+inline __host__ __device__ uchar4 make_uchar4(uchar3 a, int b) {
+  return make_uchar4(a.x, a.y, a.z, b);
+}
+inline __host__ __device__ uchar3 make_uchar3(float3 a) { return make_uchar3(a.x, a.y, a.z); }
 inline __host__ __device__ uchar3 make_uchar3(uchar4 a) { return make_uchar3(a.x, a.y, a.z); }
 
 inline __host__ __device__ float2 make_float2(float s) { return make_float2(s, s); }

@@ -194,7 +194,7 @@ __global__ void raytrace(uchar4* pixels,
   float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
+  pixels[pixel_index] = make_uchar4(float3_to_uchar3(color), 255);
 }
 
 __global__ void
@@ -219,7 +219,7 @@ interpolate(uchar4* pixels, uint2 pixel_dims, uint* rem_pixels_counter, uint2* r
   // Check color differences in the neighbours
   uint3 color_max = max(neighbors[0], max(neighbors[1], max(neighbors[2], neighbors[3])));
   uint3 color_min = min(neighbors[0], min(neighbors[1], min(neighbors[2], neighbors[3])));
-  float3 color_range = make_float3(color_max - color_min) / 255.0f;
+  float3 color_range = uint3_to_float3(color_max - color_min);
 
   // If difference is large, raytrace to find color
   if (length(color_range) > INTERP_THRESHOLD) {
@@ -251,7 +251,7 @@ __global__ void fill_remaining(uchar4* pixels,
   float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
+  pixels[pixel_index] = make_uchar4(float3_to_uchar3(color), 255);
 }
 
 void kernel_raytrace(uint2 global_dims,
