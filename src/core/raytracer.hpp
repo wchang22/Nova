@@ -29,13 +29,15 @@ private:
   std::string loaded_sky;
   uint32_t width;
   uint32_t height;
-  Buffer<uchar4> pixel_buf;
+  Image2DWrite<uchar4> pixel_im;
+  Image2DReadWrite<uchar4> temp_pixel_im1;
+  Image2DReadWrite<float4> temp_pixel_im2;
   Wrapper<uint2> pixel_dims_wrapper;
   Wrapper<SceneParams> scene_params_wrapper;
   Buffer<TriangleData> triangle_buf;
   Buffer<TriangleMetaData> tri_meta_buf;
   Buffer<FlatBVHNode> bvh_buf;
-  Buffer<uint2> rem_coords_buf;
+  Buffer<int2> rem_coords_buf;
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<float4> material_ims;
   Image2DRead<float4> sky_im;

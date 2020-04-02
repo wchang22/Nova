@@ -67,7 +67,7 @@ bool find_intersection(
   return min_intrs->tri_index != -1;
 }
 
-float3 trace_ray(uint2 pixel_coords,
+float3 trace_ray(int2 pixel_coords,
                  SceneParams scene_params,
                  global Triangle* triangles,
                  global TriangleMeta* tri_meta,
@@ -170,30 +170,31 @@ float3 trace_ray(uint2 pixel_coords,
 }
 
 kernel void kernel_raytrace(SceneParams scene_params,
-                            global uchar4* pixels,
+                            write_only image2d_t temp_pixels1,
+                            write_only image2d_t temp_pixels2,
                             uint2 pixel_dims,
                             global Triangle* triangles,
                             global TriangleMeta* tri_meta,
                             global BVHNode* bvh,
                             read_only image2d_array_t materials,
                             read_only image2d_t sky) {
-  uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
-
-  int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = (uchar4)(float3_to_uchar3(color), 255);
+  write_imageui(temp_pixels1, pixel_coords, (uint4)(float3_to_uint3(color), 255));
+  write_imagef(temp_pixels2, pixel_coords, (float4)(color, 1.0f));
 }
 
-kernel void kernel_interpolate(global uchar4* pixels,
+kernel void kernel_interpolate(read_only image2d_t temp_pixels1,
+                               write_only image2d_t temp_pixels2,
                                uint2 pixel_dims,
                                global uint* rem_pixels_counter,
-                               global uint2* rem_coords) {
-  uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
+                               global int2* rem_coords) {
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
@@ -203,10 +204,8 @@ kernel void kernel_interpolate(global uchar4* pixels,
   const int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint3 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    int index = linear_index(
-      clamp(convert_int2(pixel_coords) + neighbor_offsets[i], 0, convert_int2(pixel_dims) - 1),
-      pixel_dims.x);
-    neighbors[i] = convert_uint3(pixels[index].xyz);
+    neighbors[i] =
+      read_imageui(temp_pixels1, image_sampler, pixel_coords + neighbor_offsets[i]).xyz;
   }
 
   // Check color differences in the neighbours
@@ -220,14 +219,13 @@ kernel void kernel_interpolate(global uchar4* pixels,
   }
   // Otherwise, interpolate
   else {
-    int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
     uint3 color = (neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4;
-    pixels[pixel_index] = convert_uchar4((uint4)(color, 255));
+    write_imagef(temp_pixels2, pixel_coords, (float4)(uint3_to_float3(color), 1.0f));
   }
 }
 
 kernel void kernel_fill_remaining(SceneParams scene_params,
-                                  global uchar4* pixels,
+                                  write_only image2d_t temp_pixels2,
                                   uint2 pixel_dims,
                                   global Triangle* triangles,
                                   global TriangleMeta* tri_meta,
@@ -235,15 +233,25 @@ kernel void kernel_fill_remaining(SceneParams scene_params,
                                   read_only image2d_array_t materials,
                                   read_only image2d_t sky,
                                   global uint* rem_pixels_counter,
-                                  global uint2* rem_coords) {
+                                  global int2* rem_coords) {
   uint id = get_global_id(0);
   if (id >= *rem_pixels_counter) {
     return;
   }
-  uint2 pixel_coords = rem_coords[id];
+  int2 pixel_coords = rem_coords[id];
 
   float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
+  write_imagef(temp_pixels2, pixel_coords, (float4)(color, 1.0f));
+}
 
-  int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = (uchar4)(float3_to_uchar3(color), 255);
+kernel void kernel_post_process(read_only image2d_t temp_pixels2,
+                                write_only image2d_t pixels,
+                                uint2 pixel_dims) {
+  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y) {
+    return;
+  }
+
+  float3 color = read_imagef(temp_pixels2, image_sampler, pixel_coords).xyz;
+  write_imageui(pixels, pixel_coords, (uint4)(float3_to_uint3(color), 255));
 }

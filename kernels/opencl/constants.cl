@@ -21,4 +21,7 @@ constant float COLOR_EPSILON = 0.5f / 255.0f;
 // Min neighbour colour difference required to raytrace instead of interpolate
 constant float INTERP_THRESHOLD = SQRT3_3;
 
+constant sampler_t image_sampler =
+  CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_FALSE;
+
 #endif // CONSTANTS_CL

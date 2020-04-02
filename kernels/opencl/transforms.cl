@@ -11,6 +11,8 @@ float3 uchar3_to_float3(uchar3 u) { return convert_float3(u) / 255.0f; }
 
 uchar3 float3_to_uchar3(float3 u) { return convert_uchar3(u * 255.0f); }
 
+uint3 float3_to_uint3(float3 u) { return convert_uint3(u * 255.0f); }
+
 float3 triangle_interpolate3(float3 barycentric_coords, float3 a, float3 b, float3 c) {
   return a * barycentric_coords.x + b * barycentric_coords.y + c * barycentric_coords.z;
 }

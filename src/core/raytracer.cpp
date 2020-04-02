@@ -11,6 +11,7 @@ Raytracer::Raytracer() {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
   accelerator.add_kernel("kernel_fill_remaining");
+  accelerator.add_kernel("kernel_post_process");
 }
 
 void Raytracer::set_scene(const Scene& scene) {
@@ -36,10 +37,18 @@ void Raytracer::set_scene(const Scene& scene) {
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
-    pixel_buf = accelerator.create_buffer<uchar4>(MemFlags::READ_WRITE, width * height);
+    pixel_im = accelerator.create_image2D_write<uchar4>(ImageChannelOrder::RGBA,
+                                                        ImageChannelType::UINT8, width, height);
+    temp_pixel_im1 = accelerator.create_image2D_readwrite<uchar4>(
+      ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::CLAMP, FilterMode::NEAREST,
+      false, width, height);
+    temp_pixel_im2 = accelerator.create_image2D_readwrite<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
+      false, width, height);
+
     pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
     rem_coords_buf =
-      accelerator.create_buffer<uint2>(MemFlags::READ_WRITE, std::max(width * height / 2, 1U));
+      accelerator.create_buffer<int2>(MemFlags::READ_WRITE, std::max(width * height / 2, 1U));
   }
 
   // Update Model
@@ -99,13 +108,15 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height / 2 };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                            scene_params_wrapper, pixel_buf, pixel_dims_wrapper, triangle_buf,
-                            tri_meta_buf, bvh_buf, material_ims, sky_im);
+                            scene_params_wrapper, temp_pixel_im1, temp_pixel_im2,
+                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
+                            sky_im);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
-    accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims, pixel_buf,
-                            pixel_dims_wrapper, rem_pixels_buf, rem_coords_buf);
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
+                            temp_pixel_im1, temp_pixel_im2, pixel_dims_wrapper, rem_pixels_buf,
+                            rem_coords_buf);
     PROFILE_SECTION_END();
   }
   {
@@ -114,14 +125,22 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { counter, 1 };
     uint2 local_dims { 32, 1 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                            scene_params_wrapper, pixel_buf, pixel_dims_wrapper, triangle_buf,
+                            scene_params_wrapper, temp_pixel_im2, pixel_dims_wrapper, triangle_buf,
                             tri_meta_buf, bvh_buf, material_ims, sky_im, rem_pixels_buf,
                             rem_coords_buf);
     PROFILE_SECTION_END();
   }
+  {
+    PROFILE_SECTION_START("Postprocess kernel");
+    uint2 global_dims { width, height };
+    uint2 local_dims { 8, 4 };
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_post_process), global_dims, local_dims,
+                            temp_pixel_im2, pixel_im, pixel_dims_wrapper);
+    PROFILE_SECTION_END();
+  }
 
   PROFILE_SECTION_START("Read image");
-  std::vector<uchar4> pixels = accelerator.read_buffer(pixel_buf, width * height);
+  std::vector<uchar4> pixels = accelerator.read_image2D(pixel_im, width, height);
   PROFILE_SECTION_END();
 
   return {

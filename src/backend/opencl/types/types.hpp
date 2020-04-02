@@ -6,6 +6,7 @@
 #include "backend/opencl/types/flags.hpp"
 #include "backend/opencl/types/image2D_array.hpp"
 #include "backend/opencl/types/image2D_read.hpp"
+#include "backend/opencl/types/image2D_readwrite.hpp"
 #include "backend/opencl/types/image2D_write.hpp"
 #include "backend/opencl/types/vector_types.hpp"
 

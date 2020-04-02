@@ -11,41 +11,40 @@
   #endif
 #endif
 
+#include "backend/opencl/types/image2D.hpp"
+
 namespace nova {
 
 template <typename T>
-class Image2DRead {
+class Image2DRead : public Image2D<T> {
 public:
   Image2DRead() = default;
 
   template <typename... Args>
-  Image2DRead(Args&&... args) : image(std::forward<Args>(args)...) {}
+  Image2DRead(Args&&... args) : Image2D<T>(cl::Image2D(std::forward<Args>(args)...)) {}
 
-  Image2DRead(const Image2DRead& other) : image(other.image) {}
-  Image2DRead(Image2DRead& other) : image(other.image) {}
+  Image2DRead(const Image2DRead& other) : Image2D<T>(other.image) {}
+  Image2DRead(Image2DRead& other) : Image2D<T>(other.image) {}
 
   Image2DRead& operator=(const Image2DRead& other) {
-    image = other.image;
+    this->image = other.image;
     return *this;
   }
   Image2DRead& operator=(Image2DRead& other) {
-    image = other.image;
+    this->image = other.image;
     return *this;
   }
 
-  Image2DRead(Image2DRead&& other) : image(std::move(other.image)) {}
+  Image2DRead(Image2DRead&& other) : Image2D<T>(std::move(other.image)) {}
   Image2DRead& operator=(Image2DRead&& other) {
-    std::swap(image, other.image);
+    std::swap(this->image, other.image);
     return *this;
   }
 
   ~Image2DRead() = default;
 
-  const cl::Image2D& data() const { return image; }
-  cl::Image2D& data() { return image; }
-
-private:
-  cl::Image2D image;
+  const cl::Image2D& data() const { return this->image; }
+  cl::Image2D& data() { return this->image; }
 };
 
 }
