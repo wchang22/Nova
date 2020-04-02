@@ -178,14 +178,17 @@ kernel void kernel_raytrace(SceneParams scene_params,
                             global BVHNode* bvh,
                             read_only image2d_array_t materials,
                             read_only image2d_t sky) {
-  int2 pixel_coords = { get_global_id(0), get_global_id(1) };
-  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
+  int2 packed_pixel_coords = { get_global_id(0), get_global_id(1) };
+  if (packed_pixel_coords.x >= pixel_dims.x && packed_pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
+
+  int2 pixel_coords = packed_pixel_coords;
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
-  write_imageui(temp_pixels1, pixel_coords, (uint4)(float3_to_uint3(color), 255));
+  // Use a packed uchar4 image to save memory and bandwidth
+  write_imageui(temp_pixels1, packed_pixel_coords, (uint4)(float3_to_uint3(color), 255));
   write_imagef(temp_pixels2, pixel_coords, (float4)(color, 1.0f));
 }
 
@@ -204,8 +207,10 @@ kernel void kernel_interpolate(read_only image2d_t temp_pixels1,
   const int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint3 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    neighbors[i] =
-      read_imageui(temp_pixels1, image_sampler, pixel_coords + neighbor_offsets[i]).xyz;
+    // Lookup from the packed uchar4 image
+    int2 packed_coords = pixel_coords + neighbor_offsets[i];
+    packed_coords.y = (packed_coords.y - (packed_coords.x & 1)) / 2;
+    neighbors[i] = read_imageui(temp_pixels1, image_sampler, packed_coords).xyz;
   }
 
   // Check color differences in the neighbours

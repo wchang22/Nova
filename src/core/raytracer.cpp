@@ -39,9 +39,10 @@ void Raytracer::set_scene(const Scene& scene) {
   if (this->width != width || this->height != height) {
     pixel_im = accelerator.create_image2D_write<uchar4>(ImageChannelOrder::RGBA,
                                                         ImageChannelType::UINT8, width, height);
+    // Use a packed uchar4 image to save memory and bandwidth
     temp_pixel_im1 = accelerator.create_image2D_readwrite<uchar4>(
       ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::CLAMP, FilterMode::NEAREST,
-      false, width, height);
+      false, width, std::max(height / 2, 1U));
     temp_pixel_im2 = accelerator.create_image2D_readwrite<float4>(
       ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
       false, width, height);
