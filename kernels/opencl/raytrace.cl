@@ -1,3 +1,4 @@
+#include "anti_aliasing.cl"
 #include "constants.cl"
 #include "intersection.cl"
 #include "texture.cl"
@@ -249,7 +250,8 @@ kernel void kernel_fill_remaining(SceneParams scene_params,
   write_imagef(temp_pixels2, pixel_coords, (float4)(color, 1.0f));
 }
 
-kernel void kernel_post_process(read_only image2d_t temp_pixels2,
+kernel void kernel_post_process(SceneParams scene_params,
+                                read_only image2d_t temp_pixels2,
                                 write_only image2d_t pixels,
                                 uint2 pixel_dims) {
   int2 pixel_coords = { get_global_id(0), get_global_id(1) };
@@ -257,6 +259,14 @@ kernel void kernel_post_process(read_only image2d_t temp_pixels2,
     return;
   }
 
-  float3 color = read_imagef(temp_pixels2, image_sampler, pixel_coords).xyz;
+  float3 color;
+  if (scene_params.anti_aliasing) {
+    float2 inv_pixel_dims = 1.0f / convert_float2(pixel_dims);
+    float2 pixel_uv = (convert_float2(pixel_coords) + 0.5f) * inv_pixel_dims;
+    color = fxaa(temp_pixels2, inv_pixel_dims, pixel_uv);
+  } else {
+    color = read_imagef(temp_pixels2, image_sampler, pixel_coords).xyz;
+  }
+
   write_imageui(pixels, pixel_coords, (uint4)(float3_to_uint3(color), 255));
 }

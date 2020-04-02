@@ -13,6 +13,7 @@ public:
   struct Settings {
     vec2i output_dimensions;
     std::string output_file_path;
+    bool anti_aliasing;
     std::string model_path;
     std::string sky_path;
     Camera camera;
@@ -29,6 +30,7 @@ public:
       // clang-format off
       return output_dimensions == other.output_dimensions &&
              output_file_path == other.output_file_path &&
+             anti_aliasing == other.anti_aliasing &&
              model_path == other.model_path &&
              sky_path == other.sky_path &&
              camera == other.camera &&
@@ -51,6 +53,8 @@ public:
   const std::string& get_model_path() const;
   const std::string& set_sky_path(const std::string& path);
   const std::string& get_sky_path() const;
+  bool set_anti_aliasing(bool anti_aliasing);
+  bool get_anti_aliasing() const;
   vec3f set_camera_position(const vec3f& position);
   vec3f get_camera_position() const;
   vec3f set_camera_target(const vec3f& target);

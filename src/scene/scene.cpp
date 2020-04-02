@@ -12,6 +12,7 @@ Scene::Scene() {
 
   const auto [output_dimensions, output_file_path] = scene_parser.get_output_settings();
   const auto [model_paths, sky_path] = scene_parser.get_model_settings();
+  const auto [anti_aliasing] = scene_parser.get_post_processing_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [light_position, light_intensity] = scene_parser.get_light_settings();
@@ -24,6 +25,7 @@ Scene::Scene() {
 
   settings = { output_dimensions,
                output_file_path,
+               anti_aliasing,
                model_paths.front(),
                sky_path,
                camera,
@@ -61,6 +63,10 @@ vec3f Scene::set_camera_position(const vec3f& position) {
   settings.camera.set_position(vec_to_glm(position));
   return position;
 }
+
+bool Scene::set_anti_aliasing(bool anti_aliasing) { return settings.anti_aliasing = anti_aliasing; }
+
+bool Scene::get_anti_aliasing() const { return settings.anti_aliasing; }
 
 vec3f Scene::get_camera_position() const { return glm_to_vec(settings.camera.get_position()); }
 

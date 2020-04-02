@@ -29,11 +29,12 @@ void Raytracer::set_scene(const Scene& scene) {
   const vec3f& light_intensity = scene.get_light_intensity();
   const int ray_bounces = scene.get_ray_bounces();
   const float exposure = scene.get_exposure();
+  const bool anti_aliasing = scene.get_anti_aliasing();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
     SceneParams { scene.get_camera_eye_coords(), vec_to_float3(light_position),
                   vec_to_float3(light_intensity), vec_to_float3(shading_diffuse), shading_metallic,
-                  shading_roughness, shading_ambient_occlusion, ray_bounces, exposure });
+                  shading_roughness, shading_ambient_occlusion, ray_bounces, exposure, anti_aliasing });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
@@ -136,7 +137,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_post_process), global_dims, local_dims,
-                            temp_pixel_im2, pixel_im, pixel_dims_wrapper);
+                            scene_params_wrapper, temp_pixel_im2, pixel_im, pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }
 
