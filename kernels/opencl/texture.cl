@@ -2,7 +2,7 @@
 #define TEXTURE_CL
 
 constant sampler_t material_sampler =
-  CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_TRUE;
+  CLK_ADDRESS_REPEAT | CLK_FILTER_LINEAR | CLK_NORMALIZED_COORDS_TRUE;
 
 float3 read_material(read_only image2d_array_t materials,
                      TriangleMeta meta,
@@ -17,10 +17,7 @@ float3 read_material(read_only image2d_array_t materials,
     return default_material;
   }
 
-  float3 texture = convert_float3(
-    read_imageui(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz);
-
-  return uint3_to_float3(texture);
+  return read_imagef(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz;
 }
 
 float3 compute_normal(read_only image2d_array_t materials,

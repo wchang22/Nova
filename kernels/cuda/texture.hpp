@@ -23,9 +23,7 @@ __device__ inline float3 read_material(cudaTextureObject_t materials,
     return default_material;
   }
 
-  uchar3 texture =
-    make_uchar3(tex2DLayered<uchar4>(materials, texture_coord.x, texture_coord.y, index));
-  return uint3_to_float3(make_float3(texture));
+  return make_float3(tex2DLayered<float4>(materials, texture_coord.x, texture_coord.y, index));
 }
 
 __device__ inline float3 compute_normal(cudaTextureObject_t materials,

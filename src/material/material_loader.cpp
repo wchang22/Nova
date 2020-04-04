@@ -46,7 +46,7 @@ MaterialData MaterialLoader::build() const {
                                     }) /
                     materials.size();
 
-  std::vector<uchar4> images_data;
+  std::vector<float4> images_data;
   images_data.reserve(width * height * materials.size());
 
   // Resize all images so we can put them in a uniform array
@@ -57,8 +57,14 @@ MaterialData MaterialLoader::build() const {
     } else {
       resized_image = image_utils::resize_image(material, width, height);
     }
-    images_data.insert(images_data.end(), std::make_move_iterator(resized_image.data.begin()),
-                       std::make_move_iterator(resized_image.data.end()));
+    std::transform(resized_image.data.begin(), resized_image.data.end(),
+                   std::back_inserter(images_data), [](const uchar4& v) -> float4 {
+                     constexpr auto uchar_to_float = [](uint8_t x) {
+                       return static_cast<float>(x) / 255.0f;
+                     };
+                     return { uchar_to_float(x(v)), uchar_to_float(y(v)), uchar_to_float(z(v)),
+                              uchar_to_float(w(v)) };
+                   });
   }
 
   return { images_data, width, height, materials.size() };

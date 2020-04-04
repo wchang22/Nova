@@ -6,7 +6,7 @@
 namespace nova {
 
 struct MaterialData {
-  std::vector<uchar4> data;
+  std::vector<float4> data;
   uint32_t width;
   uint32_t height;
   size_t num_materials;

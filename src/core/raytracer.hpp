@@ -34,7 +34,7 @@ private:
   Buffer<FlatBVHNode> bvh_buf;
   Buffer<uint2> rem_coords_buf;
   Buffer<uint32_t> rem_pixels_buf;
-  Image2DArray<uchar4> material_ims;
+  Image2DArray<float4> material_ims;
 };
 
 }

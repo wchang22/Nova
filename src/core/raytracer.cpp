@@ -61,7 +61,7 @@ void Raytracer::set_scene(const Scene& scene) {
       material_data.data.emplace_back();
     }
     material_ims = accelerator.create_image2D_array(
-      ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::WRAP, FilterMode::NEAREST,
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::WRAP, FilterMode::LINEAR,
       true, std::max(material_data.num_materials, static_cast<size_t>(1)),
       std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
 
