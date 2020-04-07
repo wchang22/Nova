@@ -11,7 +11,7 @@ namespace nova {
 MaterialLoader::MaterialLoader() { stbi_set_flip_vertically_on_load(true); }
 
 int MaterialLoader::load_material(const char* path, bool srgb) {
-  image_utils::image im = image_utils::read_image(path);
+  image_utils::image<uchar4> im = image_utils::read_image<uchar4>(path);
   if (srgb) {
     constexpr auto gamma_correct = [](uint8_t x) -> uint8_t {
       return std::pow(x / 255.0f, 2.2f) * 255.0f;
@@ -51,7 +51,7 @@ MaterialData MaterialLoader::build() const {
 
   // Resize all images so we can put them in a uniform array
   for (const auto& material : materials) {
-    image_utils::image resized_image;
+    image_utils::image<uchar4> resized_image;
     if (material.width == width && material.height == height) {
       resized_image = material;
     } else {

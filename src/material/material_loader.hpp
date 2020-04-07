@@ -1,6 +1,7 @@
 #ifndef MATERIALS_HPP
 #define MATERIALS_HPP
 
+#include "backend/types.hpp"
 #include "util/image/imageutils.hpp"
 
 namespace nova {
@@ -21,7 +22,7 @@ public:
   MaterialData build() const;
 
 private:
-  std::vector<image_utils::image> materials;
+  std::vector<image_utils::image<uchar4>> materials;
 };
 
 }

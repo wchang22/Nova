@@ -15,7 +15,7 @@ public:
   Raytracer();
 
   void set_scene(const Scene& scene);
-  image_utils::image raytrace();
+  image_utils::image<uchar4> raytrace();
 
 private:
   IntersectableManager intersectable_manager;

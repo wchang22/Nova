@@ -151,7 +151,7 @@ const std::string& Scene::get_output_file_path() const { return settings.output_
 
 void Scene::render_to_screen() {
   raytracer.set_scene(*this);
-  image_utils::image im = raytracer.raytrace();
+  image_utils::image<uchar4> im = raytracer.raytrace();
 
   // Bind image data to OpenGL texture for rendering
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
@@ -164,7 +164,7 @@ void Scene::render_to_image() {
   PROFILE_SCOPE("Render to Image");
 
   raytracer.set_scene(*this);
-  image_utils::image im;
+  image_utils::image<uchar4> im;
 
   PROFILE_SECTION_START("Profile Loop");
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {

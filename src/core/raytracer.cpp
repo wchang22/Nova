@@ -61,8 +61,8 @@ void Raytracer::set_scene(const Scene& scene) {
       material_data.data.emplace_back();
     }
     material_ims = accelerator.create_image2D_array(
-      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::WRAP, FilterMode::LINEAR,
-      true, std::max(material_data.num_materials, static_cast<size_t>(1)),
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::WRAP, FilterMode::LINEAR, true,
+      std::max(material_data.num_materials, static_cast<size_t>(1)),
       std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
 
     loaded_model = model_path;
@@ -74,7 +74,7 @@ void Raytracer::set_scene(const Scene& scene) {
   this->height = height;
 }
 
-image_utils::image Raytracer::raytrace() {
+image_utils::image<uchar4> Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
   accelerator.write_buffer(rem_pixels_buf, 0U);
