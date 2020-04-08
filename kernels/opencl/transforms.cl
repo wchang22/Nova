@@ -17,7 +17,7 @@ float2 triangle_interpolate2(float3 barycentric_coords, float2 a, float2 b, floa
 
 int linear_index(int2 p, int width) { return p.y * width + p.x; }
 
-float3 tone_map(float3 x) { return native_divide(x, x + 1.0f); }
+float3 tone_map(float3 x, float exposure) { return 1.0f - exp(-x * exposure); }
 
 float3 gamma_correct(float3 x) { return pow(x, 1.0f / 2.2f); }
 

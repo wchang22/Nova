@@ -26,9 +26,9 @@ const ImVec4 INPUT_COLOR(31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f);
 const ImVec4 ERROR_COLOR(1.0f, 0.0f, 0.0f, 1.0f);
 constexpr float LEFT_PANEL_PERCENTAGE = 0.25f;
 constexpr float RIGHT_PANEL_PERCENTAGE = 1.0f - LEFT_PANEL_PERCENTAGE;
-constexpr ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                          ImGuiWindowFlags_NoCollapse |
-                                          ImGuiWindowFlags_NoBringToFrontOnFocus;
+constexpr ImGuiWindowFlags WINDOW_FLAGS =
+  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+  ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar;
 
 Window::Window(bool headless) : headless(headless) {
   // Don't setup anything if no window needed
@@ -118,12 +118,12 @@ void display_file_dialog(float button_indent,
                          const char* filters,
                          std::string& path) {
   static ImGuiFileDialog* dialog_inst = ImGuiFileDialog::Instance();
-  std::string dialog_key = button_label + std::string("Key");
+  std::string dialog_key = std::string("Key") + button_label;
 
   // Display button and file dialog popup on button click
   ImGui::Indent(button_indent);
   if (ImGui::Button(button_label, { button_width, 0.0f })) {
-    dialog_inst->OpenDialog(dialog_key, "Browse", filters, ".");
+    dialog_inst->OpenDialog(dialog_key, button_label, filters, ".");
   }
   ImGui::Indent(-button_indent);
   if (dialog_inst->FileDialog(dialog_key)) {
@@ -165,42 +165,51 @@ void Window::display_scene_settings() {
   static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
+  static std::string sky_path = scene.get_sky_path();
+  static bool sky_path_error = false;
   static vec3f camera_position = scene.get_camera_position();
   static vec3f camera_target = scene.get_camera_target();
   static vec3f camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
   static vec3f light_position = scene.get_light_position();
   static vec3f light_intensity = scene.get_light_intensity();
-  static int ray_bounces = scene.get_ray_bounces();
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
+  static int ray_bounces = scene.get_ray_bounces();
+  static float exposure = scene.get_exposure();
 
   // Render lambdas that check for errors
   const auto render_to_screen = [&]() {
-    if (model_path_error) {
+    if (model_path_error || sky_path_error) {
       return;
     }
     try {
       scene.render_to_screen();
       model_path_error = false;
+      sky_path_error = false;
     } catch (const ModelException& e) {
       model_path_error = true;
+    } catch (const SkyException& e) {
+      sky_path_error = true;
     }
   };
   const auto render_to_image = [&]() {
-    if (model_path_error || file_path_error) {
+    if (model_path_error || sky_path_error || file_path_error) {
       return;
     }
     try {
       scene.render_to_image();
       model_path_error = false;
       file_path_error = false;
+      sky_path_error = false;
     } catch (const ModelException& e) {
       model_path_error = true;
     } catch (const ImageException& e) {
       file_path_error = true;
+    } catch (const SkyException& e) {
+      sky_path_error = true;
     }
   };
 
@@ -222,9 +231,12 @@ void Window::display_scene_settings() {
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      display_input_text_error(model_path_error, "Path##Model", model_path);
-      display_file_dialog(button_indent, button_width, "Browse##Model", MODEL_FILE_TYPES,
+      display_input_text_error(model_path_error, "Model Path##Model", model_path);
+      display_file_dialog(button_indent, button_width, "Browse Model Path##Model", MODEL_FILE_TYPES,
                           model_path);
+      display_input_text_error(sky_path_error, "Sky Path##Model", sky_path);
+      display_file_dialog(button_indent, button_width, "Browse Sky Path##Model", SKY_FILE_TYPES,
+                          sky_path);
     }
 
     if (ImGui::CollapsingHeader("Camera##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -247,12 +259,6 @@ void Window::display_scene_settings() {
       light_intensity = scene.set_light_intensity(light_intensity);
     }
 
-    if (ImGui::CollapsingHeader("Ray Bounces##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputInt("Number##RayBounces", &ray_bounces);
-
-      ray_bounces = scene.set_ray_bounces(ray_bounces);
-    }
-
     if (ImGui::CollapsingHeader("Shading Defaults##SceneSettings",
                                 ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::InputFloat3("Diffuse##ShadingDefaults", shading_diffuse.data());
@@ -266,10 +272,20 @@ void Window::display_scene_settings() {
       shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
+    if (ImGui::CollapsingHeader("Other##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputInt("Ray Bounces##Other", &ray_bounces);
+      ImGui::InputFloat("Exposure##Other", &exposure);
+
+      ray_bounces = scene.set_ray_bounces(ray_bounces);
+      exposure = scene.set_exposure(exposure);
+    }
+
     if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {
       output_file_path = scene.set_output_file_path(output_file_path);
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
+      sky_path = scene.set_sky_path(sky_path);
+      sky_path_error = false;
       file_path_error = false;
       render_to_image();
     }
@@ -277,6 +293,8 @@ void Window::display_scene_settings() {
     if (ImGui::Button("Update##SceneSettings", { button_width, 0.0f })) {
       model_path = scene.set_model_path(model_path);
       model_path_error = false;
+      sky_path = scene.set_sky_path(sky_path);
+      sky_path_error = false;
       // No need to render on click if already rendering
       if (!real_time) {
         render_to_screen();

@@ -72,7 +72,8 @@ float3 trace_ray(uint2 pixel_coords,
                  global Triangle* triangles,
                  global TriangleMeta* tri_meta,
                  global BVHNode* bvh,
-                 read_only image2d_array_t materials) {
+                 read_only image2d_array_t materials,
+                 read_only image2d_t sky) {
   float2 alpha_beta = scene_params.eye_coords.coord_scale *
                       (convert_float2(pixel_coords) - scene_params.eye_coords.coord_dims + 0.5f);
   float3 ray_dir = fast_normalize(alpha_beta.x * scene_params.eye_coords.eye_coord_frame.x -
@@ -90,6 +91,9 @@ float3 trace_ray(uint2 pixel_coords,
 
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, &intrs, false)) {
+      if (depth == 0) {
+        color = read_sky(sky, ray_dir);
+      }
       break;
     }
 
@@ -126,8 +130,8 @@ float3 trace_ray(uint2 pixel_coords,
     float light_distance = fast_distance(scene_params.light_position, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic) * meta.kS;
 
-    float3 local_illum = shade(scene_params, light_dir, view_dir, half_dir, light_distance, normal,
-                               diffuse, kS, metallic, roughness);
+    float3 local_illum = shade(light_dir, view_dir, half_dir, scene_params.light_intensity,
+                               light_distance, normal, diffuse, kS, metallic, roughness);
 
     // Only cast a shadow ray if it will produce a color change
     if (any(isgreaterequal(local_illum, COLOR_EPSILON))) {
@@ -161,7 +165,7 @@ float3 trace_ray(uint2 pixel_coords,
     ray_dir = reflect(ray_dir, normal);
   }
 
-  return gamma_correct(tone_map(color));
+  return gamma_correct(tone_map(color, scene_params.exposure));
 }
 
 kernel void kernel_raytrace(SceneParams scene_params,
@@ -170,14 +174,15 @@ kernel void kernel_raytrace(SceneParams scene_params,
                             global Triangle* triangles,
                             global TriangleMeta* tri_meta,
                             global BVHNode* bvh,
-                            read_only image2d_array_t materials) {
+                            read_only image2d_array_t materials,
+                            read_only image2d_t sky) {
   uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
-  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);
@@ -185,10 +190,6 @@ kernel void kernel_raytrace(SceneParams scene_params,
 
 kernel void kernel_interpolate(global uchar4* pixels,
                                uint2 pixel_dims,
-                               global Triangle* triangles,
-                               global TriangleMeta* tri_meta,
-                               global BVHNode* bvh,
-                               read_only image2d_array_t materials,
                                global uint* rem_pixels_counter,
                                global uint2* rem_coords) {
   uint2 pixel_coords = { get_global_id(0), get_global_id(1) };
@@ -231,6 +232,7 @@ kernel void kernel_fill_remaining(SceneParams scene_params,
                                   global TriangleMeta* tri_meta,
                                   global BVHNode* bvh,
                                   read_only image2d_array_t materials,
+                                  read_only image2d_t sky,
                                   global uint* rem_pixels_counter,
                                   global uint2* rem_coords) {
   uint id = get_global_id(0);
@@ -239,7 +241,7 @@ kernel void kernel_fill_remaining(SceneParams scene_params,
   }
   uint2 pixel_coords = rem_coords[id];
 
-  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, scene_params, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(convert_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = convert_uchar4((float4)(color, 1.0f) * 255.0f);

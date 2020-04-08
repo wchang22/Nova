@@ -11,11 +11,11 @@ Scene::Scene() {
   SceneParser scene_parser;
 
   const auto [output_dimensions, output_file_path] = scene_parser.get_output_settings();
-  const auto model_paths = scene_parser.get_model_paths();
+  const auto [model_paths, sky_path] = scene_parser.get_model_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [light_position, light_intensity] = scene_parser.get_light_settings();
-  const int ray_bounces = scene_parser.get_ray_bounces();
+  const auto [ray_bounces, exposure] = scene_parser.get_other_settings();
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
@@ -25,14 +25,16 @@ Scene::Scene() {
   settings = { output_dimensions,
                output_file_path,
                model_paths.front(),
+               sky_path,
                camera,
                light_position,
                light_intensity,
-               ray_bounces,
                default_diffuse,
                default_metallic,
                default_roughness,
-               default_ambient_occlusion };
+               default_ambient_occlusion,
+               ray_bounces,
+               exposure };
 }
 
 void Scene::init_texture() {
@@ -50,6 +52,10 @@ const std::string& Scene::set_model_path(const std::string& path) {
 }
 
 const std::string& Scene::get_model_path() const { return settings.model_path; }
+
+const std::string& Scene::set_sky_path(const std::string& path) { return settings.sky_path = path; }
+
+const std::string& Scene::get_sky_path() const { return settings.sky_path; }
 
 vec3f Scene::set_camera_position(const vec3f& position) {
   settings.camera.set_position(vec_to_glm(position));
@@ -102,10 +108,6 @@ const vec3f& Scene::set_light_intensity(const vec3f& intensity) {
 
 const vec3f& Scene::get_light_intensity() const { return settings.light_intensity; }
 
-int Scene::set_ray_bounces(int bounces) { return settings.ray_bounces = std::max(1, bounces); }
-
-int Scene::get_ray_bounces() const { return settings.ray_bounces; }
-
 const vec3f& Scene::set_shading_diffuse(const vec3f& diffuse) {
   return settings.shading_diffuse = {
     std::clamp(diffuse[0], 0.0f, 1.0f),
@@ -133,6 +135,14 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 }
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
+
+int Scene::set_ray_bounces(int bounces) { return settings.ray_bounces = std::max(1, bounces); }
+
+int Scene::get_ray_bounces() const { return settings.ray_bounces; }
+
+float Scene::set_exposure(float exposure) { return settings.exposure = std::max(exposure, 0.01f); }
+
+float Scene::get_exposure() const { return settings.exposure; }
 
 const vec2i& Scene::set_output_dimensions(const vec2i& dimensions) {
   settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);

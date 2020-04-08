@@ -12,6 +12,11 @@ struct OutputSettings {
   std::string file_path;
 };
 
+struct ModelSettings {
+  std::vector<std::string> model_paths;
+  std::string sky_path;
+};
+
 struct CameraSettings {
   vec3f position;
   vec3f target;
@@ -31,16 +36,21 @@ struct LightSettings {
   vec3f intensity;
 };
 
+struct OtherSettings {
+  int ray_bounces;
+  float exposure;
+};
+
 class SceneParser {
 public:
   SceneParser();
 
   OutputSettings get_output_settings() const;
-  std::vector<std::string> get_model_paths() const;
+  ModelSettings get_model_settings() const;
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;
-  int get_ray_bounces() const;
+  OtherSettings get_other_settings() const;
 
 private:
   toml::value parsed_data;
