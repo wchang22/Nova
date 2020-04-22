@@ -36,10 +36,11 @@ $ ./nova
 ```bash
 $ cd Nova
 $ docker build -t nova .
-$ docker run -it --rm -v $(pwd):/root/Nova --device /dev/dri:/dev/dri nova
+$ xhost local:root
+$ docker run -it --rm -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $(pwd):/root/Nova --device /dev/dri:/dev/dri nova
 $ cd Nova && mkdir build && cd build
 $ cmake .. -DBACKEND=OpenCL
 $ cmake --build .
-$ ./nova --headless
+$ ./nova
 ```
 
