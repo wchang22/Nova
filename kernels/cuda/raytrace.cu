@@ -79,7 +79,8 @@ __device__ float3 trace_ray(uint2 pixel_coords,
                             TriangleData* triangles,
                             TriangleMetaData* tri_meta,
                             FlatBVHNode* bvh,
-                            cudaTextureObject_t materials) {
+                            cudaTextureObject_t materials,
+                            cudaTextureObject_t sky) {
   float2 alpha_beta = params.eye_coords.coord_scale *
                       (make_float2(pixel_coords) - params.eye_coords.coord_dims + 0.5f);
   float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -
@@ -97,6 +98,10 @@ __device__ float3 trace_ray(uint2 pixel_coords,
 
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, intrs, false)) {
+      // TODO: IBL instead of just skymap
+      if (depth == 0) {
+        color = read_sky(sky, ray_dir);
+      }
       break;
     }
 
@@ -177,7 +182,8 @@ __global__ void raytrace(uchar4* pixels,
                          TriangleData* triangles,
                          TriangleMetaData* tri_meta,
                          FlatBVHNode* bvh,
-                         cudaTextureObject_t materials) {
+                         cudaTextureObject_t materials,
+                         cudaTextureObject_t sky) {
   uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
                          blockDim.y * blockIdx.y + threadIdx.y };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
@@ -185,20 +191,14 @@ __global__ void raytrace(uchar4* pixels,
   }
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
-  float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
 }
 
-__global__ void interpolate(uchar4* pixels,
-                            uint2 pixel_dims,
-                            TriangleData* triangles,
-                            TriangleMetaData* tri_meta,
-                            FlatBVHNode* bvh,
-                            cudaTextureObject_t materials,
-                            uint* rem_pixels_counter,
-                            uint2* rem_coords) {
+__global__ void
+interpolate(uchar4* pixels, uint2 pixel_dims, uint* rem_pixels_counter, uint2* rem_coords) {
   uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
                          blockDim.y * blockIdx.y + threadIdx.y };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
@@ -239,6 +239,7 @@ __global__ void fill_remaining(uchar4* pixels,
                                TriangleMetaData* tri_meta,
                                FlatBVHNode* bvh,
                                cudaTextureObject_t materials,
+                               cudaTextureObject_t sky,
                                uint* rem_pixels_counter,
                                uint2* rem_coords) {
   uint id = blockDim.x * blockIdx.x + threadIdx.x;
@@ -247,7 +248,7 @@ __global__ void fill_remaining(uchar4* pixels,
   }
   uint2 pixel_coords = rem_coords[id];
 
-  float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials);
+  float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
   pixels[pixel_index] = make_uchar4(make_float4(color, 1.0f) * 255.0f);
@@ -262,14 +263,16 @@ void kernel_raytrace(uint2 global_dims,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
-                     cudaTextureObject_t materials) {
+                     cudaTextureObject_t materials,
+                     cudaTextureObject_t sky) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                           cudaMemcpyHostToDevice));
   CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
-  raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials);
+  raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials,
+                                       sky);
 }
 
 void kernel_interpolate(uint2 global_dims,
@@ -277,18 +280,13 @@ void kernel_interpolate(uint2 global_dims,
                         const KernelConstants& kernel_constants,
                         uchar4* pixels,
                         uint2 pixel_dims,
-                        TriangleData* triangles,
-                        TriangleMetaData* tri_meta,
-                        FlatBVHNode* bvh,
-                        cudaTextureObject_t materials,
                         uint* rem_pixels_counter,
                         uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                           cudaMemcpyHostToDevice));
-  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials,
-                                          rem_pixels_counter, rem_coords);
+  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, rem_pixels_counter, rem_coords);
 }
 
 void kernel_fill_remaining(uint2 global_dims,
@@ -301,6 +299,7 @@ void kernel_fill_remaining(uint2 global_dims,
                            TriangleMetaData* tri_meta,
                            FlatBVHNode* bvh,
                            cudaTextureObject_t materials,
+                           cudaTextureObject_t sky,
                            uint* rem_pixels_counter,
                            uint2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
@@ -310,7 +309,7 @@ void kernel_fill_remaining(uint2 global_dims,
   CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
   fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh,
-                                             materials, rem_pixels_counter, rem_coords);
+                                             materials, sky, rem_pixels_counter, rem_coords);
 }
 
 }

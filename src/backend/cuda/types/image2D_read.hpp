@@ -14,6 +14,8 @@ namespace nova {
 template <typename T>
 class Image2DRead : public Image2D<T> {
 public:
+  Image2DRead() = default;
+
   Image2DRead(AddressMode address_mode,
               FilterMode filter_mode,
               bool normalized_coords,
@@ -48,9 +50,18 @@ public:
   ~Image2DRead() { CUDA_CHECK(cudaDestroyTextureObject(tex))
                      CUDA_CHECK(cudaFreeArray(this->buffer)) }
 
-  cudaTextureObject_t& data() {
-    return tex;
-  };
+  Image2DRead(Image2DRead&& other)
+    : tex(other.tex),
+  Image2D<T>(std::move(other)) {
+    other.tex = 0;
+  }
+  Image2DRead& operator=(Image2DRead&& other) {
+    std::swap(tex, other.tex);
+    Image2D<T>::operator=(std::move(other));
+    return *this;
+  }
+
+  cudaTextureObject_t& data() { return tex; };
 
 private:
   cudaTextureObject_t tex;

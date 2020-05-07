@@ -26,6 +26,12 @@ __device__ inline float3 read_material(cudaTextureObject_t materials,
   return make_float3(tex2DLayered<float4>(materials, texture_coord.x, texture_coord.y, index));
 }
 
+__device__ inline float3 read_sky(cudaTextureObject_t sky, float3 direction) {
+  float2 uv = make_float2(atan2(direction.z, direction.x), asin(direction.y));
+  uv = uv * make_float2(CUDART_INV_PI * 0.5f, CUDART_INV_PI) + 0.5f;
+  return make_float3(tex2D<float4>(sky, uv.x, uv.y));
+}
+
 __device__ inline float3 compute_normal(cudaTextureObject_t materials,
                                         const TriangleMetaData& meta,
                                         float2 texture_coord,

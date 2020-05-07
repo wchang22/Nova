@@ -91,6 +91,7 @@ float3 trace_ray(uint2 pixel_coords,
 
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, &intrs, false)) {
+      // TODO: IBL instead of just skymap
       if (depth == 0) {
         color = read_sky(sky, ray_dir);
       }
