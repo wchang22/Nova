@@ -23,10 +23,28 @@ RUN apt-get install -yy \
   ocl-icd-opencl-dev \
   intel-opencl-icd \
   nvidia-opencl-dev \
-  xorg-dev
+  xorg-dev \
+  alien
 
 RUN ln -sf /usr/bin/g++-8 /usr/bin/g++
 RUN ln -sf /usr/bin/gcc-8 /usr/bin/gcc
+
+# Install intel cpu opencl runtime
+RUN export RUNTIME_URL="http://registrationcenter-download.intel.com/akdlm/irc_nas/9019/opencl_runtime_16.1.1_x64_ubuntu_6.4.0.25.tgz" \
+  && export TAR=$(basename ${RUNTIME_URL}) \
+  && export DIR=$(basename ${RUNTIME_URL} .tgz) \
+  && wget -q ${RUNTIME_URL} \
+  && tar -xf ${TAR} \
+  && for i in ${DIR}/rpm/*.rpm; do alien --to-deb $i; done \
+  && rm -rf ${DIR} ${TAR} \
+  && dpkg -i *.deb \
+  && rm *.deb
+
+RUN echo "/opt/intel/opencl-1.2-6.4.0.25/lib64/libintelocl.so" > /etc/OpenCL/vendors/intel_cpu.icd
+
+ENV OCL_INC /opt/intel/opencl/include
+ENV OCL_LIB /opt/intel/opencl-1.2-6.4.0.25/lib64
+ENV LD_LIBRARY_PATH $OCL_LIB:$LD_LIBRARY_PATH
 
 WORKDIR /root
 ENTRYPOINT bash
