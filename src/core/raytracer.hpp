@@ -5,6 +5,7 @@
 #include "intersectables/intersectable_manager.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "material/material_loader.hpp"
+#include "material/sky_loader.hpp"
 
 namespace nova {
 
@@ -15,15 +16,17 @@ public:
   Raytracer();
 
   void set_scene(const Scene& scene);
-  image_utils::image raytrace();
+  image_utils::image<uchar4> raytrace();
 
 private:
   IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
+  SkyLoader sky_loader;
   Accelerator accelerator;
 
   // Scene params and buffers
   std::string loaded_model;
+  std::string loaded_sky;
   uint32_t width;
   uint32_t height;
   Buffer<uchar4> pixel_buf;
@@ -35,6 +38,7 @@ private:
   Buffer<uint2> rem_coords_buf;
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<float4> material_ims;
+  Image2DRead<float4> sky_im;
 };
 
 }

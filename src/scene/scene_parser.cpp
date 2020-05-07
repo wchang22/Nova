@@ -12,14 +12,15 @@ OutputSettings SceneParser::get_output_settings() const {
   return { dimensions, file_path };
 }
 
-std::vector<std::string> SceneParser::get_model_paths() const {
-  std::vector<std::string> paths =
+ModelSettings SceneParser::get_model_settings() const {
+  std::vector<std::string> model_paths =
     toml::find<std::vector<std::string>>(parsed_data, "model", "paths");
-  for (auto& path : paths) {
+  for (auto& path : model_paths) {
     path.insert(0, ASSETS_PATH);
   }
+  std::string sky_path = ASSETS_PATH + toml::find<std::string>(parsed_data, "model", "sky");
 
-  return paths;
+  return { model_paths, sky_path };
 }
 
 CameraSettings SceneParser::get_camera_settings() const {
@@ -47,8 +48,11 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   return { diffuse, metallic, roughness, ambient_occlusion };
 }
 
-int SceneParser::get_ray_bounces() const {
-  return toml::find<int>(parsed_data, "ray_bounces", "number");
+OtherSettings SceneParser::get_other_settings() const {
+  int ray_bounces = toml::find<int>(parsed_data, "other", "ray_bounces");
+  float exposure = toml::find<float>(parsed_data, "other", "exposure");
+
+  return { ray_bounces, exposure };
 }
 
 }

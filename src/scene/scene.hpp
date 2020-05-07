@@ -14,14 +14,16 @@ public:
     vec2i output_dimensions;
     std::string output_file_path;
     std::string model_path;
+    std::string sky_path;
     Camera camera;
     vec3f light_position;
     vec3f light_intensity;
-    int ray_bounces;
     vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
     float shading_ambient_occlusion;
+    int ray_bounces;
+    float exposure;
   };
 
   void init_texture();
@@ -29,6 +31,8 @@ public:
 
   const std::string& set_model_path(const std::string& path);
   const std::string& get_model_path() const;
+  const std::string& set_sky_path(const std::string& path);
+  const std::string& get_sky_path() const;
   vec3f set_camera_position(const vec3f& position);
   vec3f get_camera_position() const;
   vec3f set_camera_target(const vec3f& target);
@@ -43,8 +47,6 @@ public:
   const vec3f& get_light_position() const;
   const vec3f& set_light_intensity(const vec3f& intensity);
   const vec3f& get_light_intensity() const;
-  int set_ray_bounces(int bounces);
-  int get_ray_bounces() const;
   const vec3f& set_shading_diffuse(const vec3f& diffuse);
   const vec3f& get_shading_diffuse() const;
   float set_shading_metallic(float metallic);
@@ -53,6 +55,10 @@ public:
   float get_shading_roughness() const;
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
+  int set_ray_bounces(int bounces);
+  int get_ray_bounces() const;
+  float set_exposure(float exposure);
+  float get_exposure() const;
 
   const vec2i& set_output_dimensions(const vec2i& dimensions);
   const vec2i& get_output_dimensions() const;

@@ -10,7 +10,16 @@ namespace nova {
 template <typename T>
 class Image2D {
 public:
+  Image2D() : buffer(nullptr) {}
   Image2D(size_t width, size_t height) : width(width), height(height) {}
+
+  Image2D(Image2D&& other) : buffer(buffer), width(width), height(height) { buffer = 0; }
+  Image2D& operator=(Image2D&& other) {
+    std::swap(buffer, other.buffer);
+    width = other.width;
+    height = other.height;
+    return *this;
+  }
 
   virtual ~Image2D() {}
 

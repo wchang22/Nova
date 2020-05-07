@@ -1,7 +1,12 @@
 #ifndef TEXTURE_CL
 #define TEXTURE_CL
 
+#include "constants.cl"
+#include "types.cl"
+
 constant sampler_t material_sampler =
+  CLK_ADDRESS_REPEAT | CLK_FILTER_LINEAR | CLK_NORMALIZED_COORDS_TRUE;
+constant sampler_t sky_sampler =
   CLK_ADDRESS_REPEAT | CLK_FILTER_LINEAR | CLK_NORMALIZED_COORDS_TRUE;
 
 float3 read_material(read_only image2d_array_t materials,
@@ -18,6 +23,12 @@ float3 read_material(read_only image2d_array_t materials,
   }
 
   return read_imagef(materials, material_sampler, (float4)(texture_coord, index, 0.0f)).xyz;
+}
+
+float3 read_sky(read_only image2d_t sky, float3 direction) {
+  float2 uv = (float2)(atan2(direction.z, direction.x), asin(direction.y));
+  uv = uv * (float2)(M_1_PI_F * 0.5f, M_1_PI_F) + 0.5f;
+  return read_imagef(sky, sky_sampler, uv).xyz;
 }
 
 float3 compute_normal(read_only image2d_array_t materials,
@@ -77,10 +88,10 @@ float3 specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metal
   return f;
 }
 
-float3 shade(SceneParams scene_params,
-             float3 light_dir,
+float3 shade(float3 light_dir,
              float3 view_dir,
              float3 half_dir,
+             float3 light_intensity,
              float light_distance,
              float3 normal,
              float3 diffuse,
@@ -105,8 +116,7 @@ float3 shade(SceneParams scene_params,
   float3 kD = (1.0f - kS) * (1.0f - metallic);
 
   float3 brdf = kD * diffuse * M_1_PI_F + native_divide(d * kS * g, max(4.0f * nvl, 1e-3f));
-  float3 radiance =
-    native_divide(scene_params.light_intensity, max(light_distance * light_distance, 1.0f));
+  float3 radiance = native_divide(light_intensity, max(light_distance * light_distance, 1.0f));
 
   return brdf * radiance * n_dot_l;
 }
