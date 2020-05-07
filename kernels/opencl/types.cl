@@ -13,7 +13,7 @@ typedef struct {
 
 Ray create_ray(float3 point, float3 direction, float epsilon) {
   float3 origin = point + direction * epsilon;
-  float3 inv_direction = native_recip(direction);
+  float3 inv_direction = 1.0f / direction;
   float3 nio = -origin * inv_direction;
   return (Ray) { origin, direction, inv_direction, nio };
 }

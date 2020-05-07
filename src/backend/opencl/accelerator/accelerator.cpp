@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "accelerator.hpp"
 #include "backend/opencl/entry.hpp"
 #include "backend/opencl/utils/build_args.hpp"
@@ -7,8 +9,20 @@
 
 namespace nova {
 
-Accelerator::Accelerator() : context(CL_DEVICE_TYPE_GPU) {
+Accelerator::Accelerator() {
+  try {
+    context = cl::Context(CL_DEVICE_TYPE_GPU);
+  } catch (...) {
+    try {
+      context = cl::Context(CL_DEVICE_TYPE_CPU);
+    } catch (...) {
+      throw AcceleratorException("No OpenCL devices available.");
+    }
+  }
+
   cl::Device device(context.getInfo<CL_CONTEXT_DEVICES>().front());
+  std::cout << "Using device " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+
   queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
   program = cl::Program(context, file_utils::read_file(KERNEL_PATH));
 

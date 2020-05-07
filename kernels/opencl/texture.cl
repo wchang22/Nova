@@ -68,15 +68,15 @@ float distribution_ggx(float n_dot_h, float roughness) {
   float denom = n_dot_h * n_dot_h * (a2 - 1.0f) + 1.0f;
   denom = M_PI_F * denom * denom;
 
-  return native_divide(a2, denom);
+  return a2 / denom;
 }
 
 float geometry_smith(float n_dot_v, float n_dot_l, float nvl, float roughness) {
   float r = roughness + 1.0f;
-  float k = native_divide(r * r, 8.0f);
+  float k = r * r / 8.0f;
   float m = 1.0f - k;
 
-  return native_divide(nvl, (n_dot_v * m + k) * (n_dot_l * m + k));
+  return nvl / ((n_dot_v * m + k) * (n_dot_l * m + k));
 }
 
 float3 specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metallic) {
@@ -115,8 +115,8 @@ float3 shade(float3 light_dir,
   // diffuse
   float3 kD = (1.0f - kS) * (1.0f - metallic);
 
-  float3 brdf = kD * diffuse * M_1_PI_F + native_divide(d * kS * g, max(4.0f * nvl, 1e-3f));
-  float3 radiance = native_divide(light_intensity, max(light_distance * light_distance, 1.0f));
+  float3 brdf = kD * diffuse * M_1_PI_F + d * kS * g / max(4.0f * nvl, 1e-3f);
+  float3 radiance = light_intensity / max(light_distance * light_distance, 1.0f);
 
   return brdf * radiance * n_dot_l;
 }
