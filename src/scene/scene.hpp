@@ -24,6 +24,24 @@ public:
     float shading_ambient_occlusion;
     int ray_bounces;
     float exposure;
+
+    bool operator==(const Settings& other) const {
+      // clang-format off
+      return output_dimensions == other.output_dimensions &&
+             output_file_path == other.output_file_path &&
+             model_path == other.model_path &&
+             sky_path == other.sky_path &&
+             camera == other.camera &&
+             light_position == other.light_position &&
+             light_intensity == other.light_intensity &&
+             shading_diffuse == other.shading_diffuse &&
+             shading_metallic == other.shading_metallic &&
+             shading_roughness == other.shading_roughness &&
+             shading_ambient_occlusion == other.shading_ambient_occlusion &&
+             ray_bounces == other.ray_bounces &&
+             exposure == other.exposure;
+      // clang-format on
+    }
   };
 
   void init_texture();
@@ -71,6 +89,7 @@ public:
 
 private:
   Settings settings;
+  Settings prev_settings;
   Raytracer raytracer;
   GLuint scene_texture_id;
 };

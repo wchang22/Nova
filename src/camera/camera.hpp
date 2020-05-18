@@ -24,6 +24,8 @@ public:
     ROTATE_UP,
   };
 
+  bool operator==(const Camera& other) const;
+
   void set_position(const glm::vec3& position);
   void set_target(const glm::vec3& target);
   void set_up(const glm::vec3& up);
@@ -46,8 +48,6 @@ private:
 
   std::pair<uint32_t, uint32_t> dimensions;
   float fovy;
-  float pitch;
-  float yaw;
 };
 
 }
