@@ -34,6 +34,8 @@ float Camera::get_fovy() const { return fovy; }
 
 void Camera::move(Direction direction, float speed) {
   constexpr float rotate_threshold = 0.98f;
+  constexpr float pan_multiplier = 0.025f;
+  constexpr float forward_multiplier = 0.5f;
 
   glm::vec3 w = -glm::normalize(target - position);
   glm::vec3 u = glm::normalize(glm::cross(up, w));
@@ -51,13 +53,21 @@ void Camera::move(Direction direction, float speed) {
     case Direction::FORWARD:
       // Prevent camera position from moving past target position
       if (distance >= 0.1f || speed < 0.0f) {
-        position += -w * glm::sign(speed) * dist_mod(distance);
+        position += -w * glm::sign(speed) * dist_mod(distance) * forward_multiplier;
       }
       break;
     case Direction::RIGHT:
-      position = glm::mat3(glm::rotate(glm::radians(speed), v)) * forward + target;
+      position += pan_multiplier * speed * u;
+      target += pan_multiplier * speed * u;
       break;
     case Direction::UP:
+      position += pan_multiplier * speed * v;
+      target += pan_multiplier * speed * v;
+      break;
+    case Direction::ROTATE_RIGHT:
+      position = glm::mat3(glm::rotate(glm::radians(speed), v)) * forward + target;
+      break;
+    case Direction::ROTATE_UP:
       // Prevent camera from moving past overhead/underneath position
       if (glm::dot(w, glm::normalize(up)) * glm::sign(speed) < rotate_threshold) {
         position = glm::mat3(glm::rotate(-glm::radians(speed), u)) * forward + target;
