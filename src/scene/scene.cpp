@@ -160,6 +160,12 @@ const std::string& Scene::set_output_file_path(const std::string& path) {
 const std::string& Scene::get_output_file_path() const { return settings.output_file_path; }
 
 void Scene::render_to_screen() {
+  // If nothing has changed, no need to rerender
+  if (settings == prev_settings) {
+    return;
+  }
+  prev_settings = settings;
+
   raytracer.set_scene(*this);
   image_utils::image<uchar4> im = raytracer.raytrace();
 

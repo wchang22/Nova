@@ -12,6 +12,16 @@ Camera::Camera(const glm::vec3& position,
                float fovy)
   : position(position), target(target), up(up), dimensions(dimensions), fovy(fovy) {}
 
+bool Camera::operator==(const Camera& other) const {
+  // clang-format off
+  return position == other.position && 
+         target == other.target && 
+         up == other.up &&
+         dimensions == other.dimensions && 
+         fovy == other.fovy;
+  // clang-format on
+}
+
 void Camera::set_position(const glm::vec3& position) { this->position = position; }
 
 void Camera::set_target(const glm::vec3& target) { this->target = target; }
