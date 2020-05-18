@@ -17,10 +17,15 @@ Model::Model(const std::string& path, MaterialLoader& material_loader)
   PROFILE_SCOPE("Load model");
 
   Assimp::Importer importer;
+
+  // Normalize model to [-1, 1]
+  importer.SetPropertyBool(AI_CONFIG_PP_PTV_NORMALIZE, true);
+
+  importer.ReadFile(path.c_str(), aiProcess_Triangulate | aiProcess_ImproveCacheLocality |
+                                    aiProcess_GenNormals | aiProcess_CalcTangentSpace |
+                                    aiProcess_PreTransformVertices);
   const aiScene* scene =
-    importer.ReadFile(path.c_str(), aiProcess_Triangulate | aiProcess_OptimizeGraph |
-                                      aiProcess_OptimizeMeshes | aiProcess_ImproveCacheLocality |
-                                      aiProcess_GenNormals | aiProcess_CalcTangentSpace);
+    importer.ApplyPostProcessing(aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes);
 
   if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
     throw ModelException(std::string("Assimp Error: ") + importer.GetErrorString());

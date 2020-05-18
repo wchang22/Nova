@@ -311,6 +311,7 @@ void Window::display_scene_settings() {
     handle_keyboard();
     // Update camera position due to IO events
     camera_position = scene.get_camera_position();
+    camera_target = scene.get_camera_target();
     render_to_screen();
   }
 }
@@ -375,12 +376,16 @@ void Window::handle_mouse_drag() {
     return;
   }
 
-  constexpr float MOUSE_SENSITIVITY = 0.5f;
-  ImVec2 delta = ImGui::GetMouseDragDelta();
+  constexpr float MOUSE_SENSITIVITY = 0.2f;
+  ImVec2 left_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+  ImVec2 right_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
 
-  scene.move_camera(Camera::Direction::RIGHT, -delta.x * MOUSE_SENSITIVITY);
-  scene.move_camera(Camera::Direction::UP, delta.y * MOUSE_SENSITIVITY);
-  ImGui::ResetMouseDragDelta();
+  scene.move_camera(Camera::Direction::RIGHT, -right_delta.x * MOUSE_SENSITIVITY);
+  scene.move_camera(Camera::Direction::UP, right_delta.y * MOUSE_SENSITIVITY);
+  scene.move_camera(Camera::Direction::ROTATE_RIGHT, -left_delta.x * MOUSE_SENSITIVITY);
+  scene.move_camera(Camera::Direction::ROTATE_UP, left_delta.y * MOUSE_SENSITIVITY);
+  ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
+  ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
 }
 
 void Window::handle_mouse_wheel() {

@@ -20,6 +20,8 @@ public:
     FORWARD,
     RIGHT,
     UP,
+    ROTATE_RIGHT,
+    ROTATE_UP,
   };
 
   void set_position(const glm::vec3& position);
