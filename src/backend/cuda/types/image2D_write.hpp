@@ -14,6 +14,8 @@ namespace nova {
 template <typename T>
 class Image2DWrite : public Image2D<T> {
 public:
+  Image2DWrite() = default;
+
   Image2DWrite(size_t width, size_t height) : Image2D<T>(width, height) {
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<T>();
     CUDA_CHECK_AND_THROW(
@@ -29,9 +31,18 @@ public:
   ~Image2DWrite() { CUDA_CHECK(cudaDestroySurfaceObject(surf))
                       CUDA_CHECK(cudaFreeArray(this->buffer)) }
 
-  cudaSurfaceObject_t& data() {
-    return surf;
-  };
+  Image2DWrite(Image2DWrite&& other)
+    : surf(other.surf),
+  Image2D<T>(std::move(other)) {
+    other.tex = 0;
+  }
+  Image2DWrite& operator=(Image2DWrite&& other) {
+    std::swap(surf, other.surf);
+    Image2D<T>::operator=(std::move(other));
+    return *this;
+  }
+
+  cudaSurfaceObject_t& data() { return surf; };
 
   std::vector<T> read(size_t width, size_t height) const {
     std::vector<T> image_data(width * height);

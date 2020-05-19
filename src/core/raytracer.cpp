@@ -110,15 +110,15 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height / 2 };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                            scene_params_wrapper, temp_pixel_im1.write(), temp_pixel_im2.write(),
-                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
-                            sky_im);
+                            scene_params_wrapper, temp_pixel_im1.write_access(),
+                            temp_pixel_im2.write_access(), pixel_dims_wrapper, triangle_buf,
+                            tri_meta_buf, bvh_buf, material_ims, sky_im);
     PROFILE_SECTION_END();
 
     PROFILE_SECTION_START("Interpolate kernel");
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
-                            temp_pixel_im1.read(), temp_pixel_im2.write(), pixel_dims_wrapper,
-                            rem_pixels_buf, rem_coords_buf);
+                            temp_pixel_im1.read_access(), temp_pixel_im2.write_access(),
+                            pixel_dims_wrapper, rem_pixels_buf, rem_coords_buf);
     PROFILE_SECTION_END();
   }
   {
@@ -127,7 +127,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { counter, 1 };
     uint2 local_dims { 32, 1 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                            scene_params_wrapper, temp_pixel_im2.write(), pixel_dims_wrapper,
+                            scene_params_wrapper, temp_pixel_im2.write_access(), pixel_dims_wrapper,
                             triangle_buf, tri_meta_buf, bvh_buf, material_ims, sky_im,
                             rem_pixels_buf, rem_coords_buf);
     PROFILE_SECTION_END();
@@ -137,7 +137,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_post_process), global_dims, local_dims,
-                            scene_params_wrapper, temp_pixel_im2.read(), pixel_im,
+                            scene_params_wrapper, temp_pixel_im2.read_access(), pixel_im,
                             pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }

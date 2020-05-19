@@ -57,8 +57,8 @@ public:
     cl::Image2D& data() { return image; }
   };
 
-  ReadAccessor read() { return { this->image }; }
-  WriteAccessor write() { return { this->image }; }
+  ReadAccessor read_access() { return { this->image }; }
+  WriteAccessor write_access() { return { this->image }; }
 };
 
 }
