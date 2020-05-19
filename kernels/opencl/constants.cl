@@ -30,4 +30,7 @@ constant float SUBPIXEL_QUALITY = 0.75f;
 constant sampler_t image_sampler =
   CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_FALSE;
 
+constant sampler_t image_sampler_norm =
+  CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR | CLK_NORMALIZED_COORDS_TRUE;
+
 #endif // CONSTANTS_CL

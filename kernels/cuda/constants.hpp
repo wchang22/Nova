@@ -18,6 +18,12 @@ const float COLOR_EPSILON = 0.5f / 255.0f;
 // Min neighbour colour difference required to raytrace instead of interpolate
 const float INTERP_THRESHOLD = CUDART_SQRT_THREE_3_F;
 
+// Anti-aliasing edge thresholds
+const float EDGE_THRESHOLD_MIN = 0.0312f;
+const float EDGE_THRESHOLD_MAX = 0.125f;
+const uint EDGE_SEARCH_ITERATIONS = 12;
+const float SUBPIXEL_QUALITY = 0.75f;
+
 }
 
 #endif // CUDA_KERNEL_CONSTANTS_HPP

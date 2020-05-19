@@ -259,13 +259,14 @@ kernel void kernel_post_process(SceneParams scene_params,
     return;
   }
 
+  float2 inv_pixel_dims = 1.0f / convert_float2(pixel_dims);
+  float2 pixel_uv = (convert_float2(pixel_coords) + 0.5f) * inv_pixel_dims;
+
   float3 color;
   if (scene_params.anti_aliasing) {
-    float2 inv_pixel_dims = 1.0f / convert_float2(pixel_dims);
-    float2 pixel_uv = (convert_float2(pixel_coords) + 0.5f) * inv_pixel_dims;
     color = fxaa(temp_pixels2, inv_pixel_dims, pixel_uv);
   } else {
-    color = read_imagef(temp_pixels2, image_sampler, pixel_coords).xyz;
+    color = read_imagef(temp_pixels2, image_sampler_norm, pixel_uv).xyz;
   }
 
   write_imageui(pixels, pixel_coords, (uint4)(float3_to_uint3(color), 255));

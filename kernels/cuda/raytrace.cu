@@ -1,3 +1,4 @@
+#include "anti_aliasing.hpp"
 #include "backend/cuda/types/error.hpp"
 #include "constants.hpp"
 #include "intersection.hpp"
@@ -177,28 +178,35 @@ __device__ float3 trace_ray(uint2 pixel_coords,
   return gamma_correct(tone_map(color));
 }
 
-__global__ void raytrace(uchar4* pixels,
+__global__ void raytrace(cudaSurfaceObject_t temp_pixels1,
+                         cudaSurfaceObject_t temp_pixels2,
                          uint2 pixel_dims,
                          TriangleData* triangles,
                          TriangleMetaData* tri_meta,
                          FlatBVHNode* bvh,
                          cudaTextureObject_t materials,
                          cudaTextureObject_t sky) {
-  uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
-                         blockDim.y * blockIdx.y + threadIdx.y };
-  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
+  uint2 packed_pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
+                                blockDim.y * blockIdx.y + threadIdx.y };
+  if (packed_pixel_coords.x >= pixel_dims.x && packed_pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
+  uint2 pixel_coords = packed_pixel_coords;
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
 
   float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
-  int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = make_uchar4(float3_to_uchar3(color), 255);
+  surf2Dwrite(make_uchar4(float3_to_uchar3(color), 255), temp_pixels1,
+              packed_pixel_coords.x * sizeof(uchar4), packed_pixel_coords.y);
+  surf2Dwrite(make_float4(color, 1.0f), temp_pixels2, pixel_coords.x * sizeof(float4),
+              pixel_coords.y);
 }
 
-__global__ void
-interpolate(uchar4* pixels, uint2 pixel_dims, uint* rem_pixels_counter, uint2* rem_coords) {
+__global__ void interpolate(cudaTextureObject_t temp_pixels1,
+                            cudaSurfaceObject_t temp_pixels2,
+                            uint2 pixel_dims,
+                            uint* rem_pixels_counter,
+                            int2* rem_coords) {
   uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
                          blockDim.y * blockIdx.y + threadIdx.y };
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
@@ -210,10 +218,12 @@ interpolate(uchar4* pixels, uint2 pixel_dims, uint* rem_pixels_counter, uint2* r
   int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint3 neighbors[4];
   for (uint i = 0; i < 4; i++) {
-    int index = linear_index(
-      clamp(make_int2(pixel_coords) + neighbor_offsets[i], make_int2(0), make_int2(pixel_dims) - 1),
-      pixel_dims.x);
-    neighbors[i] = make_uint3(make_uchar3(pixels[index]));
+    // Lookup from the packed uchar4 texture
+    int2 packed_coords = make_int2(pixel_coords) + neighbor_offsets[i];
+    packed_coords.y = (packed_coords.y - (packed_coords.x & 1)) / 2;
+
+    neighbors[i] =
+      make_uint3(make_uchar3(tex2D<uchar4>(temp_pixels1, packed_coords.x, packed_coords.y)));
   }
 
   // Check color differences in the neighbours
@@ -223,17 +233,17 @@ interpolate(uchar4* pixels, uint2 pixel_dims, uint* rem_pixels_counter, uint2* r
 
   // If difference is large, raytrace to find color
   if (length(color_range) > INTERP_THRESHOLD) {
-    rem_coords[atomicAdd(rem_pixels_counter, 1)] = pixel_coords;
+    rem_coords[atomicAdd(rem_pixels_counter, 1)] = make_int2(pixel_coords);
   }
   // Otherwise, interpolate
   else {
-    int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
     uint3 color = (neighbors[0] + neighbors[1] + neighbors[2] + neighbors[3]) / 4U;
-    pixels[pixel_index] = make_uchar4(make_uint4(color, 255));
+    surf2Dwrite(make_float4(uint3_to_float3(color), 1.0f), temp_pixels2,
+                pixel_coords.x * sizeof(float4), pixel_coords.y);
   }
 }
 
-__global__ void fill_remaining(uchar4* pixels,
+__global__ void fill_remaining(cudaSurfaceObject_t temp_pixels2,
                                uint2 pixel_dims,
                                TriangleData* triangles,
                                TriangleMetaData* tri_meta,
@@ -241,24 +251,47 @@ __global__ void fill_remaining(uchar4* pixels,
                                cudaTextureObject_t materials,
                                cudaTextureObject_t sky,
                                uint* rem_pixels_counter,
-                               uint2* rem_coords) {
+                               int2* rem_coords) {
   uint id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id >= *rem_pixels_counter) {
     return;
   }
-  uint2 pixel_coords = rem_coords[id];
+  uint2 pixel_coords = make_uint2(rem_coords[id]);
 
   float3 color = trace_ray(pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
-  int pixel_index = linear_index(make_int2(pixel_coords), pixel_dims.x);
-  pixels[pixel_index] = make_uchar4(float3_to_uchar3(color), 255);
+  surf2Dwrite(make_float4(color, 1.0f), temp_pixels2, pixel_coords.x * sizeof(float4),
+              pixel_coords.y);
+}
+
+__global__ void
+post_process(cudaTextureObject_t temp_pixels2, cudaSurfaceObject_t pixels, uint2 pixel_dims) {
+  uint2 pixel_coords = { blockDim.x * blockIdx.x + threadIdx.x,
+                         blockDim.y * blockIdx.y + threadIdx.y };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y) {
+    return;
+  }
+
+  float2 inv_pixel_dims = 1.0f / make_float2(pixel_dims);
+  float2 pixel_uv = (make_float2(pixel_coords) + 0.5f) * inv_pixel_dims;
+
+  float3 color;
+  if (params.anti_aliasing) {
+    color = fxaa(temp_pixels2, inv_pixel_dims, pixel_uv);
+  } else {
+    color = make_float3(tex2D<float4>(temp_pixels2, pixel_uv.x, pixel_uv.y));
+  }
+
+  surf2Dwrite(make_uchar4(float3_to_uchar3(color), 255), pixels, pixel_coords.x * sizeof(uchar4),
+              pixel_coords.y);
 }
 
 void kernel_raytrace(uint2 global_dims,
                      uint2 local_dims,
                      const KernelConstants& kernel_constants,
                      const SceneParams& scene_params,
-                     uchar4* pixels,
+                     cudaSurfaceObject_t temp_pixels1,
+                     cudaSurfaceObject_t temp_pixels2,
                      uint2 pixel_dims,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
@@ -271,29 +304,31 @@ void kernel_raytrace(uint2 global_dims,
                                           cudaMemcpyHostToDevice));
   CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
-  raytrace<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh, materials,
-                                       sky);
+  raytrace<<<num_blocks, block_size>>>(temp_pixels1, temp_pixels2, pixel_dims, triangles, tri_meta,
+                                       bvh, materials, sky);
 }
 
 void kernel_interpolate(uint2 global_dims,
                         uint2 local_dims,
                         const KernelConstants& kernel_constants,
-                        uchar4* pixels,
+                        cudaTextureObject_t temp_pixels1,
+                        cudaSurfaceObject_t temp_pixels2,
                         uint2 pixel_dims,
                         uint* rem_pixels_counter,
-                        uint2* rem_coords) {
+                        int2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                           cudaMemcpyHostToDevice));
-  interpolate<<<num_blocks, block_size>>>(pixels, pixel_dims, rem_pixels_counter, rem_coords);
+  interpolate<<<num_blocks, block_size>>>(temp_pixels1, temp_pixels2, pixel_dims,
+                                          rem_pixels_counter, rem_coords);
 }
 
 void kernel_fill_remaining(uint2 global_dims,
                            uint2 local_dims,
                            const KernelConstants& kernel_constants,
                            const SceneParams& scene_params,
-                           uchar4* pixels,
+                           cudaSurfaceObject_t temp_pixels2,
                            uint2 pixel_dims,
                            TriangleData* triangles,
                            TriangleMetaData* tri_meta,
@@ -301,15 +336,31 @@ void kernel_fill_remaining(uint2 global_dims,
                            cudaTextureObject_t materials,
                            cudaTextureObject_t sky,
                            uint* rem_pixels_counter,
-                           uint2* rem_coords) {
+                           int2* rem_coords) {
   dim3 block_size { local_dims.x, local_dims.y, 1 };
   dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
   CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
                                           cudaMemcpyHostToDevice));
   CUDA_CHECK_AND_THROW(
     cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
-  fill_remaining<<<num_blocks, block_size>>>(pixels, pixel_dims, triangles, tri_meta, bvh,
+  fill_remaining<<<num_blocks, block_size>>>(temp_pixels2, pixel_dims, triangles, tri_meta, bvh,
                                              materials, sky, rem_pixels_counter, rem_coords);
+}
+
+void kernel_post_process(uint2 global_dims,
+                         uint2 local_dims,
+                         const KernelConstants& kernel_constants,
+                         const SceneParams& scene_params,
+                         cudaTextureObject_t temp_pixels2,
+                         cudaSurfaceObject_t pixels,
+                         uint2 pixel_dims) {
+  dim3 block_size { local_dims.x, local_dims.y, 1 };
+  dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
+  CUDA_CHECK_AND_THROW(cudaMemcpyToSymbol(constants, &kernel_constants, sizeof(KernelConstants), 0,
+                                          cudaMemcpyHostToDevice));
+  CUDA_CHECK_AND_THROW(
+    cudaMemcpyToSymbol(params, &scene_params, sizeof(SceneParams), 0, cudaMemcpyHostToDevice));
+  post_process<<<num_blocks, block_size>>>(temp_pixels2, pixels, pixel_dims);
 }
 
 }

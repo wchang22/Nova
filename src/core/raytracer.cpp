@@ -46,7 +46,7 @@ void Raytracer::set_scene(const Scene& scene) {
       false, width, std::max(height / 2, 1U));
     temp_pixel_im2 = accelerator.create_image2D_readwrite<float4>(
       ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-      false, width, height);
+      true, width, height);
 
     pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
     rem_coords_buf =

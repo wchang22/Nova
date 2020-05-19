@@ -13,7 +13,8 @@ void kernel_raytrace(uint2 global_dims,
                      uint2 local_dims,
                      const KernelConstants& kernel_constants,
                      const SceneParams& scene_params,
-                     uchar4* pixels,
+                     cudaSurfaceObject_t temp_pixels1,
+                     cudaSurfaceObject_t temp_pixels2,
                      uint2 pixel_dims,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
@@ -24,16 +25,17 @@ void kernel_raytrace(uint2 global_dims,
 void kernel_interpolate(uint2 global_dims,
                         uint2 local_dims,
                         const KernelConstants& kernel_constants,
-                        uchar4* pixels,
+                        cudaTextureObject_t temp_pixels1,
+                        cudaSurfaceObject_t temp_pixels2,
                         uint2 pixel_dims,
                         uint* rem_pixels_counter,
-                        uint2* rem_coords);
+                        int2* rem_coords);
 
 void kernel_fill_remaining(uint2 global_dims,
                            uint2 local_dims,
                            const KernelConstants& kernel_constants,
                            const SceneParams& scene_params,
-                           uchar4* pixels,
+                           cudaSurfaceObject_t temp_pixels2,
                            uint2 pixel_dims,
                            TriangleData* triangles,
                            TriangleMetaData* tri_meta,
@@ -41,7 +43,15 @@ void kernel_fill_remaining(uint2 global_dims,
                            cudaTextureObject_t materials,
                            cudaTextureObject_t sky,
                            uint* rem_pixels_counter,
-                           uint2* rem_coords);
+                           int2* rem_coords);
+
+void kernel_post_process(uint2 global_dims,
+                         uint2 local_dims,
+                         const KernelConstants& kernel_constants,
+                         const SceneParams& scene_params,
+                         cudaTextureObject_t temp_pixels2,
+                         cudaSurfaceObject_t pixels,
+                         uint2 pixel_dims);
 
 }
 
