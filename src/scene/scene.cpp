@@ -23,20 +23,10 @@ Scene::Scene() {
   Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
                 { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
-  settings = { output_dimensions,
-               output_file_path,
-               anti_aliasing,
-               model_paths.front(),
-               sky_path,
-               camera,
-               light_position,
-               light_intensity,
-               default_diffuse,
-               default_metallic,
-               default_roughness,
-               default_ambient_occlusion,
-               ray_bounces,
-               exposure };
+  settings = { output_dimensions, output_file_path, anti_aliasing,     model_paths.front(),
+               sky_path,          camera,           light_position,    light_intensity,
+               default_diffuse,   default_metallic, default_roughness, default_ambient_occlusion,
+               ray_bounces,       exposure };
 }
 
 void Scene::init_texture() {
