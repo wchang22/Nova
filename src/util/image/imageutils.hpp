@@ -48,6 +48,8 @@ image<vec_type> read_image(const char* path) {
   return { image_data, static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
+image<uchar4> read_image(const uint8_t* data, int length);
+
 template <typename vec_type>
 void write_image(const char* path, const image<vec_type>& im) {
   static_assert(std::is_same<vec_type, uchar4>::value, "Only uchar4 images are supported");

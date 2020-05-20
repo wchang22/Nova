@@ -36,7 +36,7 @@ ambient_occlusion = 1.0
 # Dragon
 #---------------------------------------------------------------------------------------------------
 # [model]
-# paths = ["dragon/dragon.obj"]
+# paths = ["dragon/dragon.glb"]
 # sky = "sky/lakeside_4k.hdr"
 
 # [camera]
@@ -59,7 +59,7 @@ ambient_occlusion = 1.0
 # Fireplace
 #---------------------------------------------------------------------------------------------------
 # [model]
-# paths = ["fireplace_room/fireplace_room.obj"]
+# paths = ["fireplace_room/fireplace_room.glb"]
 # sky = "sky/lakeside_4k.hdr"
 
 # [camera]
@@ -74,7 +74,7 @@ ambient_occlusion = 1.0
 
 # [shading_defaults]
 # diffuse = [1.0, 1.0, 1.0]
-# metallic = 0.3
+# metallic = 0.5
 # roughness = 0.1
 # ambient_occlusion = 1.0
 
@@ -82,7 +82,7 @@ ambient_occlusion = 1.0
 # Gun
 #---------------------------------------------------------------------------------------------------
 # [model]
-# paths = ["gun/gun.obj"]
+# paths = ["gun/gun.glb"]
 # sky = "sky/lakeside_4k.hdr"
 
 # [camera]

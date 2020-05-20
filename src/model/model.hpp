@@ -17,7 +17,7 @@ public:
 private:
   void process_node(aiNode* node, const aiScene* scene);
   void process_mesh(aiMesh* mesh, const aiScene* scene);
-  int load_materials(aiMaterial* material, aiTextureType type);
+  int load_materials(const aiScene* scene, aiMaterial* material, aiTextureType type);
 
   MaterialLoader& material_loader;
   std::string directory;

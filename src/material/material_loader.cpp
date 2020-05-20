@@ -12,6 +12,15 @@ MaterialLoader::MaterialLoader() { stbi_set_flip_vertically_on_load(true); }
 
 int MaterialLoader::load_material(const char* path, bool srgb) {
   image_utils::image<uchar4> im = image_utils::read_image<uchar4>(path);
+  return load_material(im, srgb);
+}
+
+int MaterialLoader::load_material(const uint8_t* data, uint32_t length, bool srgb) {
+  image_utils::image<uchar4> im = image_utils::read_image(data, length);
+  return load_material(im, srgb);
+}
+
+int MaterialLoader::load_material(image_utils::image<uchar4>& im, bool srgb) {
   if (srgb) {
     constexpr auto gamma_correct = [](uint8_t x) -> uint8_t {
       return std::pow(x / 255.0f, 2.2f) * 255.0f;

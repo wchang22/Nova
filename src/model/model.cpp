@@ -78,14 +78,15 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   glm::vec3 kE = ai_to_glm(aikE);
   glm::vec3 kT = ai_to_glm(aikT);
 
-  int diffuse_index = load_materials(material, aiTextureType_DIFFUSE);
-  int metallic_index = load_materials(material, aiTextureType_METALNESS);
-  int roughness_index = load_materials(material, aiTextureType_DIFFUSE_ROUGHNESS);
-  int ambient_occlusion_index = load_materials(material, aiTextureType_AMBIENT_OCCLUSION);
-  int normal_index = load_materials(material, aiTextureType_NORMALS);
+  int diffuse_index = load_materials(scene, material, aiTextureType_DIFFUSE);
+  int metallic_index = load_materials(scene, material, aiTextureType_METALNESS);
+  int roughness_index = load_materials(scene, material, aiTextureType_DIFFUSE_ROUGHNESS);
+  int ambient_occlusion_index = load_materials(scene, material, aiTextureType_AMBIENT_OCCLUSION);
+  int normal_index = load_materials(scene, material, aiTextureType_NORMALS);
+
   // Some formats load normal maps into HEIGHT
   if (normal_index == -1) {
-    normal_index = load_materials(material, aiTextureType_HEIGHT);
+    normal_index = load_materials(scene, material, aiTextureType_HEIGHT);
   }
   // If no normal map, no need for tangents
   if (normal_index == -1) {
@@ -186,18 +187,34 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
   }
 }
 
-int Model::load_materials(aiMaterial* material, aiTextureType type) {
+int Model::load_materials(const aiScene* scene, aiMaterial* material, aiTextureType type) {
   uint32_t num_textures = material->GetTextureCount(type);
 
   if (num_textures == 0) {
     return -1;
   }
 
+  bool srgb = type == aiTextureType_DIFFUSE;
+
   // TODO: Support more than one texture
   aiString path;
   material->GetTexture(type, 0, &path);
-  bool srgb = type == aiTextureType_DIFFUSE;
-  return material_loader.load_material((directory + path.C_Str()).c_str(), srgb);
+
+  // File path, load from filesystem
+  if (path.C_Str()[0] != '*') {
+    return material_loader.load_material((directory + path.C_Str()).c_str(), srgb);
+  }
+
+  // Or else, embedded texture
+  int texture_index = std::stoi(path.C_Str() + 1);
+  aiTexture* texture = scene->mTextures[texture_index];
+
+  if (texture->mHeight == 0) {
+    return material_loader.load_material(reinterpret_cast<const uint8_t*>(texture->pcData),
+                                         texture->mWidth, srgb);
+  }
+  return material_loader.load_material(reinterpret_cast<const uint8_t*>(texture->pcData),
+                                       texture->mWidth * texture->mHeight, srgb);
 }
 
 const std::vector<std::pair<Triangle, TriangleMeta>>& Model::get_triangles() const {

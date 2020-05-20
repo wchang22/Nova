@@ -32,7 +32,7 @@ constexpr float FONT_SIZE = 14.0f;
 
 // Raytracer constants
 constexpr char SCENE_PATH[] = SRC_PATH "scene.toml";
-constexpr char MODEL_FILE_TYPES[] = ".obj\0";
+constexpr char MODEL_FILE_TYPES[] = ".glb\0.gltf\0.obj\0";
 constexpr char SKY_FILE_TYPES[] = ".hdr\0";
 constexpr char IMAGE_EXTENSION[] = ".jpg";
 
