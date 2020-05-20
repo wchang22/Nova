@@ -68,18 +68,16 @@ public:
     cudaTextureObject_t& tex;
 
     const cudaTextureObject_t& data() const { return tex; }
-    cudaTextureObject_t& data() { return tex; }
   };
 
   struct WriteAccessor {
     cudaSurfaceObject_t& surf;
 
     const cudaSurfaceObject_t& data() const { return surf; }
-    cudaSurfaceObject_t& data() { return surf; }
   };
 
-  ReadAccessor read_access() { return { tex }; }
-  WriteAccessor write_access() { return { surf }; }
+  const ReadAccessor read_access() { return { tex }; }
+  const WriteAccessor write_access() { return { surf }; }
 
 private:
   cudaTextureObject_t tex;

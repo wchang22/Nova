@@ -21,7 +21,7 @@ public:
   Image2DReadWrite() = default;
 
   template <typename... Args>
-  Image2DReadWrite(Args&&... args) : Image2D<T>(cl::Image2D(std::forward<Args>(args)...)) {}
+  Image2DReadWrite(Args&&... args) : Image2D<T>(std::forward<Args>(args)...) {}
 
   Image2DReadWrite(const Image2DReadWrite& other) : Image2D<T>(other.image) {}
   Image2DReadWrite(Image2DReadWrite& other) : Image2D<T>(other.image) {}
@@ -47,18 +47,16 @@ public:
     cl::Image2D& image;
 
     const cl::Image2D& data() const { return image; }
-    cl::Image2D& data() { return image; }
   };
 
   struct WriteAccessor {
     cl::Image2D& image;
 
     const cl::Image2D& data() const { return image; }
-    cl::Image2D& data() { return image; }
   };
 
-  ReadAccessor read_access() { return { this->image }; }
-  WriteAccessor write_access() { return { this->image }; }
+  const ReadAccessor read_access() { return { this->image }; }
+  const WriteAccessor write_access() { return { this->image }; }
 };
 
 }

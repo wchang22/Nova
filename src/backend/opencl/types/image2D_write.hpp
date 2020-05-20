@@ -21,7 +21,7 @@ public:
   Image2DWrite() = default;
 
   template <typename... Args>
-  Image2DWrite(Args&&... args) : Image2D<T>(cl::Image2D(std::forward<Args>(args)...)) {}
+  Image2DWrite(Args&&... args) : Image2D<T>(std::forward<Args>(args)...) {}
 
   Image2DWrite(const Image2DWrite& other) : Image2D<T>(other.image) {}
   Image2DWrite(Image2DWrite& other) : Image2D<T>(other.image) {}

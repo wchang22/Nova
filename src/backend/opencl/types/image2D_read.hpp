@@ -21,7 +21,7 @@ public:
   Image2DRead() = default;
 
   template <typename... Args>
-  Image2DRead(Args&&... args) : Image2D<T>(cl::Image2D(std::forward<Args>(args)...)) {}
+  Image2DRead(Args&&... args) : Image2D<T>(std::forward<Args>(args)...) {}
 
   Image2DRead(const Image2DRead& other) : Image2D<T>(other.image) {}
   Image2DRead(Image2DRead& other) : Image2D<T>(other.image) {}

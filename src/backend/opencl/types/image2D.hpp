@@ -17,6 +17,10 @@ template <typename T>
 class Image2D {
 public:
   Image2D() = default;
+
+  template <typename... Args>
+  Image2D(Args&&... args) : image(std::forward<Args>(args)...) {}
+
   Image2D(const cl::Image2D& image) : image(image) {}
   Image2D(cl::Image2D&& image) : image(std::move(image)) {}
 
