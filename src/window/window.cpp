@@ -162,6 +162,7 @@ void Window::display_scene_settings() {
   static bool real_time = false;
   static vec2i output_dimensions = scene.get_output_dimensions();
   static std::string output_file_path = scene.get_output_file_path();
+  static bool anti_aliasing = scene.get_anti_aliasing();
   static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
   static bool model_path_error = false;
@@ -228,6 +229,12 @@ void Window::display_scene_settings() {
                           output_file_path);
 
       output_dimensions = scene.set_output_dimensions(output_dimensions);
+    }
+
+    if (ImGui::CollapsingHeader("Post Processing##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox("Anti-Aliasing (FXAA)##Rendering", &anti_aliasing);
+
+      anti_aliasing = scene.set_anti_aliasing(anti_aliasing);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {

@@ -74,6 +74,39 @@ public:
   }
 
   template <typename T>
+  Image2DReadWrite<T> create_image2D_readwrite(ImageChannelOrder channel_order,
+                                               ImageChannelType channel_type,
+                                               AddressMode address_mode,
+                                               FilterMode filter_mode,
+                                               bool normalized_coords,
+                                               size_t width,
+                                               size_t height,
+                                               std::vector<T>& data) const {
+    (void) channel_order;
+    (void) channel_type;
+    if (data.empty() || width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DReadWrite");
+    }
+    return Image2DReadWrite<T>(address_mode, filter_mode, normalized_coords, width, height, data);
+  }
+
+  template <typename T>
+  Image2DReadWrite<T> create_image2D_readwrite(ImageChannelOrder channel_order,
+                                               ImageChannelType channel_type,
+                                               AddressMode address_mode,
+                                               FilterMode filter_mode,
+                                               bool normalized_coords,
+                                               size_t width,
+                                               size_t height) const {
+    (void) channel_order;
+    (void) channel_type;
+    if (width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DReadWrite");
+    }
+    return Image2DReadWrite<T>(address_mode, filter_mode, normalized_coords, width, height);
+  }
+
+  template <typename T>
   Image2DArray<T> create_image2D_array(ImageChannelOrder channel_order,
                                        ImageChannelType channel_type,
                                        AddressMode address_mode,

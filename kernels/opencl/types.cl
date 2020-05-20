@@ -43,6 +43,7 @@ typedef struct {
   float shading_ambient_occlusion;
   int ray_bounces;
   float exposure;
+  char anti_aliasing;
 } SceneParams;
 
 // Woop 4x3 affine transform matrix

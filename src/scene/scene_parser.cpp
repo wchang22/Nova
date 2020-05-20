@@ -12,6 +12,12 @@ OutputSettings SceneParser::get_output_settings() const {
   return { dimensions, file_path };
 }
 
+PostProcessingSettings SceneParser::get_post_processing_settings() const {
+  bool anti_aliasing = toml::find<bool>(parsed_data, "post_processing", "anti_aliasing");
+
+  return { anti_aliasing };
+}
+
 ModelSettings SceneParser::get_model_settings() const {
   std::vector<std::string> model_paths =
     toml::find<std::vector<std::string>>(parsed_data, "model", "paths");

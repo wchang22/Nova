@@ -17,6 +17,10 @@ struct ModelSettings {
   std::string sky_path;
 };
 
+struct PostProcessingSettings {
+  bool anti_aliasing;
+};
+
 struct CameraSettings {
   vec3f position;
   vec3f target;
@@ -47,6 +51,7 @@ public:
 
   OutputSettings get_output_settings() const;
   ModelSettings get_model_settings() const;
+  PostProcessingSettings get_post_processing_settings() const;
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;

@@ -11,41 +11,40 @@
   #endif
 #endif
 
+#include "backend/opencl/types/image2D.hpp"
+
 namespace nova {
 
 template <typename T>
-class Image2DWrite {
+class Image2DWrite : public Image2D<T> {
 public:
   Image2DWrite() = default;
 
   template <typename... Args>
-  Image2DWrite(Args&&... args) : image(std::forward<Args>(args)...) {}
+  Image2DWrite(Args&&... args) : Image2D<T>(std::forward<Args>(args)...) {}
 
-  Image2DWrite(const Image2DWrite& other) : image(other.image) {}
-  Image2DWrite(Image2DWrite& other) : image(other.image) {}
+  Image2DWrite(const Image2DWrite& other) : Image2D<T>(other.image) {}
+  Image2DWrite(Image2DWrite& other) : Image2D<T>(other.image) {}
 
   Image2DWrite& operator=(const Image2DWrite& other) {
-    image = other.image;
+    this->image = other.image;
     return *this;
   }
   Image2DWrite& operator=(Image2DWrite& other) {
-    image = other.image;
+    this->image = other.image;
     return *this;
   }
 
-  Image2DWrite(Image2DWrite&& other) : image(std::move(other.image)) {}
+  Image2DWrite(Image2DWrite&& other) : Image2D<T>(std::move(other.image)) {}
   Image2DWrite& operator=(Image2DWrite&& other) {
-    std::swap(image, other.image);
+    std::swap(this->image, other.image);
     return *this;
   }
 
   ~Image2DWrite() = default;
 
-  const cl::Image2D& data() const { return image; }
-  cl::Image2D& data() { return image; }
-
-private:
-  cl::Image2D image;
+  const cl::Image2D& data() const { return this->image; }
+  cl::Image2D& data() { return this->image; }
 };
 
 }

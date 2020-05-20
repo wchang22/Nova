@@ -21,4 +21,16 @@ constant float COLOR_EPSILON = 0.5f / 255.0f;
 // Min neighbour colour difference required to raytrace instead of interpolate
 constant float INTERP_THRESHOLD = SQRT3_3;
 
+// Anti-aliasing edge thresholds
+constant float EDGE_THRESHOLD_MIN = 0.0312f;
+constant float EDGE_THRESHOLD_MAX = 0.125f;
+constant uint EDGE_SEARCH_ITERATIONS = 12;
+constant float SUBPIXEL_QUALITY = 0.75f;
+
+constant sampler_t image_sampler =
+  CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_FALSE;
+
+constant sampler_t image_sampler_norm =
+  CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR | CLK_NORMALIZED_COORDS_TRUE;
+
 #endif // CONSTANTS_CL
