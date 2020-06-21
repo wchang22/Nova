@@ -17,6 +17,7 @@ RUN add-apt-repository ppa:intel-opencl/intel-opencl
 RUN apt-get update -yy
 RUN apt-get install -yy \
   g++-8 \
+  clang-9 \
   cmake \
   opencl-headers \
   clinfo \
@@ -28,6 +29,8 @@ RUN apt-get install -yy \
 
 RUN ln -sf /usr/bin/g++-8 /usr/bin/g++
 RUN ln -sf /usr/bin/gcc-8 /usr/bin/gcc
+RUN ln -sf /usr/bin/clang-9 /usr/bin/clang
+RUN ln -sf /usr/bin/clang++-9 /usr/bin/clang++
 
 # Install intel cpu opencl runtime
 RUN export RUNTIME_URL="http://registrationcenter-download.intel.com/akdlm/irc_nas/9019/opencl_runtime_16.1.1_x64_ubuntu_6.4.0.25.tgz" \

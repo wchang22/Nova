@@ -24,7 +24,7 @@ add_subdirectory(dependencies)
 set(LIBS_NAME includes)
 file(GLOB_RECURSE LIBS_SOURCES include/*)
 add_library(${LIBS_NAME} STATIC ${LIBS_SOURCES})
-target_link_libraries(${LIBS_NAME} ${CMAKE_DL_LIBS} glfw)
+target_link_libraries(${LIBS_NAME} PRIVATE ${CMAKE_DL_LIBS} glfw)
 target_include_directories(${LIBS_NAME} PRIVATE include ${GLFW_INCLUDE_PATH})
 target_compile_definitions(${LIBS_NAME} PRIVATE
     GLM_FORCE_INTRINSICS
@@ -59,7 +59,7 @@ endif()
 set(SOURCES ${SOURCES} ${BACKEND_SOURCES})
 
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
-    "-Wall -Wextra -Werror -Wpedantic")
+    "-Wall -Wextra -Werror -Wpedantic -Wno-missing-braces")
 
 # CUDA Kernels
 if (NOT OpenCL_FOUND)

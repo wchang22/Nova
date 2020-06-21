@@ -71,7 +71,7 @@ Thumbs.db
 *.dll
 *.exe
 
-build
+build*
 CMakeLists.txt.user
 .vscode
 !assets/*.obj

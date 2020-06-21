@@ -16,7 +16,7 @@
 ## Dependencies For Building
 * C++17
 * CMake 3.12+
-* OpenCL C++ or CUDA
+* OpenCL 2.1 (with clang-9) or CUDA
 * OpenMP
 * OpenGL 3.3+
 * GLFW dependencies (https://www.glfw.org/docs/3.3/compile.html#compile_deps)

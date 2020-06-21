@@ -13,7 +13,9 @@ public:
   Image2D() : buffer(nullptr) {}
   Image2D(size_t width, size_t height) : width(width), height(height) {}
 
-  Image2D(Image2D&& other) : buffer(buffer), width(width), height(height) { buffer = 0; }
+  Image2D(Image2D&& other) : buffer(other.buffer), width(other.width), height(other.height) {
+    buffer = 0;
+  }
   Image2D& operator=(Image2D&& other) {
     std::swap(buffer, other.buffer);
     width = other.width;
