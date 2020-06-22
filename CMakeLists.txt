@@ -61,12 +61,22 @@ set(SOURCES ${SOURCES} ${BACKEND_SOURCES})
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
     "-Wall -Wextra -Werror -Wpedantic -Wno-missing-braces")
 
-# CUDA Kernels
-if (NOT OpenCL_FOUND)
+# Kernels
+if (OpenCL_FOUND)
+    set(OPENCL_LIB_NAME opencl)
+    add_custom_target(
+        ${OPENCL_LIB_NAME} ALL
+        COMMAND ${CMAKE_CXX_COMPILER} -c -target spir64-unknown-unknown -emit-llvm -Xclang 
+        -finclude-default-header -cl-std=clc++
+        -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/include/libclcxx
+        -DKERNEL_BACKEND_OPENCL
+        ${CMAKE_SOURCE_DIR}/kernels/new/transforms.hpp -o ${PROJECT_NAME}.spirv
+    )
+else()
     set(CUDA_LIB_NAME cuda)
     file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
-    target_include_directories(${CUDA_LIB_NAME} PRIVATE src)
+    target_include_directories(${CUDA_LIB_NAME} PRIVATE src ${CMAKE_SOURCE_DIR})
     target_compile_options(${CUDA_LIB_NAME} PRIVATE
         $<$<COMPILE_LANGUAGE:CUDA>:
         --use_fast_math 
@@ -74,6 +84,7 @@ if (NOT OpenCL_FOUND)
         -maxrregcount=64
         >
     )
+    target_compile_definitions(${CUDA_LIB_NAME} PRIVATE KERNEL_BACKEND_CUDA)
     set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 
