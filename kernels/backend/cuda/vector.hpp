@@ -67,41 +67,70 @@ __device__ inline constexpr auto dot(const U& u, const U& v) {
   return t;
 }
 
-#define VECTOR_SCALAR_BINARY_OP(op)                                  \
-  template <typename W, typename T>                                  \
-  __device__ inline constexpr W operator op(const W& u, T t) {       \
-    constexpr size_t u_comp = sizeof(u) / sizeof(u.x);               \
-    static_assert(u_comp >= 2 && u_comp <= 4);                       \
-    W w;                                                             \
-    static_if<u_comp == 2>([&](auto f) {                             \
-      f(w) = { f(u).x op t, f(u).y op t };                           \
-    });                                                              \
-    static_if<u_comp == 3>([&](auto f) {                             \
-      f(w) = { f(u).x op t, f(u).y op t, f(u).z op t };              \
-    });                                                              \
-    static_if<u_comp == 4>([&](auto f) {                             \
-      f(w) = { f(u).x op t, f(u).y op t, f(u).z op t, f(u).w op t }; \
-    });                                                              \
-    return w;                                                        \
+#define VECTOR_SCALAR_BINARY_OP(op)                                      \
+  template <typename A, typename B>                                      \
+  __device__ inline constexpr auto operator op(const A& a, const B& b) { \
+    typename std::conditional<(sizeof(A) > sizeof(B)), A, B>::type c;    \
+    static_if<(sizeof(A) > sizeof(B))>([&](auto f) {                     \
+      constexpr size_t comp = sizeof(f(a)) / sizeof(f(a).x);             \
+      static_assert(comp >= 2 && comp <= 4);                             \
+      static_if<comp == 2>([&](auto g) {                                 \
+        g(c) = { g(a).x op b, g(a).y op b };                             \
+      });                                                                \
+      static_if<comp == 3>([&](auto g) {                                 \
+        g(c) = { g(a).x op b, g(a).y op b, g(a).z op b };                \
+      });                                                                \
+      static_if<comp == 4>([&](auto g) {                                 \
+        g(c) = { g(a).x op b, g(a).y op b, g(a).z op b, g(a).w op b };   \
+      });                                                                \
+    }).else_([&](auto f) {                                               \
+      constexpr size_t comp = sizeof(f(b)) / sizeof(f(b).x);             \
+      static_assert(comp >= 2 && comp <= 4);                             \
+      static_if<comp == 2>([&](auto g) {                                 \
+        g(c) = { g(b).x op a, g(b).y op a };                             \
+      });                                                                \
+      static_if<comp == 3>([&](auto g) {                                 \
+        g(c) = { g(b).x op a, g(b).y op a, g(b).z op a };                \
+      });                                                                \
+      static_if<comp == 4>([&](auto g) {                                 \
+        g(c) = { g(b).x op a, g(b).y op a, g(b).z op a, g(b).w op a };   \
+      });                                                                \
+    });                                                                  \
+    return c;                                                            \
   }
 
-#define VECTOR_SCALAR_FUNC(func)                                                   \
-  template <typename W, typename T>                                                \
-  __device__ inline constexpr W func(const W& u, T t) {                            \
-    constexpr size_t u_comp = sizeof(u) / sizeof(u.x);                             \
-    static_assert(u_comp >= 2 && u_comp <= 4);                                     \
-    W w;                                                                           \
-    static_if<u_comp == 2>([&](auto f) {                                           \
-      f(w) = { std::func(f(u).x, t), std::func(f(u).y, t) };                       \
-    });                                                                            \
-    static_if<u_comp == 3>([&](auto f) {                                           \
-      f(w) = { std::func(f(u).x, t), std::func(f(u).y, t), std::func(f(u).z, t) }; \
-    });                                                                            \
-    static_if<u_comp == 4>([&](auto f) {                                           \
-      f(w) = { std::func(f(u).x, t), std::func(f(u).y, t), std::func(f(u).z, t),   \
-               std::func(f(u).w, t) };                                             \
-    });                                                                            \
-    return w;                                                                      \
+#define VECTOR_SCALAR_FUNC(func)                                                     \
+  template <typename A, typename B>                                                  \
+  __device__ inline constexpr auto func(const A& a, const B& b) {                    \
+    typename std::conditional<(sizeof(A) > sizeof(B)), A, B>::type c;                \
+    static_if<(sizeof(A) > sizeof(B))>([&](auto f) {                                 \
+      constexpr size_t comp = sizeof(f(a)) / sizeof(f(a).x);                         \
+      static_assert(comp >= 2 && comp <= 4);                                         \
+      static_if<comp == 2>([&](auto g) {                                             \
+        g(c) = { std::func(g(a).x, b), std::func(g(a).y, b) };                       \
+      });                                                                            \
+      static_if<comp == 3>([&](auto g) {                                             \
+        g(c) = { std::func(g(a).x, b), std::func(g(a).y, b), std::func(g(a).z, b) }; \
+      });                                                                            \
+      static_if<comp == 4>([&](auto g) {                                             \
+        g(c) = { std::func(g(a).x, b), std::func(g(a).y, b), std::func(g(a).z, b),   \
+                 std::func(g(a).w, b) };                                             \
+      });                                                                            \
+    }).else_([&](auto f) {                                                           \
+      constexpr size_t comp = sizeof(f(b)) / sizeof(f(b).x);                         \
+      static_assert(comp >= 2 && comp <= 4);                                         \
+      static_if<comp == 2>([&](auto g) {                                             \
+        g(c) = { std::func(g(b).x, a), std::func(g(b).y, a) };                       \
+      });                                                                            \
+      static_if<comp == 3>([&](auto g) {                                             \
+        g(c) = { std::func(g(b).x, a), std::func(g(b).y, a), std::func(g(b).z, a) }; \
+      });                                                                            \
+      static_if<comp == 4>([&](auto g) {                                             \
+        g(c) = { std::func(g(b).x, a), std::func(g(b).y, a), std::func(g(b).z, a),   \
+                 std::func(g(b).w, a) };                                             \
+      });                                                                            \
+    });                                                                              \
+    return c;                                                                        \
   }
 
 #define VECTOR_VECTOR_BINARY_OP(op)                                                      \
