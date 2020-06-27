@@ -6,17 +6,17 @@
 namespace nova {
 
 template <typename W, typename T>
-DEVICE inline constexpr W make_vector(T a, T b) {
+DEVICE constexpr W make_vector(T a, T b) {
   return { a, b };
 }
 
 template <typename W, typename T>
-DEVICE inline constexpr W make_vector(T a, T b, T c) {
+DEVICE constexpr W make_vector(T a, T b, T c) {
   return { a, b, c };
 }
 
 template <typename W, typename T>
-DEVICE inline constexpr W make_vector(T a, T b, T c, T d) {
+DEVICE constexpr W make_vector(T a, T b, T c, T d) {
   return { a, b, c, d };
 }
 

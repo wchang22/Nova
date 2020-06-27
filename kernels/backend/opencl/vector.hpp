@@ -6,17 +6,17 @@
 namespace nova {
 
 template <typename V, typename U>
-inline constexpr V xyz(const U& u) {
+constexpr V xyz(const U& u) {
   return u.xyz;
 }
 
 template <typename W, typename U, typename T>
-inline constexpr W make_vector(const U& u, T t) {
+constexpr W make_vector(const U& u, T t) {
   return { u, t };
 }
 
 template <typename W, typename U>
-inline constexpr W make_vector(const U& u) {
+constexpr W make_vector(const U& u) {
   return cl::convert_cast<W, U>(u);
 }
 
