@@ -70,7 +70,7 @@ if (OpenCL_FOUND)
         -finclude-default-header -cl-std=clc++
         -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
         -DKERNEL_BACKEND_OPENCL
-        ${CMAKE_SOURCE_DIR}/kernels/new/types.hpp -o ${PROJECT_NAME}.spirv
+        ${CMAKE_SOURCE_DIR}/kernels/new/intersection.hpp -o ${PROJECT_NAME}.spirv
     )
 else()
     set(CUDA_LIB_NAME cuda)
