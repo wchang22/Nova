@@ -1,5 +1,5 @@
-#ifndef CUDA_KERNEL_TYPES_HPP
-#define CUDA_KERNEL_TYPES_HPP
+#ifndef KERNEL_TYPES_HPP
+#define KERNEL_TYPES_HPP
 
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/math_constants.hpp"
@@ -14,7 +14,7 @@ struct Ray {
   float3 nio;
 };
 
-__device__ inline Ray create_ray(float3 point, float3 direction, float epsilon) {
+DEVICE inline Ray create_ray(float3 point, float3 direction, float epsilon) {
   float3 origin = point + direction * epsilon;
   float3 inv_direction = 1.0f / direction;
   float3 nio = -origin * inv_direction;
@@ -27,10 +27,8 @@ struct Intersection {
   int tri_index;
 };
 
-__device__ inline Intersection no_intersection() {
-  return { make_vector<float3>(0.0f), FLT_MAX, -1 };
-};
+DEVICE inline Intersection no_intersection() { return { make_vector<float3>(0), FLT_MAX, -1 }; };
 
 }
 
-#endif // CUDA_KERNEL_TYPES_HPP
+#endif // KERNEL_TYPES_HPP

@@ -68,9 +68,9 @@ if (OpenCL_FOUND)
         ${OPENCL_LIB_NAME} ALL
         COMMAND ${CMAKE_CXX_COMPILER} -c -target spir64-unknown-unknown -emit-llvm -Xclang 
         -finclude-default-header -cl-std=clc++
-        -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/include/libclcxx
+        -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
         -DKERNEL_BACKEND_OPENCL
-        ${CMAKE_SOURCE_DIR}/kernels/new/transforms.hpp -o ${PROJECT_NAME}.spirv
+        ${CMAKE_SOURCE_DIR}/kernels/new/types.hpp -o ${PROJECT_NAME}.spirv
     )
 else()
     set(CUDA_LIB_NAME cuda)
