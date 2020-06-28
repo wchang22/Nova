@@ -2,79 +2,82 @@
 #define KERNELS_BACKEND_CUDA_VECTOR_HPP
 
 #include <algorithm>
-#include <type_traits>
 
 #include "kernels/backend/cuda/static_if.hpp"
+#include "kernels/backend/cuda/vector_traits.hpp"
 
 namespace nova {
 
-#define NUM_COMP(u) sizeof(u) / sizeof(u.x)
-
-template <class T>
-inline constexpr bool is_arithmetic_v = std::is_arithmetic<T>::value;
-
 template <typename W, typename U>
 __device__ constexpr W xyz(U&& u) {
+  static_assert(is_vector_v<U> && num_comp_v<U> >= 3);
+  static_assert(is_vector_v<W> && num_comp_v<W> == 3);
   return { u.x, u.y, u.z };
 }
 
-template <typename W, typename U, typename T>
+template <typename W,
+          typename U,
+          typename T,
+          std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>
 __device__ constexpr W make_vector(U&& u, T t) {
-  W w;
-  constexpr size_t w_comp = NUM_COMP(w);
-  static_assert(w_comp >= 3 && w_comp <= 4);
+  constexpr size_t u_comp = num_comp_v<U>;
+  constexpr size_t w_comp = num_comp_v<W>;
+  static_assert(u_comp == 2 || u_comp == 3);
+  static_assert(is_vector_v<W> && (w_comp == u_comp + 1));
 
+  W w;
   static_if<w_comp == 3>([&](auto f) {
     f(w) = { f(u).x, f(u).y, t };
   });
   static_if<w_comp == 4>([&](auto f) {
     f(w) = { f(u).x, f(u).y, f(u).z, t };
   });
-
   return w;
 }
 
-template <typename W, typename U>
+template <typename W, typename U, std::enable_if_t<(is_arithmetic_v<U> && is_vector_v<W>), int> = 0>
 __device__ constexpr W make_vector(U&& u) {
-  W w;
+  constexpr size_t comp = num_comp_v<W>;
 
-  constexpr size_t comp = NUM_COMP(w);
-  static_assert(comp >= 2 && comp <= 4);
   using T = decltype(W::x);
-
-  static_if<is_arithmetic_v<U>>([&](auto f) {
-    T t = static_cast<T>(f(u));
-
-    static_if<comp == 2>([&](auto g) {
-      g(w) = { t, t };
-    });
-    static_if<comp == 3>([&](auto g) {
-      g(w) = { t, t, t };
-    });
-    static_if<comp == 4>([&](auto g) {
-      g(w) = { t, t, t, t };
-    });
-  }).else_([&](auto f) {
-    static_if<comp == 2>([&](auto g) {
-      g(w) = { static_cast<T>(g(u).x), static_cast<T>(g(u).y) };
-    });
-    static_if<comp == 3>([&](auto g) {
-      g(w) = { static_cast<T>(g(u).x), static_cast<T>(g(u).y), static_cast<T>(g(u).y) };
-    });
-    static_if<comp == 4>([&](auto g) {
-      g(w) = { static_cast<T>(g(u).x), static_cast<T>(g(u).y), static_cast<T>(g(u).z),
-               static_cast<T>(g(u).w) };
-    });
+  W w;
+  T t = static_cast<T>(u);
+  static_if<comp == 2>([&](auto f) {
+    f(w) = { t, t };
+  });
+  static_if<comp == 3>([&](auto f) {
+    f(w) = { t, t, t };
+  });
+  static_if<comp == 4>([&](auto f) {
+    f(w) = { t, t, t, t };
   });
   return w;
 }
 
-template <typename U>
-__device__ constexpr auto dot(const U& u, const U& v) {
-  constexpr size_t comp = NUM_COMP(u);
-  static_assert(comp >= 2 && comp <= 4);
+template <typename W, typename U, std::enable_if_t<(is_vector_v<U> && is_vector_v<W>), int> = 0>
+__device__ constexpr W make_vector(U&& u) {
+  constexpr size_t comp = num_comp_v<W>;
 
-  decltype(u.x) t = 0;
+  using T = decltype(W::x);
+  W w;
+  static_if<comp == 2>([&](auto f) {
+    f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y) };
+  });
+  static_if<comp == 3>([&](auto f) {
+    f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y), static_cast<T>(f(u).y) };
+  });
+  static_if<comp == 4>([&](auto f) {
+    f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y), static_cast<T>(f(u).z),
+             static_cast<T>(f(u).w) };
+  });
+  return w;
+}
+
+template <typename U, std::enable_if_t<is_vector_v<U>, int> = 0>
+__device__ constexpr decltype(U::x) dot(const U& u, const U& v) {
+  constexpr size_t comp = num_comp_v<U>;
+
+  decltype(U::x) t = 0;
   static_if<comp == 2>([&](auto f) {
     f(t) = f(u).x * f(v).x + f(u).y * f(v).y;
   });
@@ -87,158 +90,123 @@ __device__ constexpr auto dot(const U& u, const U& v) {
   return t;
 }
 
-#define VECTOR_SCALAR_BINARY_OP(op)                                    \
-  template <typename A, typename B>                                    \
-  __device__ constexpr auto operator op(const A& a, const B& b) {      \
-    constexpr bool b_is_num = is_arithmetic_v<B>;                      \
-    std::conditional_t<b_is_num, A, B> c;                              \
-    static_if<b_is_num>([&](auto f) {                                  \
-      constexpr size_t comp = NUM_COMP(f(a));                          \
-      static_assert(comp >= 2 && comp <= 4);                           \
-      static_if<comp == 2>([&](auto g) {                               \
-        g(c) = { g(a).x op b, g(a).y op b };                           \
-      });                                                              \
-      static_if<comp == 3>([&](auto g) {                               \
-        g(c) = { g(a).x op b, g(a).y op b, g(a).z op b };              \
-      });                                                              \
-      static_if<comp == 4>([&](auto g) {                               \
-        g(c) = { g(a).x op b, g(a).y op b, g(a).z op b, g(a).w op b }; \
-      });                                                              \
-    }).else_([&](auto f) {                                             \
-      constexpr size_t comp = NUM_COMP(f(b));                          \
-      static_assert(comp >= 2 && comp <= 4);                           \
-      static_if<comp == 2>([&](auto g) {                               \
-        g(c) = { g(b).x op a, g(b).y op a };                           \
-      });                                                              \
-      static_if<comp == 3>([&](auto g) {                               \
-        g(c) = { g(b).x op a, g(b).y op a, g(b).z op a };              \
-      });                                                              \
-      static_if<comp == 4>([&](auto g) {                               \
-        g(c) = { g(b).x op a, g(b).y op a, g(b).z op a, g(b).w op a }; \
-      });                                                              \
-    });                                                                \
-    return c;                                                          \
-  }
-
-#define VECTOR_SCALAR_FUNC(func, scalar_func)                                              \
-  template <typename A, typename B>                                                        \
-  __device__ constexpr auto func(A&& a, B&& b) {                                           \
-    constexpr bool b_is_num = is_arithmetic_v<std::decay_t<B>>;                            \
-    std::conditional_t<b_is_num, std::decay_t<A>, std::decay_t<B>> c;                      \
-    static_if<b_is_num>([&](auto f) {                                                      \
-      constexpr size_t comp = NUM_COMP(f(a));                                              \
-      static_assert(comp >= 2 && comp <= 4);                                               \
-      static_if<comp == 2>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(a).x, b), scalar_func(g(a).y, b) };                         \
-      });                                                                                  \
-      static_if<comp == 3>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(a).x, b), scalar_func(g(a).y, b), scalar_func(g(a).z, b) }; \
-      });                                                                                  \
-      static_if<comp == 4>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(a).x, b), scalar_func(g(a).y, b), scalar_func(g(a).z, b),   \
-                 scalar_func(g(a).w, b) };                                                 \
-      });                                                                                  \
-    }).else_([&](auto f) {                                                                 \
-      constexpr size_t comp = NUM_COMP(f(b));                                              \
-      static_assert(comp >= 2 && comp <= 4);                                               \
-      static_if<comp == 2>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(b).x, a), scalar_func(g(b).y, a) };                         \
-      });                                                                                  \
-      static_if<comp == 3>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(b).x, a), scalar_func(g(b).y, a), scalar_func(g(b).z, a) }; \
-      });                                                                                  \
-      static_if<comp == 4>([&](auto g) {                                                   \
-        g(c) = { scalar_func(g(b).x, a), scalar_func(g(b).y, a), scalar_func(g(b).z, a),   \
-                 scalar_func(g(b).w, a) };                                                 \
-      });                                                                                  \
-    });                                                                                    \
-    return c;                                                                              \
-  }
-
-#define VECTOR_VECTOR_FUNC(func, scalar_func)                                \
-  template <typename W>                                                      \
-  __device__ constexpr auto func(W u, W v) {                                 \
-    W w;                                                                     \
-    constexpr bool is_num = is_arithmetic_v<W>;                              \
-    static_if<is_num>([&](auto f) {                                          \
-      f(w) = scalar_func(f(u), f(v));                                        \
-    }).else_([&](auto f) {                                                   \
-      constexpr size_t comp = NUM_COMP(f(u));                                \
-      static_assert(comp >= 2 && comp <= 4);                                 \
-      static_if<comp == 2>([&](auto g) {                                     \
-        g(w) = { scalar_func(g(u).x, g(v).x), scalar_func(g(u).y, g(v).y) }; \
-      });                                                                    \
-      static_if<comp == 3>([&](auto g) {                                     \
-        g(w) = { scalar_func(g(u).x, g(v).x), scalar_func(g(u).y, g(v).y),   \
-                 scalar_func(g(u).z, g(v).z) };                              \
-      });                                                                    \
-      static_if<comp == 4>([&](auto g) {                                     \
-        g(w) = { scalar_func(g(u).x, g(v).x), scalar_func(g(u).y, g(v).y),   \
-                 scalar_func(g(u).z, g(v).z), scalar_func(g(u).w, g(v).w) }; \
-      });                                                                    \
-    });                                                                      \
-    return w;                                                                \
-  }
-
-#define VECTOR_VECTOR_BINARY_OP(op)                                                      \
-  template <typename W>                                                                  \
-  __device__ constexpr W operator op(const W& u, const W& v) {                           \
-    constexpr size_t comp = NUM_COMP(u);                                                 \
-    static_assert(comp >= 2 && comp <= 4);                                               \
-    W w;                                                                                 \
+#define VECTOR_SCALAR_FUNC(func, scalar_func)                                            \
+  template <typename U, typename T,                                                      \
+            std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>           \
+  __device__ constexpr U func(const U& u, T t) {                                         \
+    constexpr size_t comp = num_comp_v<U>;                                               \
+    U w;                                                                                 \
     static_if<comp == 2>([&](auto f) {                                                   \
-      f(w) = { f(u).x op f(v).x, f(u).y op f(v).y };                                     \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                         \
     });                                                                                  \
     static_if<comp == 3>([&](auto f) {                                                   \
-      f(w) = { f(u).x op f(v).x, f(u).y op f(v).y, f(u).z op f(v).z };                   \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t) }; \
     });                                                                                  \
     static_if<comp == 4>([&](auto f) {                                                   \
-      f(w) = { f(u).x op f(v).x, f(u).y op f(v).y, f(u).z op f(v).z, f(u).w op f(v).w }; \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t),   \
+               scalar_func(f(u).w, t) };                                                 \
+    });                                                                                  \
+    return w;                                                                            \
+  }                                                                                      \
+  template <typename T, typename U,                                                      \
+            std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>           \
+  __device__ constexpr U func(T t, const U& u) {                                         \
+    constexpr size_t comp = num_comp_v<U>;                                               \
+    U w;                                                                                 \
+    static_if<comp == 2>([&](auto f) {                                                   \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                         \
+    });                                                                                  \
+    static_if<comp == 3>([&](auto f) {                                                   \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t) }; \
+    });                                                                                  \
+    static_if<comp == 4>([&](auto f) {                                                   \
+      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t),   \
+               scalar_func(f(u).w, t) };                                                 \
     });                                                                                  \
     return w;                                                                            \
   }
 
-#define VECTOR_FUNC(func, scalar_func)                                            \
-  template <typename W>                                                           \
-  __device__ constexpr auto func(W&& u) {                                         \
-    std::decay_t<W> w;                                                            \
-    constexpr bool is_num = is_arithmetic_v<std::decay_t<W>>;                     \
-    static_if<is_num>([&](auto f) {                                               \
-      f(w) = scalar_func(f(u));                                                   \
-    }).else_([&](auto f) {                                                        \
-      constexpr size_t comp = NUM_COMP(f(u));                                     \
-      static_assert(comp >= 2 && comp <= 4);                                      \
-      static_if<comp == 2>([&](auto g) {                                          \
-        g(w) = { scalar_func(g(u).x), scalar_func(g(u).y) };                      \
-      });                                                                         \
-      static_if<comp == 3>([&](auto g) {                                          \
-        g(w) = { scalar_func(g(u).x), scalar_func(g(u).y), scalar_func(g(u).z) }; \
-      });                                                                         \
-      static_if<comp == 4>([&](auto g) {                                          \
-        g(w) = { scalar_func(g(u).x), scalar_func(g(u).y), scalar_func(g(u).z),   \
-                 scalar_func(g(u).w) };                                           \
-      });                                                                         \
-    });                                                                           \
-    return w;                                                                     \
+#define VECTOR_VECTOR_FUNC(func, scalar_func)                              \
+  template <typename T, std::enable_if_t<is_arithmetic_v<T>, int> = 0>     \
+  __device__ constexpr T func(T s, T t) {                                  \
+    return scalar_func(s, t);                                              \
+  }                                                                        \
+  template <typename U, std::enable_if_t<is_vector_v<U>, int> = 0>         \
+  __device__ constexpr U func(const U& u, const U& v) {                    \
+    U w;                                                                   \
+    constexpr size_t comp = num_comp_v<U>;                                 \
+    static_if<comp == 2>([&](auto f) {                                     \
+      f(w) = { scalar_func(f(u).x, f(v).x), scalar_func(f(u).y, f(v).y) }; \
+    });                                                                    \
+    static_if<comp == 3>([&](auto f) {                                     \
+      f(w) = { scalar_func(f(u).x, f(v).x), scalar_func(f(u).y, f(v).y),   \
+               scalar_func(f(u).z, f(v).z) };                              \
+    });                                                                    \
+    static_if<comp == 4>([&](auto f) {                                     \
+      f(w) = { scalar_func(f(u).x, f(v).x), scalar_func(f(u).y, f(v).y),   \
+               scalar_func(f(u).z, f(v).z), scalar_func(f(u).w, f(v).w) }; \
+    });                                                                    \
+    return w;                                                              \
   }
 
-VECTOR_SCALAR_BINARY_OP(+)
-VECTOR_SCALAR_BINARY_OP(-)
-VECTOR_SCALAR_BINARY_OP(*)
-VECTOR_SCALAR_BINARY_OP(/)
+#define VECTOR_UNARY_FUNC(func, scalar_func)                                    \
+  template <typename T, std::enable_if_t<is_arithmetic_v<T>, int> = 0>          \
+  __device__ constexpr T func(T t) {                                            \
+    return scalar_func(t);                                                      \
+  }                                                                             \
+  template <typename U, std::enable_if_t<is_vector_v<U>, int> = 0>              \
+  __device__ constexpr U func(const U& u) {                                     \
+    U w;                                                                        \
+    constexpr size_t comp = num_comp_v<U>;                                      \
+    static_if<comp == 2>([&](auto f) {                                          \
+      f(w) = { scalar_func(f(u).x), scalar_func(f(u).y) };                      \
+    });                                                                         \
+    static_if<comp == 3>([&](auto f) {                                          \
+      f(w) = { scalar_func(f(u).x), scalar_func(f(u).y), scalar_func(f(u).z) }; \
+    });                                                                         \
+    static_if<comp == 4>([&](auto f) {                                          \
+      f(w) = { scalar_func(f(u).x), scalar_func(f(u).y), scalar_func(f(u).z),   \
+               scalar_func(f(u).w) };                                           \
+    });                                                                         \
+    return w;                                                                   \
+  }
 
-VECTOR_VECTOR_BINARY_OP(+)
-VECTOR_VECTOR_BINARY_OP(-)
-VECTOR_VECTOR_BINARY_OP(*)
-VECTOR_VECTOR_BINARY_OP(/)
+#define op_add         \
+  [](auto a, auto b) { \
+    return a + b;      \
+  }
+#define op_sub         \
+  [](auto a, auto b) { \
+    return a - b;      \
+  }
+#define op_mul         \
+  [](auto a, auto b) { \
+    return a * b;      \
+  }
+#define op_div         \
+  [](auto a, auto b) { \
+    return a / b;      \
+  }
+#define op_neg \
+  [](auto a) { \
+    return -a; \
+  }
 
+VECTOR_SCALAR_FUNC(operator+, op_add)
+VECTOR_SCALAR_FUNC(operator-, op_sub)
+VECTOR_SCALAR_FUNC(operator*, op_mul)
+VECTOR_SCALAR_FUNC(operator/, op_div)
 VECTOR_SCALAR_FUNC(pow, powf)
 
+VECTOR_VECTOR_FUNC(operator+, op_add)
+VECTOR_VECTOR_FUNC(operator-, op_sub)
+VECTOR_VECTOR_FUNC(operator*, op_mul)
+VECTOR_VECTOR_FUNC(operator/, op_div)
 VECTOR_VECTOR_FUNC(min, fminf)
 VECTOR_VECTOR_FUNC(max, fmaxf)
 
-VECTOR_FUNC(exp, expf)
-VECTOR_FUNC(operator-, [](auto x) { return -x; })
+VECTOR_UNARY_FUNC(operator-, op_neg)
+VECTOR_UNARY_FUNC(exp, expf)
 
 }
 
