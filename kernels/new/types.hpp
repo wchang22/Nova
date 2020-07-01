@@ -27,7 +27,7 @@ struct Intersection {
   int tri_index;
 };
 
-DEVICE inline Intersection no_intersection() { return { make_vector<float3>(0), FLT_MAX, -1 }; };
+DEVICE inline Intersection no_intersection() { return { make_vector<float3>(0.0f), FLT_MAX, -1 }; };
 
 }
 

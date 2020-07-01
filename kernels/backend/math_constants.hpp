@@ -1,9 +1,9 @@
 #ifndef KERNELS_BACKEND_MATH_CONSTANTS_HPP
 #define KERNELS_BACKEND_MATH_CONSTANTS_HPP
 
-#if defined(KERNEL_BACKEND_OPENCL)
+#include "kernels/backend/common/math_constants.hpp"
 
-#elif defined(KERNEL_BACKEND_CUDA)
+#if defined(KERNEL_BACKEND_CUDA)
   #include "kernels/backend/cuda/math_constants.hpp"
 #endif
 

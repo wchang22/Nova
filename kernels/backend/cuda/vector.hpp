@@ -35,21 +35,21 @@ __device__ constexpr W make_vector(U&& u, T t) {
   return w;
 }
 
-template <typename W, typename U, std::enable_if_t<(is_arithmetic_v<U> && is_vector_v<W>), int> = 0>
-__device__ constexpr W make_vector(U&& u) {
+template <typename W, typename T, std::enable_if_t<(is_arithmetic_v<T> && is_vector_v<W>), int> = 0>
+__device__ constexpr W make_vector(T t) {
   constexpr size_t comp = num_comp_v<W>;
 
-  using T = decltype(W::x);
+  using S = decltype(W::x);
   W w {};
-  T t = static_cast<T>(u);
+  S s = static_cast<S>(t);
   static_if<comp == 2>([&](auto f) {
-    f(w) = { t, t };
+    f(w) = { s, s };
   });
   static_if<comp == 3>([&](auto f) {
-    f(w) = { t, t, t };
+    f(w) = { s, s, s };
   });
   static_if<comp == 4>([&](auto f) {
-    f(w) = { t, t, t, t };
+    f(w) = { s, s, s, s };
   });
   return w;
 }
@@ -78,7 +78,7 @@ __device__ constexpr W make_vector(U&& u) {
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(const U& u, T t) {                                             \
     constexpr size_t comp = num_comp_v<U>;                                                   \
-    U w {};                                                                                     \
+    U w {};                                                                                  \
     static_if<comp == 2>([&](auto f) {                                                       \
       f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                             \
     });                                                                                      \
@@ -95,7 +95,7 @@ __device__ constexpr W make_vector(U&& u) {
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(T t, const U& u) {                                             \
     constexpr size_t comp = num_comp_v<U>;                                                   \
-    U w {};                                                                                     \
+    U w {};                                                                                  \
     static_if<comp == 2>([&](auto f) {                                                       \
       f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                             \
     });                                                                                      \
@@ -116,7 +116,7 @@ __device__ constexpr W make_vector(U&& u) {
   }                                                                         \
   template <typename U, std::enable_if_t<is_##vector_type##_v<U>, int> = 0> \
   __device__ constexpr U func(const U& u, const U& v) {                     \
-    U w {};                                                                    \
+    U w {};                                                                 \
     constexpr size_t comp = num_comp_v<U>;                                  \
     static_if<comp == 2>([&](auto f) {                                      \
       f(w) = { scalar_func(f(u).x, f(v).x), scalar_func(f(u).y, f(v).y) };  \
@@ -139,7 +139,7 @@ __device__ constexpr W make_vector(U&& u) {
   }                                                                             \
   template <typename U, std::enable_if_t<is_##vector_type##_v<U>, int> = 0>     \
   __device__ constexpr U func(const U& u) {                                     \
-    U w {};                                                                        \
+    U w {};                                                                     \
     constexpr size_t comp = num_comp_v<U>;                                      \
     static_if<comp == 2>([&](auto f) {                                          \
       f(w) = { scalar_func(f(u).x), scalar_func(f(u).y) };                      \
