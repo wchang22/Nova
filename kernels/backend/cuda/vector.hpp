@@ -173,6 +173,51 @@ __device__ constexpr W make_vector(U&& u) {
              scalar_func(u.w, v.w) };                                                      \
   }
 
+#define VECTOR_ASSIGNMENT(op)                                                                      \
+  template <typename U, typename T,                                                                \
+            std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>                     \
+  __device__ constexpr U& operator op(U& u, T t) {                                                 \
+    constexpr size_t comp = num_comp_v<U>;                                                         \
+    static_if<comp == 2>([&](auto f) {                                                             \
+      f(u).x op t;                                                                                 \
+      f(u).y op t;                                                                                 \
+    });                                                                                            \
+    static_if<comp == 3>([&](auto f) {                                                             \
+      f(u).x op t;                                                                                 \
+      f(u).y op t;                                                                                 \
+      f(u).z op t;                                                                                 \
+    });                                                                                            \
+    static_if<comp == 4>([&](auto f) {                                                             \
+      f(u).x op t;                                                                                 \
+      f(u).y op t;                                                                                 \
+      f(u).z op t;                                                                                 \
+      f(u).w op t;                                                                                 \
+    });                                                                                            \
+    return u;                                                                                      \
+  }                                                                                                \
+  template <typename U, typename V,                                                                \
+            std::enable_if_t<(is_vector_v<U> && is_vector_v<V> && num_comp_v<U> == num_comp_v<V>), \
+                             int> = 0>                                                             \
+  __device__ constexpr U& operator op(U& u, const V& v) {                                          \
+    constexpr size_t comp = num_comp_v<U>;                                                         \
+    static_if<comp == 2>([&](auto f) {                                                             \
+      f(u).x op f(v).x;                                                                            \
+      f(u).y op f(v).y;                                                                            \
+    });                                                                                            \
+    static_if<comp == 3>([&](auto f) {                                                             \
+      f(u).x op f(v).x;                                                                            \
+      f(u).y op f(v).y;                                                                            \
+      f(u).z op f(v).z;                                                                            \
+    });                                                                                            \
+    static_if<comp == 4>([&](auto f) {                                                             \
+      f(u).x op f(v).x;                                                                            \
+      f(u).y op f(v).y;                                                                            \
+      f(u).z op f(v).z;                                                                            \
+      f(u).w op f(v).w;                                                                            \
+    });                                                                                            \
+    return u;                                                                                      \
+  }
+
 #define op_add         \
   [](auto a, auto b) { \
     return a + b;      \
@@ -245,6 +290,11 @@ VECTOR_COMP_FUNC(isgreater, op_greater)
 VECTOR_COMP_FUNC(isgreaterequal, op_greaterequal)
 VECTOR_COMP_FUNC(isequal, op_equal)
 VECTOR_COMP_FUNC(isnotequal, op_notequal)
+
+VECTOR_ASSIGNMENT(+=)
+VECTOR_ASSIGNMENT(-=)
+VECTOR_ASSIGNMENT(*=)
+VECTOR_ASSIGNMENT(/=)
 
 template <typename U, std::enable_if_t<is_float_vector_v<U>, int> = 0>
 __device__ constexpr decltype(U::x) dot(const U& u, const U& v) {
