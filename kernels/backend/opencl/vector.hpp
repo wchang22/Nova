@@ -16,7 +16,7 @@ constexpr W make_vector(U&& u, T t) {
 }
 
 template <typename W, typename U>
-constexpr W make_vector(U&& u) {
+constexpr W make_vector(U u) {
   W w;
   if constexpr (is_arithmetic<U>::value) {
     w = static_cast<W>(u);

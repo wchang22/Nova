@@ -31,9 +31,6 @@ Accelerator::Accelerator() {
     build_args.add_flag("-cl-fast-relaxed-math");
     build_args.add_flag("-cl-mad-enable");
     build_args.add_include_dir(KERNELS_PATH_STR "opencl");
-    build_args.add_define("TRIANGLES_PER_LEAF_BITS", TRIANGLES_PER_LEAF_BITS);
-    build_args.add_define("TRIANGLE_NUM_SHIFT", TRIANGLE_NUM_SHIFT);
-    build_args.add_define("TRIANGLE_OFFSET_MASK", TRIANGLE_OFFSET_MASK);
     program.build(build_args.str().c_str());
   } catch (...) {
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));

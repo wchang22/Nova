@@ -9,16 +9,16 @@
 #include "kernels/new/matrix.hpp"
 #include "kernels/new/transforms.hpp"
 
-// #define cudaTextureObject_t float
+#define cudaTextureObject_t float
 
-// template <typename T>
-// DEVICE T tex2DLayered(cudaTextureObject_t a, float x, float y, int i) {
-//   return nova::make_vector<T>(0.0f);
-// }
-// template <typename T>
-// DEVICE T tex2D(cudaTextureObject_t a, float x, float y) {
-//   return nova::make_vector<T>(0.0f);
-// }
+template <typename T>
+DEVICE T tex2DLayered(cudaTextureObject_t a, float x, float y, int i) {
+  return nova::make_vector<T>(0.0f);
+}
+template <typename T>
+DEVICE T tex2D(cudaTextureObject_t a, float x, float y) {
+  return nova::make_vector<T>(0.0f);
+}
 
 namespace nova {
 

@@ -8,12 +8,12 @@
 
 namespace nova {
 
-// #define cudaTextureObject_t float
+#define cudaTextureObject_t float
 
-// template <typename T>
-// DEVICE T tex2D(cudaTextureObject_t a, float x, float y) {
-//   return make_vector<T>(0.0f);
-// }
+template <typename T>
+DEVICE T tex2D(cudaTextureObject_t a, float x, float y) {
+  return make_vector<T>(0.0f);
+}
 
 // Fast approximate anti-aliasing:
 // http://blog.simonrodriguez.fr/articles/30-07-2016_implementing_fxaa.html

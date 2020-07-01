@@ -1,13 +1,13 @@
 #ifndef KERNEL_CONSTANTS_HPP
 #define KERNEL_CONSTANTS_HPP
 
-#include "kernel_types/kernel_constants.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernels/backend/math_constants.hpp"
+#include "shared_constants.hpp"
 
 namespace nova {
 
-#define STACK_SIZE 96
+constexpr int STACK_SIZE = 96;
 
 constexpr float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 // Min epsilon to produce significant change in 8 bit colour channels
