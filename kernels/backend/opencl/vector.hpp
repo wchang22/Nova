@@ -26,6 +26,10 @@ constexpr W make_vector(U&& u) {
   return w;
 }
 
+inline float3 reflect(const float3& i, const float3& n) {
+  return i - 2.0f * dot(n, i) * n;
+}
+
 }
 
 #endif

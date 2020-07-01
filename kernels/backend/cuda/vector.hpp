@@ -25,7 +25,7 @@ __device__ constexpr W make_vector(U&& u, T t) {
   static_assert(u_comp == 2 || u_comp == 3);
   static_assert(is_vector_v<W> && (w_comp == u_comp + 1));
 
-  W w;
+  W w {};
   static_if<w_comp == 3>([&](auto f) {
     f(w) = { f(u).x, f(u).y, t };
   });
@@ -40,7 +40,7 @@ __device__ constexpr W make_vector(U&& u) {
   constexpr size_t comp = num_comp_v<W>;
 
   using T = decltype(W::x);
-  W w;
+  W w {};
   T t = static_cast<T>(u);
   static_if<comp == 2>([&](auto f) {
     f(w) = { t, t };
@@ -59,7 +59,7 @@ __device__ constexpr W make_vector(U&& u) {
   constexpr size_t comp = num_comp_v<W>;
 
   using T = decltype(W::x);
-  W w;
+  W w {};
   static_if<comp == 2>([&](auto f) {
     f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y) };
   });
@@ -78,7 +78,7 @@ __device__ constexpr W make_vector(U&& u) {
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(const U& u, T t) {                                             \
     constexpr size_t comp = num_comp_v<U>;                                                   \
-    U w;                                                                                     \
+    U w {};                                                                                     \
     static_if<comp == 2>([&](auto f) {                                                       \
       f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                             \
     });                                                                                      \
@@ -95,7 +95,7 @@ __device__ constexpr W make_vector(U&& u) {
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(T t, const U& u) {                                             \
     constexpr size_t comp = num_comp_v<U>;                                                   \
-    U w;                                                                                     \
+    U w {};                                                                                     \
     static_if<comp == 2>([&](auto f) {                                                       \
       f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                             \
     });                                                                                      \
@@ -116,7 +116,7 @@ __device__ constexpr W make_vector(U&& u) {
   }                                                                         \
   template <typename U, std::enable_if_t<is_##vector_type##_v<U>, int> = 0> \
   __device__ constexpr U func(const U& u, const U& v) {                     \
-    U w;                                                                    \
+    U w {};                                                                    \
     constexpr size_t comp = num_comp_v<U>;                                  \
     static_if<comp == 2>([&](auto f) {                                      \
       f(w) = { scalar_func(f(u).x, f(v).x), scalar_func(f(u).y, f(v).y) };  \
@@ -139,7 +139,7 @@ __device__ constexpr W make_vector(U&& u) {
   }                                                                             \
   template <typename U, std::enable_if_t<is_##vector_type##_v<U>, int> = 0>     \
   __device__ constexpr U func(const U& u) {                                     \
-    U w;                                                                        \
+    U w {};                                                                        \
     constexpr size_t comp = num_comp_v<U>;                                      \
     static_if<comp == 2>([&](auto f) {                                          \
       f(w) = { scalar_func(f(u).x), scalar_func(f(u).y) };                      \
@@ -373,6 +373,14 @@ __device__ constexpr decltype(U::x) clamp(const U& u, const U& lo, const U& hi) 
              clamp(f(u).z, f(lo).z, f(hi).z), clamp(f(u).w, f(lo).w, f(hi).w) };
   });
   return w;
+}
+
+__device__ constexpr float3 reflect(const float3& i, const float3& n) {
+  return i - 2.0f * dot(n, i) * n;
+}
+
+__device__ constexpr float3 cross(const float3& a, const float3& b) {
+  return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x };
 }
 
 template <typename T, std::enable_if_t<is_integral_v<T>, int> = 0>
