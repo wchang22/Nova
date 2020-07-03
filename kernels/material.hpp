@@ -7,8 +7,8 @@
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/math_constants.hpp"
 #include "kernels/backend/vector.hpp"
-#include "kernels/new/matrix.hpp"
-#include "kernels/new/transforms.hpp"
+#include "kernels/matrix.hpp"
+#include "kernels/transforms.hpp"
 
 namespace nova {
 

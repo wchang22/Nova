@@ -71,12 +71,12 @@ if (OpenCL_FOUND)
         -finclude-default-header -cl-std=clc++
         -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
         -DKERNEL_BACKEND_OPENCL
-        ${CMAKE_SOURCE_DIR}/kernels/new/entrypoint.cpp -o ${PROJECT_NAME}.bc &&
+        ${CMAKE_SOURCE_DIR}/kernels/opencl/entrypoint.cpp -o ${PROJECT_NAME}.bc &&
         llvm-spirv ${PROJECT_NAME}.bc
     )
 else()
     set(CUDA_LIB_NAME cuda)
-    file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/* kernels/new/*)
+    file(GLOB CUDA_SOURCES kernels/cuda/* kernels/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
     target_include_directories(${CUDA_LIB_NAME} PRIVATE src ${CMAKE_SOURCE_DIR})
     target_compile_options(${CUDA_LIB_NAME} PRIVATE

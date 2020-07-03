@@ -6,11 +6,11 @@
 #include "kernel_types/triangle.hpp"
 #include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
-#include "kernels/new/constants.hpp"
-#include "kernels/new/intersection.hpp"
-#include "kernels/new/material.hpp"
-#include "kernels/new/transforms.hpp"
-#include "kernels/new/types.hpp"
+#include "kernels/constants.hpp"
+#include "kernels/intersection.hpp"
+#include "kernels/material.hpp"
+#include "kernels/transforms.hpp"
+#include "kernels/types.hpp"
 
 namespace nova {
 

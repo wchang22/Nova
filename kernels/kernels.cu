@@ -1,9 +1,7 @@
-#include "kernels/new/kernels.hpp"
+#include "kernels/anti_aliasing.hpp"
 #include "kernels/backend/atomic.hpp"
-#include "kernels/new/anti_aliasing.hpp"
-#include "kernels/new/constants.hpp"
-#include "kernels/new/raytrace.hpp"
-#include "kernels/new/transforms.hpp"
+#include "kernels/raytrace.hpp"
+#include "kernels/transforms.hpp"
 
 namespace nova {
 

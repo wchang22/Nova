@@ -4,8 +4,8 @@
 #include "kernel_types/triangle.hpp"
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/vector.hpp"
-#include "kernels/new/matrix.hpp"
-#include "kernels/new/types.hpp"
+#include "kernels/matrix.hpp"
+#include "kernels/types.hpp"
 
 namespace nova {
 

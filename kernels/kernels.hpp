@@ -6,7 +6,6 @@
 #include "kernel_types/triangle.hpp"
 #include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
-#include "kernels/backend/vector.hpp"
 
 namespace nova {
 

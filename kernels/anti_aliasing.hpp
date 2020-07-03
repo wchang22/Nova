@@ -1,34 +1,36 @@
-#ifndef ANTI_ALIASING_HPP
-#define ANTI_ALIASING_HPP
+#ifndef KERNEL_ANTI_ALIASING_HPP
+#define KERNEL_ANTI_ALIASING_HPP
 
-#include "constants.hpp"
-#include "transforms.hpp"
-#include "vector_math.h"
+#include "kernels/backend/image.hpp"
+#include "kernels/backend/kernel.hpp"
+#include "kernels/backend/vector.hpp"
+#include "kernels/constants.hpp"
+#include "kernels/transforms.hpp"
 
 namespace nova {
 
 // Fast approximate anti-aliasing:
 // http://blog.simonrodriguez.fr/articles/30-07-2016_implementing_fxaa.html
-__device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims, float2 pixel_uv) {
-  float3 center_color = make_float3(tex2D<float4>(pixels, pixel_uv.x, pixel_uv.y));
+DEVICE inline float3 fxaa(image2d_read_t pixels, float2 inv_pixel_dims, float2 pixel_uv) {
+  float3 center_color = xyz<float3>(read_image<float4>(pixels, pixel_uv));
   float center = rgb_to_luma(center_color);
 
   const float2 offsets[] = {
-    make_float2(0, -1) * inv_pixel_dims,  make_float2(-1, 0) * inv_pixel_dims,
-    make_float2(1, 0) * inv_pixel_dims,   make_float2(0, 1) * inv_pixel_dims,
-    make_float2(-1, -1) * inv_pixel_dims, make_float2(1, -1) * inv_pixel_dims,
-    make_float2(-1, 1) * inv_pixel_dims,  make_float2(1, 1) * inv_pixel_dims,
+    make_vector<float2>(0.0f, -1.0f) * inv_pixel_dims,
+    make_vector<float2>(-1.0f, 0.0f) * inv_pixel_dims,
+    make_vector<float2>(1.0f, 0.0f) * inv_pixel_dims,
+    make_vector<float2>(0.0f, 1.0f) * inv_pixel_dims,
+    make_vector<float2>(-1.0f, -1.0f) * inv_pixel_dims,
+    make_vector<float2>(1.0f, -1.0f) * inv_pixel_dims,
+    make_vector<float2>(-1.0f, 1.0f) * inv_pixel_dims,
+    make_vector<float2>(1.0f, 1.0f) * inv_pixel_dims,
   };
 
   // Sample 4 neighbours
-  float down = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[0].x, pixel_uv.y + offsets[0].y)));
-  float left = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[1].x, pixel_uv.y + offsets[1].y)));
-  float right = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[2].x, pixel_uv.y + offsets[2].y)));
-  float up = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[3].x, pixel_uv.y + offsets[3].y)));
+  float down = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[0])));
+  float left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[1])));
+  float right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[2])));
+  float up = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[3])));
 
   float luma_max = max(center, max(up, max(left, max(right, down))));
   float luma_min = min(center, min(up, min(left, min(right, down))));
@@ -40,14 +42,10 @@ __device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims,
   }
 
   // Sample other 4 neighbours
-  float down_left = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[4].x, pixel_uv.y + offsets[4].y)));
-  float down_right = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[5].x, pixel_uv.y + offsets[5].y)));
-  float up_left = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[6].x, pixel_uv.y + offsets[6].y)));
-  float up_right = rgb_to_luma(
-    make_float3(tex2D<float4>(pixels, pixel_uv.x + offsets[7].x, pixel_uv.y + offsets[7].y)));
+  float down_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[4])));
+  float down_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[5])));
+  float up_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[6])));
+  float up_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[7])));
 
   float down_up = down + up;
   float left_right = left + right;
@@ -66,7 +64,7 @@ __device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims,
   bool is_horizontal = edge_h >= edge_v;
 
   // Calculate gradient opposite edge direction
-  float2 luma = is_horizontal ? make_float2(down, up) : make_float2(left, right);
+  float2 luma = is_horizontal ? make_vector<float2>(down, up) : make_vector<float2>(left, right);
   float2 gradient = luma - center;
   float gradient_scaled = 0.25f * max(fabs(gradient.x), fabs(gradient.y));
 
@@ -89,8 +87,8 @@ __device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims,
   }
 
   // Explore luma along edge until we reach the edges
-  float2 offset =
-    is_horizontal ? make_float2(inv_pixel_dims.x, 0.0f) : make_float2(0.0f, inv_pixel_dims.y);
+  float2 offset = is_horizontal ? make_vector<float2>(inv_pixel_dims.x, 0.0f)
+                                : make_vector<float2>(0.0f, inv_pixel_dims.y);
   float2 uv1 = uv - offset;
   float2 uv2 = uv + offset;
   bool reached_end1 = false;
@@ -103,12 +101,12 @@ __device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims,
 
   for (uint i = 0; i < EDGE_SEARCH_ITERATIONS; i++) {
     if (!reached_end1) {
-      luma_end1 = rgb_to_luma(make_float3(tex2D<float4>(pixels, uv1.x, uv1.y))) - luma_local_avg;
+      luma_end1 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv1))) - luma_local_avg;
       reached_end1 = fabs(luma_end1) >= gradient_scaled;
       uv1 -= step_mod[i] * offset;
     }
     if (!reached_end2) {
-      luma_end2 = rgb_to_luma(make_float3(tex2D<float4>(pixels, uv2.x, uv2.y))) - luma_local_avg;
+      luma_end2 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv2))) - luma_local_avg;
       reached_end2 = fabs(luma_end2) >= gradient_scaled;
       uv2 += step_mod[i] * offset;
     }
@@ -147,9 +145,9 @@ __device__ inline float3 fxaa(cudaTextureObject_t pixels, float2 inv_pixel_dims,
     pixel_uv.x += final_offset * step_length;
   }
 
-  return make_float3(tex2D<float4>(pixels, pixel_uv.x, pixel_uv.y));
+  return xyz<float3>(read_image<float4>(pixels, pixel_uv));
 }
 
 }
 
-#endif // ANTI_ALIASING_HPP
+#endif // KERNEL_ANTI_ALIASING_HPP
