@@ -3,5 +3,9 @@
 
 #define DEVICE
 #define HOST
+#define KERNEL kernel
+#define GLOBAL global
+#define LOCAL local
+#define CONSTANT constant
 
 #endif

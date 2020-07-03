@@ -1,28 +1,18 @@
-#ifndef KERNEL_TEXTURE_HPP
-#define KERNEL_TEXTURE_HPP
+#ifndef KERNEL_MATERIAL_HPP
+#define KERNEL_MATERIAL_HPP
 
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
+#include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/math_constants.hpp"
 #include "kernels/backend/vector.hpp"
 #include "kernels/new/matrix.hpp"
 #include "kernels/new/transforms.hpp"
 
-#define cudaTextureObject_t float
-
-template <typename T>
-DEVICE T tex2DLayered(cudaTextureObject_t a, float x, float y, int i) {
-  return nova::make_vector<T>(0.0f);
-}
-template <typename T>
-DEVICE T tex2D(cudaTextureObject_t a, float x, float y) {
-  return nova::make_vector<T>(0.0f);
-}
-
 namespace nova {
 
-DEVICE inline float3 read_material(cudaTextureObject_t materials,
+DEVICE inline float3 read_material(image2d_array_read_t materials,
                                    const TriangleMetaData& meta,
                                    float2 texture_coord,
                                    int index,
@@ -35,16 +25,16 @@ DEVICE inline float3 read_material(cudaTextureObject_t materials,
     return default_material;
   }
 
-  return xyz<float3>(tex2DLayered<float4>(materials, texture_coord.x, texture_coord.y, index));
+  return xyz<float3>(read_image<float4, AddressMode::WRAP>(materials, texture_coord, index));
 }
 
-DEVICE inline float3 read_sky(cudaTextureObject_t sky, float3 direction) {
+DEVICE inline float3 read_sky(image2d_read_t sky, float3 direction) {
   float2 uv = make_vector<float2>(atan2(direction.z, direction.x), asin(direction.y));
   uv = uv * make_vector<float2>(M_1_PI_F * 0.5f, M_1_PI_F) + 0.5f;
-  return xyz<float3>(tex2D<float4>(sky, uv.x, uv.y));
+  return xyz<float3>(read_image<float4, AddressMode::WRAP>(sky, uv));
 }
 
-DEVICE inline float3 compute_normal(cudaTextureObject_t materials,
+DEVICE inline float3 compute_normal(image2d_array_read_t materials,
                                     const TriangleMetaData& meta,
                                     float2 texture_coord,
                                     float3 barycentric) {
@@ -140,4 +130,4 @@ DEVICE inline float3 shade(const SceneParams& params,
 
 }
 
-#endif // KERNEL_TEXTURE_HPP
+#endif // KERNEL_MATERIAL_HPP

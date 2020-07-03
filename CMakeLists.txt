@@ -64,17 +64,19 @@ set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
 # Kernels
 if (OpenCL_FOUND)
     set(OPENCL_LIB_NAME opencl)
+    set(OPENCL_KERNEL_BINARY ${PROJECT_NAME}.spv)
     add_custom_target(
         ${OPENCL_LIB_NAME} ALL
         COMMAND ${CMAKE_CXX_COMPILER} -c -target spir64-unknown-unknown -emit-llvm -Xclang 
         -finclude-default-header -cl-std=clc++
         -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
         -DKERNEL_BACKEND_OPENCL
-        ${CMAKE_SOURCE_DIR}/kernels/new/intersection.hpp -o ${PROJECT_NAME}.spirv
+        ${CMAKE_SOURCE_DIR}/kernels/new/entrypoint.cpp -o ${PROJECT_NAME}.bc &&
+        llvm-spirv ${PROJECT_NAME}.bc
     )
 else()
     set(CUDA_LIB_NAME cuda)
-    file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/*)
+    file(GLOB_RECURSE CUDA_SOURCES kernels/cuda/* kernels/new/*)
     add_library(${CUDA_LIB_NAME} STATIC ${CUDA_SOURCES})
     target_include_directories(${CUDA_LIB_NAME} PRIVATE src ${CMAKE_SOURCE_DIR})
     target_compile_options(${CUDA_LIB_NAME} PRIVATE
@@ -152,8 +154,7 @@ set_backend_defines(${PROJECT_NAME})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     SRC_PATH="${CMAKE_SOURCE_DIR}/"
-    KERNELS_PATH=${CMAKE_SOURCE_DIR}/kernels
-    KERNELS_PATH_STR="${CMAKE_SOURCE_DIR}/kernels/"
+    OPENCL_KERNEL_BINARY="${OPENCL_KERNEL_BINARY}"
     ASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/"
 )
 

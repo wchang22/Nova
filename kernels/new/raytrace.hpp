@@ -4,18 +4,15 @@
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
+#include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
-#include "kernels/backend/vector.hpp"
 #include "kernels/new/constants.hpp"
 #include "kernels/new/intersection.hpp"
-#include "kernels/new/raytrace.hpp"
-#include "kernels/new/texture.hpp"
+#include "kernels/new/material.hpp"
 #include "kernels/new/transforms.hpp"
 #include "kernels/new/types.hpp"
 
 namespace nova {
-
-#define cudaTextureObject_t float
 
 DEVICE bool find_intersection(
   TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool fast) {
@@ -83,12 +80,12 @@ DEVICE bool find_intersection(
 }
 
 DEVICE float3 trace_ray(const SceneParams& params,
-                        uint2 pixel_coords,
+                        int2 pixel_coords,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
-                        cudaTextureObject_t materials,
-                        cudaTextureObject_t sky) {
+                        image2d_array_read_t materials,
+                        image2d_read_t sky) {
   float2 alpha_beta = params.eye_coords.coord_scale *
                       (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + 0.5f);
   float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -

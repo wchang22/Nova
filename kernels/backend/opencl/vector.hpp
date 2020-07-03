@@ -6,19 +6,19 @@
 namespace nova {
 
 template <typename V, typename U>
-constexpr V xyz(U&& u) {
+constexpr V xyz(U u) {
   return u.xyz;
 }
 
 template <typename W, typename U, typename T>
-constexpr W make_vector(U&& u, T t) {
+constexpr W make_vector(U u, T t) {
   return { u, t };
 }
 
 template <typename W, typename U>
 constexpr W make_vector(U u) {
   W w;
-  if constexpr (is_arithmetic<U>::value) {
+  if constexpr (is_arithmetic_v<U>) {
     w = static_cast<W>(u);
   } else {
     w = __builtin_convertvector(u, W);

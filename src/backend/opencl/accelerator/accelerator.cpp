@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "accelerator.hpp"
-#include "backend/opencl/entry.hpp"
 #include "backend/opencl/utils/build_args.hpp"
 #include "constants.hpp"
 #include "util/exception/exception.hpp"
@@ -24,13 +23,17 @@ Accelerator::Accelerator() {
   std::cout << "Using device " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
 
   queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
-  program = cl::Program(context, file_utils::read_file(KERNEL_PATH));
+  std::string binary = file_utils::read_file(OPENCL_KERNEL_BINARY);
+  cl_int err = 0;
+  program = cl::Program(clCreateProgramWithIL(context(), binary.data(), binary.length(), &err));
+  if (err) {
+    throw KernelException(cl::Error(err).what());
+  }
 
   try {
     BuildArgs build_args;
     build_args.add_flag("-cl-fast-relaxed-math");
     build_args.add_flag("-cl-mad-enable");
-    build_args.add_include_dir(KERNELS_PATH_STR "opencl");
     program.build(build_args.str().c_str());
   } catch (...) {
     throw KernelException(program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device));

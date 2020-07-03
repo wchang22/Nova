@@ -15,8 +15,6 @@ namespace nova {
 
 class Accelerator {
 public:
-  Accelerator();
-
   void add_kernel(const std::string& kernel_name) { (void) kernel_name; }
 
   template <typename Kernel, typename... Args>

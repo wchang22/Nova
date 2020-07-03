@@ -4,11 +4,8 @@
 #ifndef SRC_PATH
   #define SRC_PATH ""
 #endif
-#ifndef KERNELS_PATH
-  #define KERNELS_PATH
-#endif
-#ifndef KERNELS_PATH_STR
-  #define KERNELS_PATH_STR ""
+#ifndef OPENCL_KERNEL_BINARY
+  #define OPENCL_KERNEL_BINARY ""
 #endif
 #ifndef ASSETS_PATH
   #define ASSETS_PATH ""
