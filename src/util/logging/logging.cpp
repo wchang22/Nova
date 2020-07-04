@@ -2,9 +2,13 @@
 
 #include "util/exception/exception.hpp"
 
-#include <filesystem>
-
-using namespace std::chrono;
+#if __has_include(<filesystem>)
+  #include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#endif
 
 logger_t Logging::logger = nullptr;
 
@@ -14,7 +18,7 @@ logger_t Logging::get_logger() {
   }
 
 #ifdef LOG
-  std::filesystem::create_directory("logs");
+  fs::create_directory("logs");
   logger = std::make_shared<std::ofstream>("logs/debug.log");
 
   if (!logger->is_open()) {

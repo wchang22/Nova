@@ -1,0 +1,9 @@
+#ifndef KERNELS_BACKEND_COMMON_TEXTURE_HPP
+#define KERNELS_BACKEND_COMMON_TEXTURE_HPP
+
+enum class AddressMode {
+  WRAP,
+  CLAMP,
+};
+
+#endif

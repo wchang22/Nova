@@ -58,7 +58,7 @@ private:
   };
 
   std::unique_ptr<BVHNode> build_bvh();
-  void build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth);
+  void build_bvh_node(std::unique_ptr<BVHNode>& node, int depth);
 
   std::vector<FlatBVHNode> build_flat_bvh(std::unique_ptr<BVHNode>& root);
   size_t build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes, std::unique_ptr<BVHNode>& node);

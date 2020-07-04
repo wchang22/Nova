@@ -15,14 +15,16 @@ namespace nova {
 
 class Accelerator {
 public:
-  Accelerator();
-
   void add_kernel(const std::string& kernel_name) { (void) kernel_name; }
 
   template <typename Kernel, typename... Args>
   void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
     align_dims(global_dims, local_dims);
-    kernel(global_dims, local_dims, kernel_constants, std::forward<Args>(args).data()...);
+
+    dim3 block_size { local_dims.x, local_dims.y, 1 };
+    dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
+    kernel(num_blocks, block_size, std::forward<Args>(args).data()...);
+
     CUDA_CHECK_AND_THROW(cudaPeekAtLastError())
     CUDA_CHECK_AND_THROW(cudaDeviceSynchronize())
   }
@@ -191,9 +193,6 @@ public:
   Wrapper<T> create_wrapper(Args&&... args) const {
     return Wrapper<T>(std::forward<Args>(args)...);
   }
-
-private:
-  KernelConstants kernel_constants;
 };
 
 }

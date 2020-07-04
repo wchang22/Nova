@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <filesystem>
 
 #include "bvh.hpp"
 #include "constants.hpp"
@@ -134,7 +133,7 @@ BVH::split_node(std::unique_ptr<BVHNode>& node,
   return { std::move(left), std::move(right) };
 }
 
-void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
+void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, int depth) {
   if (node->triangles.size() <= MIN_TRIANGLES_PER_LEAF) {
     return;
   }
@@ -190,17 +189,17 @@ void BVH::build_bvh_node(std::unique_ptr<BVHNode>& node, const int depth) {
     return;
   }
 
-  auto [left, right] = split_node(node, std::move(best_params), bound_splits);
+  auto splits = split_node(node, std::move(best_params), bound_splits);
 
 // Recursively build left and right nodes
-#pragma omp task default(none) shared(left)
-  build_bvh_node(left, depth + 1);
-#pragma omp task default(none) shared(right)
-  build_bvh_node(right, depth + 1);
+#pragma omp task default(none) shared(splits, depth)
+  build_bvh_node(splits.first, depth + 1);
+#pragma omp task default(none) shared(splits, depth)
+  build_bvh_node(splits.second, depth + 1);
 #pragma omp taskwait
 
-  node->left = std::move(left);
-  node->right = std::move(right);
+  node->left = std::move(splits.first);
+  node->right = std::move(splits.second);
 }
 
 std::vector<FlatBVHNode> BVH::build_flat_bvh(std::unique_ptr<BVHNode>& root) {

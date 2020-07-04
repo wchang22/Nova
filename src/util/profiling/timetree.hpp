@@ -1,6 +1,7 @@
 #ifndef TIMETREE_HPP
 #define TIMETREE_HPP
 
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
