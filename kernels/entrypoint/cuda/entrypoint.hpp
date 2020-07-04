@@ -8,8 +8,8 @@
 
 namespace nova {
 
-void kernel_raytrace(uint2 global_dims,
-                     uint2 local_dims,
+void kernel_raytrace(dim3 num_blocks,
+                     dim3 block_size,
                      const SceneParams& scene_params,
                      cudaSurfaceObject_t temp_pixels1,
                      cudaSurfaceObject_t temp_pixels2,
@@ -20,16 +20,16 @@ void kernel_raytrace(uint2 global_dims,
                      cudaTextureObject_t materials,
                      cudaTextureObject_t sky);
 
-void kernel_interpolate(uint2 global_dims,
-                        uint2 local_dims,
+void kernel_interpolate(dim3 num_blocks,
+                        dim3 block_size,
                         cudaTextureObject_t temp_pixels1,
                         cudaSurfaceObject_t temp_pixels2,
                         uint2 pixel_dims,
                         uint* rem_pixels_counter,
                         int2* rem_coords);
 
-void kernel_fill_remaining(uint2 global_dims,
-                           uint2 local_dims,
+void kernel_fill_remaining(dim3 num_blocks,
+                           dim3 block_size,
                            const SceneParams& scene_params,
                            cudaSurfaceObject_t temp_pixels2,
                            uint2 pixel_dims,
@@ -41,8 +41,8 @@ void kernel_fill_remaining(uint2 global_dims,
                            uint* rem_pixels_counter,
                            int2* rem_coords);
 
-void kernel_post_process(uint2 global_dims,
-                         uint2 local_dims,
+void kernel_post_process(dim3 num_blocks,
+                         dim3 block_size,
                          const SceneParams& scene_params,
                          cudaTextureObject_t temp_pixels2,
                          cudaSurfaceObject_t pixels,

@@ -20,7 +20,11 @@ public:
   template <typename Kernel, typename... Args>
   void call_kernel(const Kernel& kernel, uint2 global_dims, uint2 local_dims, Args&&... args) {
     align_dims(global_dims, local_dims);
-    kernel(global_dims, local_dims, std::forward<Args>(args).data()...);
+
+    dim3 block_size { local_dims.x, local_dims.y, 1 };
+    dim3 num_blocks { global_dims.x / block_size.x, global_dims.y / block_size.y, 1 };
+    kernel(num_blocks, block_size, std::forward<Args>(args).data()...);
+
     CUDA_CHECK_AND_THROW(cudaPeekAtLastError())
     CUDA_CHECK_AND_THROW(cudaDeviceSynchronize())
   }

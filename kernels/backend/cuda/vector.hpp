@@ -1,8 +1,6 @@
 #ifndef KERNELS_BACKEND_CUDA_VECTOR_HPP
 #define KERNELS_BACKEND_CUDA_VECTOR_HPP
 
-#include <algorithm>
-
 #include "kernels/backend/cuda/static_if.hpp"
 #include "kernels/backend/cuda/swizzle.hpp"
 #include "kernels/backend/cuda/vector_traits.hpp"
