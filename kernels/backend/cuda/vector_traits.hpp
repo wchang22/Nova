@@ -5,14 +5,12 @@
 
 namespace nova {
 
-#define NUM_COMP(v) sizeof(v) / sizeof(v.x)
-
 template <typename T>
-inline constexpr bool is_arithmetic_v = std::is_arithmetic<T>::value;
+__device__ inline constexpr bool is_arithmetic_v = std::is_arithmetic<T>::value;
 template <typename T>
-inline constexpr bool is_float_v = std::is_floating_point<T>::value;
+__device__ inline constexpr bool is_float_v = std::is_floating_point<T>::value;
 template <typename T>
-inline constexpr bool is_integral_v = std::is_integral<T>::value;
+__device__ inline constexpr bool is_integral_v = std::is_integral<T>::value;
 
 template <typename T>
 struct num_comp_base : std::integral_constant<size_t, 0> {};

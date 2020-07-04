@@ -10,8 +10,6 @@ namespace nova {
 
 template <typename W, typename U>
 __device__ constexpr W xyz(U&& u) {
-  static_assert(is_vector_v<U> && num_comp_v<U> >= 3);
-  static_assert(is_vector_v<W> && num_comp_v<W> == 3);
   return { u.x, u.y, u.z };
 }
 
@@ -20,10 +18,7 @@ template <typename W,
           typename T,
           std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>
 __device__ constexpr W make_vector(U&& u, T t) {
-  constexpr size_t u_comp = num_comp_v<U>;
   constexpr size_t w_comp = num_comp_v<W>;
-  static_assert(u_comp == 2 || u_comp == 3);
-  static_assert(is_vector_v<W> && (w_comp == u_comp + 1));
 
   W w {};
   static_if<w_comp == 3>([&](auto f) {
@@ -64,7 +59,7 @@ __device__ constexpr W make_vector(U&& u) {
     f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y) };
   });
   static_if<comp == 3>([&](auto f) {
-    f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y), static_cast<T>(f(u).y) };
+    f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y), static_cast<T>(f(u).z) };
   });
   static_if<comp == 4>([&](auto f) {
     f(w) = { static_cast<T>(f(u).x), static_cast<T>(f(u).y), static_cast<T>(f(u).z),
@@ -97,14 +92,14 @@ __device__ constexpr W make_vector(U&& u) {
     constexpr size_t comp = num_comp_v<U>;                                                   \
     U w {};                                                                                  \
     static_if<comp == 2>([&](auto f) {                                                       \
-      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t) };                             \
+      f(w) = { scalar_func(t, f(u).x), scalar_func(t, f(u).y) };                             \
     });                                                                                      \
     static_if<comp == 3>([&](auto f) {                                                       \
-      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t) };     \
+      f(w) = { scalar_func(t, f(u).x), scalar_func(t, f(u).y), scalar_func(t, f(u).z) };     \
     });                                                                                      \
     static_if<comp == 4>([&](auto f) {                                                       \
-      f(w) = { scalar_func(f(u).x, t), scalar_func(f(u).y, t), scalar_func(f(u).z, t),       \
-               scalar_func(f(u).w, t) };                                                     \
+      f(w) = { scalar_func(t, f(u).x), scalar_func(t, f(u).y), scalar_func(t, f(u).z),       \
+               scalar_func(t, f(u).w) };                                                     \
     });                                                                                      \
     return w;                                                                                \
   }
@@ -262,6 +257,14 @@ __device__ constexpr W make_vector(U&& u) {
   [](auto a, auto b) { \
     return a != b;     \
   }
+#define op_min            \
+  [](auto a, auto b) {    \
+    return a < b ? a : b; \
+  }
+#define op_max            \
+  [](auto a, auto b) {    \
+    return a > b ? a : b; \
+  }
 
 VECTOR_SCALAR_FUNC(operator+, op_add, vector, arithmetic)
 VECTOR_SCALAR_FUNC(operator-, op_sub, vector, arithmetic)
@@ -275,14 +278,14 @@ VECTOR_VECTOR_FUNC(operator*, op_mul, vector, arithmetic)
 VECTOR_VECTOR_FUNC(operator/, op_div, vector, arithmetic)
 VECTOR_VECTOR_FUNC(min, fminf, float_vector, float)
 VECTOR_VECTOR_FUNC(max, fmaxf, float_vector, float)
-VECTOR_VECTOR_FUNC(min, min, integral_vector, integral)
-VECTOR_VECTOR_FUNC(max, max, integral_vector, integral)
+VECTOR_VECTOR_FUNC(min, op_min, integral_vector, integral)
+VECTOR_VECTOR_FUNC(max, op_max, integral_vector, integral)
 VECTOR_VECTOR_FUNC(fmod, fmodf, float_vector, float)
 VECTOR_VECTOR_FUNC(floor, floorf, float_vector, float)
 
 VECTOR_UNARY_FUNC(operator-, op_neg, vector, arithmetic)
 VECTOR_UNARY_FUNC(exp, expf, float_vector, float)
-VECTOR_UNARY_FUNC(fabs, fabs, float_vector, float)
+VECTOR_UNARY_FUNC(fabs, fabsf, float_vector, float)
 
 VECTOR_COMP_FUNC(isless, op_less)
 VECTOR_COMP_FUNC(islessequal, op_lessequal)
@@ -335,7 +338,7 @@ __device__ constexpr U normalize(const U& u) {
 
 template <typename T, std::enable_if_t<is_arithmetic_v<T>, int> = 0>
 __device__ constexpr T clamp(T t, T lo, T hi) {
-  return max(hi, min(t, lo));
+  return max(lo, min(t, hi));
 }
 
 template <typename U, typename T, std::enable_if_t<(is_vector_v<U> && is_arithmetic_v<T>), int> = 0>

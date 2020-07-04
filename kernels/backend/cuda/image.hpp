@@ -37,7 +37,7 @@ __device__ constexpr W read_image(image2d_array_read_t image, const float2& coor
 
 template <typename U>
 __device__ constexpr void write_image(image2d_write_t image, const int2& coords, const U& value) {
-  surf2Dwrite(value, image, coords.x * sizeof(value), coords.y);
+  surf2Dwrite(value, image, coords.x * sizeof(U), coords.y);
 }
 
 }
