@@ -11,7 +11,7 @@ namespace nova {
 
 // Fast approximate anti-aliasing:
 // http://blog.simonrodriguez.fr/articles/30-07-2016_implementing_fxaa.html
-DEVICE inline float3 fxaa(image2d_read_t pixels, float2 inv_pixel_dims, float2 pixel_uv) {
+DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const float2& pixel_uv) {
   float3 center_color = xyz<float3>(read_image<float4>(pixels, pixel_uv));
   float center = rgb_to_luma(center_color);
 
@@ -139,13 +139,14 @@ DEVICE inline float3 fxaa(image2d_read_t pixels, float2 inv_pixel_dims, float2 p
   final_offset = max(final_offset, subpixel_offset_final);
 
   // Read final color
+  float2 final_pixel_uv = pixel_uv;
   if (is_horizontal) {
-    pixel_uv.y += final_offset * step_length;
+    final_pixel_uv.y += final_offset * step_length;
   } else {
-    pixel_uv.x += final_offset * step_length;
+    final_pixel_uv.x += final_offset * step_length;
   }
 
-  return xyz<float3>(read_image<float4>(pixels, pixel_uv));
+  return xyz<float3>(read_image<float4>(pixels, final_pixel_uv));
 }
 
 }

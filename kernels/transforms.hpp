@@ -20,8 +20,6 @@ triangle_interpolate(const float3& barycentric_coords, const U& a, const U& b, c
   return a * barycentric_coords.x + b * barycentric_coords.y + c * barycentric_coords.z;
 }
 
-DEVICE inline int linear_index(const int2& p, int width) { return p.y * width + p.x; }
-
 DEVICE inline float3 tone_map(const float3& x, float exposure) { return 1.0f - exp(-x * exposure); }
 
 DEVICE inline float3 gamma_correct(const float3& x) { return pow(x, 1.0f / 2.2f); }

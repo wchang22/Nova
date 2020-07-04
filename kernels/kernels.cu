@@ -41,7 +41,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
   pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
 
   // Sample 4 neighbours
-  int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
+  constexpr int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
   uint3 neighbors[4];
   for (uint i = 0; i < 4; i++) {
     // Lookup from the packed uchar4 texture

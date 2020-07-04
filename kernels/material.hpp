@@ -14,9 +14,9 @@ namespace nova {
 
 DEVICE inline float3 read_material(image2d_array_read_t materials,
                                    const TriangleMetaData& meta,
-                                   float2 texture_coord,
+                                   const float2& texture_coord,
                                    int index,
-                                   float3 default_material) {
+                                   const float3& default_material) {
   if (meta.diffuse_index == -1 && meta.metallic_index == -1 && meta.roughness_index == -1 &&
       meta.ambient_occlusion_index == -1 && meta.normal_index == -1) {
     return default_material;
@@ -36,8 +36,8 @@ DEVICE inline float3 read_sky(image2d_read_t sky, float3 direction) {
 
 DEVICE inline float3 compute_normal(image2d_array_read_t materials,
                                     const TriangleMetaData& meta,
-                                    float2 texture_coord,
-                                    float3 barycentric) {
+                                    const float2& texture_coord,
+                                    const float3& barycentric) {
   // Interpolate triangle normal from vertex data
   float3 normal =
     normalize(triangle_interpolate(barycentric, meta.normal1, meta.normal2, meta.normal3));
@@ -61,7 +61,7 @@ DEVICE inline float3 compute_normal(image2d_array_read_t materials,
   return normal;
 }
 
-DEVICE inline float3 fresnel_schlick(float cos_theta, float3 f0) {
+DEVICE inline float3 fresnel_schlick(float cos_theta, const float3& f0) {
   float a = 1.0f - cos_theta;
   float a2 = a * a;
   float a5 = a2 * a2 * a;
@@ -86,7 +86,8 @@ DEVICE inline float geometry_smith(float n_dot_v, float n_dot_l, float nvl, floa
   return nvl / ((n_dot_v * m + k) * (n_dot_l * m + k));
 }
 
-DEVICE inline float3 specularity(float3 view_dir, float3 half_dir, float3 diffuse, float metallic) {
+DEVICE inline float3
+specularity(const float3& view_dir, const float3& half_dir, const float3& diffuse, float metallic) {
   float h_dot_v = max(dot(half_dir, view_dir), 0.0f);
   float3 f0 = mix(make_vector<float3>(0.04f), diffuse, metallic);
   // fresnel equation
@@ -95,16 +96,16 @@ DEVICE inline float3 specularity(float3 view_dir, float3 half_dir, float3 diffus
   return f;
 }
 
-DEVICE inline float3 shade(const SceneParams& params,
-                           float3 light_dir,
-                           float3 view_dir,
-                           float3 half_dir,
-                           float light_distance,
-                           float3 normal,
-                           float3 diffuse,
-                           float3 kS,
-                           float metallic,
-                           float roughness) {
+DEVICE float3 shade(const SceneParams& params,
+                    const float3& light_dir,
+                    const float3& view_dir,
+                    const float3& half_dir,
+                    float light_distance,
+                    const float3& normal,
+                    const float3& diffuse,
+                    const float3& kS,
+                    float metallic,
+                    float roughness) {
   float n_dot_l = max(dot(normal, light_dir), 0.0f);
   if (n_dot_l == 0.0f) {
     return make_vector<float3>(0.0f);

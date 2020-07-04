@@ -1,14 +1,10 @@
 #ifndef KERNELS_BACKEND_OPENCL_VECTOR_HPP
 #define KERNELS_BACKEND_OPENCL_VECTOR_HPP
 
+#include "kernels/backend/opencl/swizzle.hpp"
 #include "kernels/backend/opencl/type_traits.hpp"
 
 namespace nova {
-
-template <typename V, typename U>
-constexpr V xyz(U u) {
-  return u.xyz;
-}
 
 template <typename W, typename U, typename T>
 constexpr W make_vector(U u, T t) {

@@ -1,7 +1,6 @@
 #ifndef KERNEL_CONSTANTS_HPP
 #define KERNEL_CONSTANTS_HPP
 
-#include "kernel_types/scene_params.hpp"
 #include "kernels/backend/math_constants.hpp"
 #include "shared_constants.hpp"
 

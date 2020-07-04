@@ -12,22 +12,21 @@ struct Ray {
   float3 direction;
   float3 inv_direction;
   float3 nio;
-};
 
-DEVICE inline Ray create_ray(float3 point, float3 direction, float epsilon) {
-  float3 origin = point + direction * epsilon;
-  float3 inv_direction = 1.0f / direction;
-  float3 nio = -origin * inv_direction;
-  return { origin, direction, inv_direction, nio };
-}
+  DEVICE Ray(float3 point, float3 direction, float epsilon)
+    : origin(point + direction * epsilon),
+      direction(direction),
+      inv_direction(1.0f / direction),
+      nio(-origin * inv_direction) {}
+};
 
 struct Intersection {
   float3 barycentric;
   float length;
   int tri_index;
-};
 
-DEVICE inline Intersection no_intersection() { return { make_vector<float3>(0.0f), FLT_MAX, -1 }; };
+  DEVICE Intersection() : barycentric(make_vector<float3>(0.0f)), length(FLT_MAX), tri_index(-1) {}
+};
 
 }
 

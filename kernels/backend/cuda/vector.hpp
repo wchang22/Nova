@@ -4,14 +4,10 @@
 #include <algorithm>
 
 #include "kernels/backend/cuda/static_if.hpp"
+#include "kernels/backend/cuda/swizzle.hpp"
 #include "kernels/backend/cuda/vector_traits.hpp"
 
 namespace nova {
-
-template <typename W, typename U>
-__device__ constexpr W xyz(U&& u) {
-  return { u.x, u.y, u.z };
-}
 
 template <typename W,
           typename U,

@@ -80,7 +80,7 @@ DEVICE bool find_intersection(
 }
 
 DEVICE float3 trace_ray(const SceneParams& params,
-                        int2 pixel_coords,
+                        const int2& pixel_coords,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
@@ -97,9 +97,9 @@ DEVICE float3 trace_ray(const SceneParams& params,
   float3 reflectance = make_vector<float3>(1.0f);
 
   for (int depth = 0; depth < params.ray_bounces; depth++) {
-    Ray ray = create_ray(ray_pos, ray_dir, RAY_EPSILON);
+    Ray ray(ray_pos, ray_dir, RAY_EPSILON);
 
-    Intersection intrs = no_intersection();
+    Intersection intrs;
 
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, intrs, false)) {
@@ -150,8 +150,8 @@ DEVICE float3 trace_ray(const SceneParams& params,
     // Only cast a shadow ray if it will produce a color change
     if (any(isgreaterequal(local_illum, make_vector<float3>(COLOR_EPSILON)))) {
       // Cast a shadow ray to the light
-      Ray shadow_ray = create_ray(intrs_point, light_dir, RAY_EPSILON);
-      Intersection light_intrs = no_intersection();
+      Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs;
       // Ensure objects blocking light are not behind the light
       light_intrs.length = light_distance;
 

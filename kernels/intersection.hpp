@@ -23,9 +23,8 @@ intersects_triangle(const Ray& ray, Intersection& intrs, int tri_index, const Tr
     return false;
   }
 
-  float u = woop_ray.origin.x + t * woop_ray.direction.x;
-  float v = woop_ray.origin.y + t * woop_ray.direction.y;
-  float3 barycentric = { 1.0f - u - v, u, v };
+  float2 uv = xy<float2>(woop_ray.origin) + t * xy<float2>(woop_ray.direction);
+  float3 barycentric = make_vector<float3>(1.0f - uv.x - uv.y, uv.x, uv.y);
 
   if (any(isless(barycentric, make_vector<float3>(0.0f)))) {
     return false;
