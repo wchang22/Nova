@@ -24,8 +24,9 @@ RUN apt-get install -yy \
   intel-opencl-icd \
   nvidia-opencl-dev \
   xorg-dev \
-  alien \
-  zip
+  libarchive-tools \
+  zip \
+  numactl
 
 RUN ln -sf /usr/bin/clang-9 /usr/bin/clang
 RUN ln -sf /usr/bin/clang++-9 /usr/bin/clang++
@@ -33,30 +34,31 @@ RUN ln -sf /usr/bin/clang++-9 /usr/bin/clang++
 WORKDIR /tmp
 
 # Install intel cpu opencl runtime
-RUN export RUNTIME_URL="http://registrationcenter-download.intel.com/akdlm/irc_nas/9019/opencl_runtime_16.1.1_x64_ubuntu_6.4.0.25.tgz" \
-  && export TAR=$(basename ${RUNTIME_URL}) \
-  && export DIR=$(basename ${RUNTIME_URL} .tgz) \
-  && wget -q ${RUNTIME_URL} \
-  && tar -xf ${TAR} \
-  && for i in ${DIR}/rpm/*.rpm; do alien --to-deb $i; done \
-  && rm -rf ${DIR} ${TAR} \
-  && dpkg -i *.deb \
-  && rm *.deb
+ARG cpu_runtime_pkg=l_opencl_p_18.1.0.013
+RUN wget "http://registrationcenter-download.intel.com/akdlm/irc_nas/13793/${cpu_runtime_pkg}.tgz"
+RUN tar xf "${cpu_runtime_pkg}.tgz"
+WORKDIR "${cpu_runtime_pkg}"
+RUN rm rpm/intel-openclrt-pset-*.rpm && for i in rpm/*.rpm; do bsdtar -xf "$i"; done
 
-RUN echo "/opt/intel/opencl-1.2-6.4.0.25/lib64/libintelocl.so" > /etc/OpenCL/vendors/intel_cpu.icd
+RUN echo /opt/intel/opencl-runtime/linux/compiler/lib/intel64_lin/libintelocl.so > /etc/OpenCL/vendors/intel_cpu.icd
+RUN mkdir -p /opt/intel/opencl-runtime
+RUN cp -r opt/intel/opencl_*/* /opt/intel/opencl-runtime
+RUN rm -rf /tmp/"${cpu_runtime_pkg}"*
 
-ENV OCL_INC /opt/intel/opencl/include
-ENV OCL_LIB /opt/intel/opencl-1.2-6.4.0.25/lib64
+ARG OCL_LIB=/opt/intel/opencl-runtime/linux/compiler/lib/intel64_lin/
 ENV LD_LIBRARY_PATH $OCL_LIB:$LD_LIBRARY_PATH
 
 # Install SPIRV-LLVM-Translator for compiling C++ for OpenCL to SPIR-V
-RUN wget https://github.com/KhronosGroup/SPIRV-LLVM-Translator/releases/download/v9.0.0-1/SPIRV-LLVM-Translator-v9.0.0-1-linux-Release.zip
-RUN unzip SPIRV-LLVM-Translator-v9.0.0-1-linux-Release.zip -d spirv-llvm-translator
-RUN install -Dm755 spirv-llvm-translator/lib/libLLVMSPIRVLib.so.9 /usr/lib
-RUN install -Dm755 spirv-llvm-translator/bin/llvm-spirv /usr/bin
+WORKDIR /tmp
+ARG translator_pkg=SPIRV-LLVM-Translator-v9.0.0-1-linux-Release
+RUN wget "https://github.com/KhronosGroup/SPIRV-LLVM-Translator/releases/download/v9.0.0-1/${translator_pkg}.zip"
+RUN unzip "${translator_pkg}.zip" -d "${translator_pkg}"
+RUN install -Dm755 "${translator_pkg}"/lib/libLLVMSPIRVLib.so.9 /usr/lib
+RUN install -Dm755 "${translator_pkg}"/bin/llvm-spirv /usr/bin
+RUN rm -rf "${translator_pkg}"*
 
-ENV CC=/usr/bin/clang
-ENV CXX=/usr/bin/clang++
+ENV CC /usr/bin/clang
+ENV CXX /usr/bin/clang++
 
 WORKDIR /root
 ENTRYPOINT bash

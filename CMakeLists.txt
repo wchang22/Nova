@@ -72,7 +72,7 @@ if (OpenCL_FOUND)
         -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
         -DKERNEL_BACKEND_OPENCL
         ${CMAKE_SOURCE_DIR}/kernels/entrypoint/opencl/entrypoint.cpp -o ${PROJECT_NAME}.bc &&
-        llvm-spirv ${PROJECT_NAME}.bc
+        llvm-spirv --spirv-max-version=1.0 ${PROJECT_NAME}.bc
     )
 else()
     set(CUDA_LIB_NAME cuda)
