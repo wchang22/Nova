@@ -18,6 +18,8 @@ public:
   void set_scene(const Scene& scene);
   image_utils::image<uchar4> raytrace();
 
+  int get_sample_index() const { return sample_index; };
+
 private:
   IntersectableManager intersectable_manager;
   MaterialLoader material_loader;
@@ -30,6 +32,7 @@ private:
   uint32_t width;
   uint32_t height;
   Image2DWrite<uchar4> pixel_im;
+  Image2DRead<uchar4> prev_pixel_im;
   Image2DReadWrite<uchar4> temp_pixel_im1;
   Image2DReadWrite<float4> temp_pixel_im2;
   Wrapper<uint2> pixel_dims_wrapper;
@@ -41,6 +44,9 @@ private:
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<float4> material_ims;
   Image2DRead<float4> sky_im;
+
+  // Local state
+  int sample_index;
 };
 
 }

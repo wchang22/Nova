@@ -55,10 +55,11 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
 }
 
 OtherSettings SceneParser::get_other_settings() const {
+  int num_samples = toml::find<int>(parsed_data, "other", "num_samples");
   int ray_bounces = toml::find<int>(parsed_data, "other", "ray_bounces");
   float exposure = toml::find<float>(parsed_data, "other", "exposure");
 
-  return { ray_bounces, exposure };
+  return { num_samples, ray_bounces, exposure };
 }
 
 }

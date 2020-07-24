@@ -9,6 +9,7 @@
 #include "kernels/constants.hpp"
 #include "kernels/intersection.hpp"
 #include "kernels/material.hpp"
+#include "kernels/random.hpp"
 #include "kernels/transforms.hpp"
 #include "kernels/types.hpp"
 
@@ -79,15 +80,20 @@ DEVICE bool find_intersection(
   return min_intrs.tri_index != -1;
 }
 
-DEVICE float3 trace_ray(const SceneParams& params,
+DEVICE float3 trace_ray(uint& seed1,
+                        uint& seed2,
+                        const SceneParams& params,
                         const int2& pixel_coords,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
                         image2d_array_read_t materials,
                         image2d_read_t sky) {
+  // Jitter ray to get free anti-aliasing
+  float2 rand = make_vector<float2>(rng(seed1, seed2), rng(seed1, seed2));
+
   float2 alpha_beta = params.eye_coords.coord_scale *
-                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + 0.5f);
+                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + rand);
   float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -
                              alpha_beta.y * params.eye_coords.eye_coord_frame.y -
                              params.eye_coords.eye_coord_frame.z);

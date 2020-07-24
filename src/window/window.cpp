@@ -178,6 +178,7 @@ void Window::display_scene_settings() {
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
+  static int num_samples = scene.get_num_samples();
   static int ray_bounces = scene.get_ray_bounces();
   static float exposure = scene.get_exposure();
 
@@ -219,15 +220,18 @@ void Window::display_scene_settings() {
     ImGui::SetWindowSize({ window_width, window_height }, true);
 
     ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::TextWrapped("Sample %d", scene.get_sample_index());
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
       ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
+      ImGui::InputInt("Num Samples##Other", &num_samples);
 
       display_input_text_error(file_path_error, "Save Path##Rendering", output_file_path);
       display_file_dialog(button_indent, button_width, "Browse##Rendering", IMAGE_EXTENSION,
                           output_file_path);
 
+      num_samples = scene.set_num_samples(num_samples);
       output_dimensions = scene.set_output_dimensions(output_dimensions);
     }
 

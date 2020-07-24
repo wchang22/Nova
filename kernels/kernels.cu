@@ -6,6 +6,7 @@
 namespace nova {
 
 KERNEL void kernel_raytrace(SceneParams params,
+                            int sample_num,
                             image2d_write_t temp_pixels1,
                             image2d_write_t temp_pixels2,
                             uint2 pixel_dims,
@@ -21,8 +22,11 @@ KERNEL void kernel_raytrace(SceneParams params,
   }
   int2 pixel_coords = packed_pixel_coords;
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
+  uint seed1 = pixel_coords.x + sample_num;
+  uint seed2 = pixel_coords.y + sample_num;
 
-  float3 color = trace_ray(params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+  float3 color =
+    trace_ray(seed1, seed2, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   write_image(temp_pixels1, packed_pixel_coords,
               make_vector<uchar4>(float3_to_uchar3(color), static_cast<unsigned char>(255)));
@@ -68,6 +72,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
 }
 
 KERNEL void kernel_fill_remaining(SceneParams params,
+                                  int sample_num,
                                   image2d_write_t temp_pixels2,
                                   uint2 pixel_dims,
                                   GLOBAL TriangleData* triangles,
@@ -82,14 +87,19 @@ KERNEL void kernel_fill_remaining(SceneParams params,
     return;
   }
   int2 pixel_coords = rem_coords[id];
+  uint seed1 = pixel_coords.x + sample_num;
+  uint seed2 = pixel_coords.y + sample_num;
 
-  float3 color = trace_ray(params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+  float3 color =
+    trace_ray(seed1, seed2, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
 }
 
 KERNEL void kernel_post_process(SceneParams params,
+                                int sample_num,
                                 image2d_read_t temp_pixels2,
+                                image2d_read_t prev_pixels,
                                 image2d_write_t pixels,
                                 uint2 pixel_dims) {
   int2 pixel_coords = { static_cast<int>(get_global_id(0)), static_cast<int>(get_global_id(1)) };
@@ -105,6 +115,12 @@ KERNEL void kernel_post_process(SceneParams params,
     color = fxaa(temp_pixels2, inv_pixel_dims, pixel_uv);
   } else {
     color = xyz<float3>(read_image<float4>(temp_pixels2, pixel_uv));
+  }
+
+  if (sample_num != 0) {
+    float3 prev_color =
+      uchar3_to_float3(xyz<uchar3>(read_image<uchar4>(prev_pixels, pixel_coords)));
+    color = (prev_color * sample_num + color) / static_cast<float>(sample_num + 1);
   }
 
   write_image(pixels, pixel_coords,

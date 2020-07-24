@@ -41,6 +41,7 @@ struct LightSettings {
 };
 
 struct OtherSettings {
+  int max_num_samples;
   int ray_bounces;
   float exposure;
 };

@@ -16,7 +16,7 @@ Scene::Scene() {
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [light_position, light_intensity] = scene_parser.get_light_settings();
-  const auto [ray_bounces, exposure] = scene_parser.get_other_settings();
+  const auto [num_samples, ray_bounces, exposure] = scene_parser.get_other_settings();
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
@@ -26,7 +26,7 @@ Scene::Scene() {
   settings = { output_dimensions, output_file_path, anti_aliasing,     model_paths.front(),
                sky_path,          camera,           light_position,    light_intensity,
                default_diffuse,   default_metallic, default_roughness, default_ambient_occlusion,
-               ray_bounces,       exposure };
+               num_samples,       ray_bounces,      exposure };
 }
 
 void Scene::init_texture() {
@@ -132,6 +132,12 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
+int Scene::set_num_samples(int num_samples) {
+  return settings.num_samples = std::max(1, num_samples);
+}
+
+int Scene::get_num_samples() const { return settings.num_samples; }
+
 int Scene::set_ray_bounces(int bounces) { return settings.ray_bounces = std::max(1, bounces); }
 
 int Scene::get_ray_bounces() const { return settings.ray_bounces; }
@@ -156,13 +162,15 @@ const std::string& Scene::set_output_file_path(const std::string& path) {
 const std::string& Scene::get_output_file_path() const { return settings.output_file_path; }
 
 void Scene::render_to_screen() {
-  // If nothing has changed, no need to rerender
-  if (settings == prev_settings) {
+  // If nothing has changed, no need to update
+  if (settings != prev_settings) {
+    raytracer.set_scene(*this);
+    prev_settings = settings;
+  }
+  if (raytracer.get_sample_index() >= settings.num_samples) {
     return;
   }
-  prev_settings = settings;
 
-  raytracer.set_scene(*this);
   image_utils::image<uchar4> im = raytracer.raytrace();
 
   // Bind image data to OpenGL texture for rendering
@@ -175,12 +183,14 @@ void Scene::render_to_screen() {
 void Scene::render_to_image() {
   PROFILE_SCOPE("Render to Image");
 
-  raytracer.set_scene(*this);
   image_utils::image<uchar4> im;
 
   PROFILE_SECTION_START("Profile Loop");
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
-    im = raytracer.raytrace();
+    raytracer.set_scene(*this);
+    for (int j = 0; j < settings.num_samples; j++) {
+      im = raytracer.raytrace();
+    }
   }
   PROFILE_SECTION_END();
 

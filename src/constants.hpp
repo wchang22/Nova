@@ -12,7 +12,7 @@
 #endif
 
 #ifndef NDEBUG
-  #define NUM_PROFILE_ITERATIONS 100
+  #define NUM_PROFILE_ITERATIONS 10
 #else
   #define NUM_PROFILE_ITERATIONS 1
 #endif

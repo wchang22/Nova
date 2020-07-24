@@ -23,6 +23,7 @@ public:
     float shading_metallic;
     float shading_roughness;
     float shading_ambient_occlusion;
+    int num_samples;
     int ray_bounces;
     float exposure;
 
@@ -40,10 +41,12 @@ public:
              shading_metallic == other.shading_metallic &&
              shading_roughness == other.shading_roughness &&
              shading_ambient_occlusion == other.shading_ambient_occlusion &&
+             num_samples == other.num_samples &&
              ray_bounces == other.ray_bounces &&
              exposure == other.exposure;
       // clang-format on
     }
+    bool operator!=(const Settings& other) const { return !(*this == other); }
   };
 
   void init_texture();
@@ -77,6 +80,8 @@ public:
   float get_shading_roughness() const;
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
+  int set_num_samples(int num_samples);
+  int get_num_samples() const;
   int set_ray_bounces(int bounces);
   int get_ray_bounces() const;
   float set_exposure(float exposure);
@@ -90,6 +95,8 @@ public:
   void render_to_screen();
   void render_to_image();
   GLuint get_scene_texture_id() const;
+
+  int get_sample_index() const { return raytracer.get_sample_index(); };
 
 private:
   Settings settings;
