@@ -3,6 +3,7 @@
 
 #include <toml.hpp>
 
+#include "kernel_types/area_light.hpp"
 #include "vector/vector_types.hpp"
 
 namespace nova {
@@ -36,8 +37,10 @@ struct ShadingDefaultSettings {
 };
 
 struct LightSettings {
-  vec3f position;
   vec3f intensity;
+  vec3f position;
+  vec3f normal;
+  float size;
 };
 
 struct OtherSettings {

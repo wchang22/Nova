@@ -9,6 +9,7 @@
 #include "kernels/constants.hpp"
 #include "kernels/intersection.hpp"
 #include "kernels/material.hpp"
+#include "kernels/matrix.hpp"
 #include "kernels/random.hpp"
 #include "kernels/transforms.hpp"
 #include "kernels/types.hpp"
@@ -80,8 +81,7 @@ DEVICE bool find_intersection(
   return min_intrs.tri_index != -1;
 }
 
-DEVICE float3 trace_ray(uint& seed1,
-                        uint& seed2,
+DEVICE float3 trace_ray(uint& rng_state,
                         const SceneParams& params,
                         const int2& pixel_coords,
                         TriangleData* triangles,
@@ -90,10 +90,10 @@ DEVICE float3 trace_ray(uint& seed1,
                         image2d_array_read_t materials,
                         image2d_read_t sky) {
   // Jitter ray to get free anti-aliasing
-  float2 rand = make_vector<float2>(rng(seed1, seed2), rng(seed1, seed2));
+  float2 offset = make_vector<float2>(xorshift_rand(rng_state), xorshift_rand(rng_state));
 
   float2 alpha_beta = params.eye_coords.coord_scale *
-                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + rand);
+                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + offset);
   float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -
                              alpha_beta.y * params.eye_coords.eye_coord_frame.y -
                              params.eye_coords.eye_coord_frame.z);
@@ -143,11 +143,19 @@ DEVICE float3 trace_ray(uint& seed1,
     // Add ambient color even if pixel is in shadow
     float3 intrs_color = diffuse * ambient_occlusion * 0.03f * meta.kA + meta.kE;
 
+    // Sample area light source
+    const AreaLight& light = params.light;
+    offset = light.size * make_vector<float2>(xorshift_rand(rng_state) * 2.0f - 1.0f,
+                                              xorshift_rand(rng_state) * 2.0f - 1.0f);
+    Mat3x3 light_basis = create_basis(normalize(light.normal));
+    float3 light_position =
+      light.position + light_basis * make_vector<float3>(offset.x, 0.0f, offset.y);
+
     // Calculate lighting params
-    float3 light_dir = normalize(params.light_position - intrs_point);
+    float3 light_dir = normalize(light_position - intrs_point);
     float3 view_dir = -ray.direction;
     float3 half_dir = normalize(light_dir + view_dir);
-    float light_distance = distance(params.light_position, intrs_point);
+    float light_distance = distance(light_position, intrs_point);
     float3 kS = specularity(view_dir, half_dir, diffuse, metallic) * meta.kS;
 
     float3 local_illum = shade(params, light_dir, view_dir, half_dir, light_distance, normal,

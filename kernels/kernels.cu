@@ -1,12 +1,13 @@
 #include "kernels/anti_aliasing.hpp"
 #include "kernels/backend/atomic.hpp"
+#include "kernels/random.hpp"
 #include "kernels/raytrace.hpp"
 #include "kernels/transforms.hpp"
 
 namespace nova {
 
 KERNEL void kernel_raytrace(SceneParams params,
-                            int sample_num,
+                            uint time,
                             image2d_write_t temp_pixels1,
                             image2d_write_t temp_pixels2,
                             uint2 pixel_dims,
@@ -22,11 +23,10 @@ KERNEL void kernel_raytrace(SceneParams params,
   }
   int2 pixel_coords = packed_pixel_coords;
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
-  uint seed1 = pixel_coords.x + sample_num;
-  uint seed2 = pixel_coords.y + sample_num;
+  uint rng_state = wang_hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + wang_hash(time));
 
   float3 color =
-    trace_ray(seed1, seed2, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+    trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   write_image(temp_pixels1, packed_pixel_coords,
               make_vector<uchar4>(float3_to_uchar3(color), static_cast<unsigned char>(255)));
@@ -72,7 +72,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
 }
 
 KERNEL void kernel_fill_remaining(SceneParams params,
-                                  int sample_num,
+                                  uint time,
                                   image2d_write_t temp_pixels2,
                                   uint2 pixel_dims,
                                   GLOBAL TriangleData* triangles,
@@ -87,11 +87,10 @@ KERNEL void kernel_fill_remaining(SceneParams params,
     return;
   }
   int2 pixel_coords = rem_coords[id];
-  uint seed1 = pixel_coords.x + sample_num;
-  uint seed2 = pixel_coords.y + sample_num;
+  uint rng_state = wang_hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + wang_hash(time));
 
   float3 color =
-    trace_ray(seed1, seed2, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+    trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
 
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
 }

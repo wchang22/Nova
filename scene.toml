@@ -8,7 +8,7 @@ ray_bounces = 5
 exposure = 1.0
 
 [post_processing]
-anti_aliasing = true
+anti_aliasing = false
 
 #---------------------------------------------------------------------------------------------------
 # Aircraft
@@ -25,6 +25,8 @@ fovy = 45.0
 
 [light]
 position = [-4.0, 2.8, 7.0]
+normal = [0.0, -1.0, 0.0]
+size = 0.2
 intensity = [500.0, 500.0, 500.0]
 
 [shading_defaults]
@@ -48,6 +50,8 @@ ambient_occlusion = 1.0
 
 # [light]
 # position = [-4.0, 5.0, -6.0]
+# normal = [0.0, -1.0, 0.0]
+# size = 0.2
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -71,6 +75,8 @@ ambient_occlusion = 1.0
 
 # [light]
 # position = [0.8, 0.4, -0.6]
+# normal = [0.0, -1.0, 0.0]
+# size = 0.2
 # intensity = [5.0, 5.0, 5.0]
 
 # [shading_defaults]
@@ -94,6 +100,8 @@ ambient_occlusion = 1.0
 
 # [light]
 # position = [3.0, 1.0, 4.5]
+# normal = [0.0, -1.0, 0.0]
+# size = 0.2
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]

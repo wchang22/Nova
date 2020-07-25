@@ -15,7 +15,8 @@ Scene::Scene() {
   const auto [anti_aliasing] = scene_parser.get_post_processing_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
-  const auto [light_position, light_intensity] = scene_parser.get_light_settings();
+  const auto [light_intensity, light_position, light_normal, light_size] =
+    scene_parser.get_light_settings();
   const auto [num_samples, ray_bounces, exposure] = scene_parser.get_other_settings();
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
@@ -23,10 +24,15 @@ Scene::Scene() {
   Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
                 { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
-  settings = { output_dimensions, output_file_path, anti_aliasing,     model_paths.front(),
-               sky_path,          camera,           light_position,    light_intensity,
-               default_diffuse,   default_metallic, default_roughness, default_ambient_occlusion,
-               num_samples,       ray_bounces,      exposure };
+  settings = { output_dimensions, output_file_path,
+               anti_aliasing,     model_paths.front(),
+               sky_path,          camera,
+               light_intensity,   light_position,
+               light_normal,      light_size,
+               default_diffuse,   default_metallic,
+               default_roughness, default_ambient_occlusion,
+               num_samples,       ray_bounces,
+               exposure };
 }
 
 void Scene::init_texture() {
@@ -93,6 +99,14 @@ const vec3f& Scene::set_light_position(const vec3f& position) {
 }
 
 const vec3f& Scene::get_light_position() const { return settings.light_position; }
+
+const vec3f& Scene::set_light_normal(const vec3f& normal) { return settings.light_normal = normal; }
+
+const vec3f& Scene::get_light_normal() const { return settings.light_normal; }
+
+float Scene::set_light_size(float size) { return settings.light_size = std::max(0.0f, size); }
+
+float Scene::get_light_size() const { return settings.light_size; }
 
 const vec3f& Scene::set_light_intensity(const vec3f& intensity) {
   return settings.light_intensity = {

@@ -5,23 +5,21 @@
 
 namespace nova {
 
-// https://raytracey.blogspot.com/2015/10/gpu-path-tracing-tutorial-1-drawing.html
-DEVICE inline float rng(uint& seed1, uint& seed2) {
-  // hash the seeds using bitwise AND and bitshifts
-  seed1 = 36969 * (seed1 & 65535) + (seed1 >> 16);
-  seed2 = 18000 * (seed2 & 65535) + (seed2 >> 16);
+// http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
+DEVICE inline uint wang_hash(uint seed) {
+  seed = (seed ^ 61) ^ (seed >> 16);
+  seed *= 9;
+  seed = seed ^ (seed >> 4);
+  seed *= 0x27d4eb2d;
+  seed = seed ^ (seed >> 15);
+  return seed;
+}
 
-  uint ires = ((seed1) << 16) + (seed2);
-
-  // Convert to float
-  union {
-    float f;
-    uint ui;
-  } res;
-
-  res.ui = (ires & 0x007fffff) | 0x40000000;
-
-  return (res.f - 2.0f) / 2.0f;
+DEVICE inline float xorshift_rand(uint& rng_state) {
+  rng_state ^= rng_state << 13;
+  rng_state ^= rng_state >> 17;
+  rng_state ^= rng_state << 5;
+  return rng_state / static_cast<float>(UINT_MAX);
 }
 
 }

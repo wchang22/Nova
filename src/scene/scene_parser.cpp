@@ -39,10 +39,12 @@ CameraSettings SceneParser::get_camera_settings() const {
 }
 
 LightSettings SceneParser::get_light_settings() const {
-  vec3f position = toml::find<vec3f>(parsed_data, "light", "position");
   vec3f intensity = toml::find<vec3f>(parsed_data, "light", "intensity");
+  vec3f position = toml::find<vec3f>(parsed_data, "light", "position");
+  vec3f normal = toml::find<vec3f>(parsed_data, "light", "normal");
+  float size = toml::find<float>(parsed_data, "light", "size");
 
-  return { position, intensity };
+  return { intensity, position, normal, size };
 }
 
 ShadingDefaultSettings SceneParser::get_shading_default_settings() const {

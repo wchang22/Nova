@@ -124,7 +124,7 @@ DEVICE float3 shade(const SceneParams& params,
   float3 kD = (1.0f - kS) * (1.0f - metallic);
 
   float3 brdf = kD * diffuse * M_1_PI_F + d * kS * g / max(4.0f * nvl, 1e-3f);
-  float3 radiance = params.light_intensity / max(light_distance * light_distance, 1.0f);
+  float3 radiance = params.light.intensity / max(light_distance * light_distance, 1.0f);
 
   return brdf * radiance * n_dot_l;
 }

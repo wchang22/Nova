@@ -3,6 +3,7 @@
 
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/vector.hpp"
+#include "kernels/matrix.hpp"
 
 namespace nova {
 
@@ -26,6 +27,16 @@ DEVICE inline float3 gamma_correct(const float3& x) { return pow(x, 1.0f / 2.2f)
 
 DEVICE inline float rgb_to_luma(const float3& rgb) {
   return dot(rgb, make_vector<float3>(0.299f, 0.587f, 0.114f));
+}
+
+DEVICE inline Mat3x3 create_basis(const float3& normal) {
+  float3 v = normal;
+  float3 vec =
+    fabs(v.y) > 0.1 ? make_vector<float3>(1.0f, 0.0f, 0.0f) : make_vector<float3>(0.0f, 1.0f, 0.0f);
+  float3 u = normalize(cross(v, vec));
+  float3 w = cross(u, v);
+
+  return { u, v, w };
 }
 
 }

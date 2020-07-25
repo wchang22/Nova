@@ -173,6 +173,8 @@ void Window::display_scene_settings() {
   static vec3f camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
   static vec3f light_position = scene.get_light_position();
+  static vec3f light_normal = scene.get_light_normal();
+  static float light_size = scene.get_light_size();
   static vec3f light_intensity = scene.get_light_intensity();
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
@@ -264,9 +266,13 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Light##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::InputFloat3("Position##Light", light_position.data());
+      ImGui::InputFloat3("Normal##Light", light_normal.data());
+      ImGui::InputFloat("Size##Light", &light_size);
       ImGui::InputFloat3("Intensity##Light", light_intensity.data());
 
       light_position = scene.set_light_position(light_position);
+      light_normal = scene.set_light_normal(light_normal);
+      light_size = scene.set_light_size(light_size);
       light_intensity = scene.set_light_intensity(light_intensity);
     }
 

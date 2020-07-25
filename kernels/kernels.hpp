@@ -10,7 +10,7 @@
 namespace nova {
 
 KERNEL void kernel_raytrace(SceneParams params,
-                            int sample_num,
+                            uint time,
                             image2d_write_t temp_pixels1,
                             image2d_write_t temp_pixels2,
                             uint2 pixel_dims,
@@ -27,7 +27,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
                                GLOBAL int2* rem_coords);
 
 KERNEL void kernel_fill_remaining(SceneParams params,
-                                  int sample_num,
+                                  uint time,
                                   image2d_write_t temp_pixels2,
                                   uint2 pixel_dims,
                                   GLOBAL TriangleData* triangles,
