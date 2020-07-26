@@ -14,6 +14,7 @@ Raytracer::Raytracer() : sample_index(0) {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
   accelerator.add_kernel("kernel_fill_remaining");
+  accelerator.add_kernel("kernel_accumulate");
   accelerator.add_kernel("kernel_post_process");
 }
 
@@ -49,13 +50,13 @@ void Raytracer::set_scene(const Scene& scene) {
   if (this->width != width || this->height != height) {
     pixel_im = accelerator.create_image2D_write<uchar4>(ImageChannelOrder::RGBA,
                                                         ImageChannelType::UINT8, width, height);
-    prev_pixel_im = accelerator.create_image2D_read<uchar4>(
-      ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::CLAMP, FilterMode::NEAREST,
-      false, width, height);
+    prev_pixel_im = accelerator.create_image2D_read<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
+      true, width, height);
     // Use a packed uchar4 image to save memory and bandwidth
-    temp_pixel_im1 = accelerator.create_image2D_readwrite<uchar4>(
-      ImageChannelOrder::RGBA, ImageChannelType::UINT8, AddressMode::CLAMP, FilterMode::NEAREST,
-      false, width, std::max(height / 2, 1U));
+    temp_pixel_im1 = accelerator.create_image2D_readwrite<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
+      true, width, height);
     temp_pixel_im2 = accelerator.create_image2D_readwrite<float4>(
       ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
       true, width, height);
@@ -117,12 +118,17 @@ void Raytracer::set_scene(const Scene& scene) {
 image_utils::image<uchar4> Raytracer::raytrace() {
   PROFILE_SCOPE("Raytrace");
 
+  // Create sample specific data
   auto sample_index_wrapper = accelerator.create_wrapper<int>(sample_index);
   using namespace std::chrono;
   auto time_wrapper = accelerator.create_wrapper<uint32_t>(
     duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 
   accelerator.write_buffer(rem_pixels_buf, 0U);
+  // Make sure previous pixels are cleared
+  if (sample_index == 0) {
+    accelerator.fill_image2D(prev_pixel_im, width, height, float4 {});
+  }
   {
     PROFILE_SECTION_START("Raytrace kernel");
     uint2 global_dims { width, height / 2 };
@@ -132,8 +138,11 @@ image_utils::image<uchar4> Raytracer::raytrace() {
                             temp_pixel_im2.write_access(), pixel_dims_wrapper, triangle_buf,
                             tri_meta_buf, bvh_buf, material_ims, sky_im);
     PROFILE_SECTION_END();
-
+  }
+  {
     PROFILE_SECTION_START("Interpolate kernel");
+    uint2 global_dims { width, height / 2 };
+    uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
                             temp_pixel_im1.read_access(), temp_pixel_im2.write_access(),
                             pixel_dims_wrapper, rem_pixels_buf, rem_coords_buf);
@@ -151,9 +160,18 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     PROFILE_SECTION_END();
   }
   {
+    PROFILE_SECTION_START("Accumulate kernel");
+    uint2 global_dims { width, height };
+    uint2 local_dims { 8, 4 };
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_accumulate), global_dims, local_dims,
+                            sample_index_wrapper, temp_pixel_im2.read_access(), prev_pixel_im,
+                            temp_pixel_im1.write_access(), pixel_dims_wrapper);
+    PROFILE_SECTION_END();
+  }
+  {
     PROFILE_SECTION_START("Copy previous image");
     if (sample_index != 0) {
-      accelerator.copy_image2D(prev_pixel_im, pixel_im, width, height);
+      accelerator.copy_image2D(prev_pixel_im, temp_pixel_im1, width, height);
     }
     PROFILE_SECTION_END();
   }
@@ -162,8 +180,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_post_process), global_dims, local_dims,
-                            scene_params_wrapper, sample_index_wrapper,
-                            temp_pixel_im2.read_access(), prev_pixel_im, pixel_im,
+                            scene_params_wrapper, temp_pixel_im1.read_access(), pixel_im,
                             pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }
@@ -174,7 +191,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
 
   sample_index++;
   return {
-    std::move(pixels),
+    pixels,
     width,
     height,
   };

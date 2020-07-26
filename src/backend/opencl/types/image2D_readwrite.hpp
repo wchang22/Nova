@@ -55,8 +55,12 @@ public:
     const cl::Image2D& data() const { return image; }
   };
 
-  const ReadAccessor read_access() { return { this->image }; }
-  const WriteAccessor write_access() { return { this->image }; }
+  const ReadAccessor read_access() const { return read_accessor; }
+  const WriteAccessor write_access() const { return write_accessor; }
+
+private:
+  ReadAccessor read_accessor { this->image };
+  WriteAccessor write_accessor { this->image };
 };
 
 }

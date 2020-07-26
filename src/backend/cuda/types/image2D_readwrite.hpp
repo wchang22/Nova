@@ -76,12 +76,14 @@ public:
     const cudaSurfaceObject_t& data() const { return surf; }
   };
 
-  const ReadAccessor read_access() { return { tex }; }
-  const WriteAccessor write_access() { return { surf }; }
+  const ReadAccessor read_access() const { return read_accessor; }
+  const WriteAccessor write_access() const { return write_accessor; }
 
 private:
   cudaTextureObject_t tex;
   cudaSurfaceObject_t surf;
+  ReadAccessor read_accessor { tex };
+  WriteAccessor write_accessor { surf };
 };
 
 }

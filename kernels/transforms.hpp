@@ -39,6 +39,10 @@ DEVICE inline Mat3x3 create_basis(const float3& normal) {
   return { u, v, w };
 }
 
+DEVICE inline float2 coords_to_uv(const int2& coords, const uint2& dims) {
+  return (make_vector<float2>(coords) + 0.5f) / make_vector<float2>(dims);
+}
+
 }
 
 #endif // KERNEL_TRANSFORMS_HPP

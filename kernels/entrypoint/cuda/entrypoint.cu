@@ -48,16 +48,24 @@ void kernel_fill_remaining(dim3 num_blocks,
                                                     rem_pixels_counter, rem_coords);
 }
 
+void kernel_accumulate(dim3 num_blocks,
+                       dim3 block_size,
+                       int sample_num,
+                       cudaTextureObject_t temp_pixels2,
+                       cudaTextureObject_t prev_pixels,
+                       cudaSurfaceObject_t temp_pixels1,
+                       uint2 pixel_dims) {
+  kernel_accumulate<<<num_blocks, block_size>>>(sample_num, temp_pixels2, prev_pixels, temp_pixels1,
+                                                pixel_dims);
+}
+
 void kernel_post_process(dim3 num_blocks,
                          dim3 block_size,
                          const SceneParams& scene_params,
-                         int sample_num,
-                         cudaTextureObject_t temp_pixels2,
-                         cudaTextureObject_t prev_pixels,
+                         cudaTextureObject_t temp_pixels1,
                          cudaSurfaceObject_t pixels,
                          uint2 pixel_dims) {
-  kernel_post_process<<<num_blocks, block_size>>>(scene_params, sample_num, temp_pixels2,
-                                                  prev_pixels, pixels, pixel_dims);
+  kernel_post_process<<<num_blocks, block_size>>>(scene_params, temp_pixels1, pixels, pixel_dims);
 }
 
 }

@@ -43,12 +43,18 @@ void kernel_fill_remaining(dim3 num_blocks,
                            uint* rem_pixels_counter,
                            int2* rem_coords);
 
+void kernel_accumulate(dim3 num_blocks,
+                       dim3 block_size,
+                       int sample_num,
+                       cudaTextureObject_t temp_pixels2,
+                       cudaTextureObject_t prev_pixels,
+                       cudaSurfaceObject_t temp_pixels1,
+                       uint2 pixel_dims);
+
 void kernel_post_process(dim3 num_blocks,
                          dim3 block_size,
                          const SceneParams& scene_params,
-                         int sample_num,
-                         cudaTextureObject_t temp_pixels2,
-                         cudaTextureObject_t prev_pixels,
+                         cudaTextureObject_t temp_pixels1,
                          cudaSurfaceObject_t pixels,
                          uint2 pixel_dims);
 

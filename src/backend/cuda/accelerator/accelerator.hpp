@@ -141,6 +141,23 @@ public:
   }
 
   template <typename T>
+  void copy_image2D(Image2DRead<T>& dst,
+                    const Image2DReadWrite<T>& src,
+                    size_t width,
+                    size_t height) const {
+    (void) width;
+    (void) height;
+    dst.copy_from(src);
+  }
+
+  template <typename T>
+  void fill_image2D(Image2DRead<T>& image, size_t width, size_t height, const T& t) const {
+    (void) width;
+    (void) height;
+    image.fill(t);
+  }
+
+  template <typename T>
   Buffer<T> create_buffer(MemFlags mem_flags, std::vector<T>& data) const {
     (void) mem_flags;
     if (data.empty()) {

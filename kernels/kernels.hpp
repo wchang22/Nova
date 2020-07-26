@@ -38,10 +38,14 @@ KERNEL void kernel_fill_remaining(SceneParams params,
                                   GLOBAL uint* rem_pixels_counter,
                                   GLOBAL int2* rem_coords);
 
+KERNEL void kernel_accumulate(int sample_num,
+                              image2d_read_t temp_pixels2,
+                              image2d_read_t prev_pixels,
+                              image2d_write_t temp_pixels1,
+                              uint2 pixel_dims);
+
 KERNEL void kernel_post_process(SceneParams params,
-                                int sample_num,
-                                image2d_read_t temp_pixels2,
-                                image2d_read_t prev_pixels,
+                                image2d_read_t temp_pixels1,
                                 image2d_write_t pixels,
                                 uint2 pixel_dims);
 
