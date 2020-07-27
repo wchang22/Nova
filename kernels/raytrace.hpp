@@ -95,9 +95,8 @@ DEVICE float3 trace_ray(uint& rng_state,
 
   float2 alpha_beta = params.eye_coords.coord_scale *
                       (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + offset);
-  float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -
-                             alpha_beta.y * params.eye_coords.eye_coord_frame.y -
-                             params.eye_coords.eye_coord_frame.z);
+  float3 ray_dir = normalize(transpose(params.eye_coords.eye_coord_frame) *
+                             make_vector<float3>(alpha_beta.x, -alpha_beta.y, -1.0f));
   float3 ray_pos = params.eye_coords.eye_pos;
 
   float3 color = make_vector<float3>(0.0f);
