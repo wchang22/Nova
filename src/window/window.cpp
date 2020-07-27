@@ -425,7 +425,7 @@ void Window::handle_mouse_wheel() {
 void Window::main_loop() {
   if (headless) {
     PROFILE_SCOPE("Main Loop");
-    scene.render_to_image();
+    scene.render_to_image(true);
   } else {
     while (!glfwWindowShouldClose(window)) {
       PROFILE_SCOPE("Main Loop");

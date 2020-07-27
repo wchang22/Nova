@@ -15,10 +15,13 @@ class Raytracer {
 public:
   Raytracer();
 
+  void start();
   void set_scene(const Scene& scene);
   image_utils::image<uchar4> raytrace();
 
-  int get_sample_index() const { return sample_index; };
+  void step() { sample_index++; }
+  bool is_done() const { return sample_index >= num_samples; }
+  int get_sample_index() const { return sample_index; }
 
 private:
   IntersectableManager intersectable_manager;
@@ -44,9 +47,10 @@ private:
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<float4> material_ims;
   Image2DRead<float4> sky_im;
+  int num_samples = 0;
 
   // Local state
-  int sample_index;
+  int sample_index = 0;
 };
 
 }

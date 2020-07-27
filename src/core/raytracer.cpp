@@ -10,12 +10,17 @@
 
 namespace nova {
 
-Raytracer::Raytracer() : sample_index(0) {
+Raytracer::Raytracer() {
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_interpolate");
   accelerator.add_kernel("kernel_fill_remaining");
   accelerator.add_kernel("kernel_accumulate");
   accelerator.add_kernel("kernel_post_process");
+}
+
+void Raytracer::start() {
+  sample_index = 0;
+  accelerator.fill_image2D(prev_pixel_im, width, height, float4 {});
 }
 
 void Raytracer::set_scene(const Scene& scene) {
@@ -25,25 +30,25 @@ void Raytracer::set_scene(const Scene& scene) {
   const uint32_t height = static_cast<uint32_t>(scene.get_output_dimensions()[1]);
 
   // Update Scene Params
-  const vec3f& shading_diffuse = scene.get_shading_diffuse();
+  const EyeCoords& eye_coords = scene.get_camera_eye_coords();
+  const float3 shading_diffuse = vec_to_float3(scene.get_shading_diffuse());
   const float shading_metallic = scene.get_shading_metallic();
   const float shading_roughness = scene.get_shading_roughness();
   const float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
-  const vec3f& light_intensity = scene.get_light_intensity();
-  const vec3f& light_position = scene.get_light_position();
-  const vec3f& light_normal = scene.get_light_normal();
+  const float3 light_intensity = vec_to_float3(scene.get_light_intensity());
+  const float3 light_position = vec_to_float3(scene.get_light_position());
+  const float3 light_normal = vec_to_float3(scene.get_light_normal());
   float light_size = scene.get_light_size();
   const int num_samples = scene.get_num_samples();
   const int ray_bounces = scene.get_ray_bounces();
   const float exposure = scene.get_exposure();
   const bool anti_aliasing = scene.get_anti_aliasing();
 
-  AreaLight light { vec_to_float3(light_intensity), vec_to_float3(light_position),
-                    vec_to_float3(light_normal), light_size };
+  AreaLight light { light_intensity, light_position, light_normal, light_size };
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { scene.get_camera_eye_coords(), light, vec_to_float3(shading_diffuse),
-                  shading_metallic, shading_roughness, shading_ambient_occlusion, num_samples,
+    SceneParams { eye_coords, light, shading_diffuse, shading_metallic,
+                  shading_roughness, shading_ambient_occlusion, num_samples,
                   ray_bounces, exposure, anti_aliasing });
 
   // Update buffers depending on width, height
@@ -112,7 +117,7 @@ void Raytracer::set_scene(const Scene& scene) {
 
   this->width = width;
   this->height = height;
-  sample_index = 0;
+  this->num_samples = num_samples;
 }
 
 image_utils::image<uchar4> Raytracer::raytrace() {
@@ -125,18 +130,15 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 
   accelerator.write_buffer(rem_pixels_buf, 0U);
-  // Make sure previous pixels are cleared
-  if (sample_index == 0) {
-    accelerator.fill_image2D(prev_pixel_im, width, height, float4 {});
-  }
   {
     PROFILE_SECTION_START("Raytrace kernel");
     uint2 global_dims { width, height / 2 };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                            scene_params_wrapper, time_wrapper, temp_pixel_im1.write_access(),
-                            temp_pixel_im2.write_access(), pixel_dims_wrapper, triangle_buf,
-                            tri_meta_buf, bvh_buf, material_ims, sky_im);
+                            scene_params_wrapper, sample_index_wrapper, time_wrapper,
+                            temp_pixel_im1.write_access(), temp_pixel_im2.write_access(),
+                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
+                            sky_im);
     PROFILE_SECTION_END();
   }
   {
@@ -144,8 +146,9 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint2 global_dims { width, height / 2 };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_interpolate), global_dims, local_dims,
-                            temp_pixel_im1.read_access(), temp_pixel_im2.write_access(),
-                            pixel_dims_wrapper, rem_pixels_buf, rem_coords_buf);
+                            sample_index_wrapper, temp_pixel_im1.read_access(),
+                            temp_pixel_im2.write_access(), pixel_dims_wrapper, rem_pixels_buf,
+                            rem_coords_buf);
     PROFILE_SECTION_END();
   }
   {
@@ -189,7 +192,6 @@ image_utils::image<uchar4> Raytracer::raytrace() {
   std::vector<uchar4> pixels = accelerator.read_image2D(pixel_im, width, height);
   PROFILE_SECTION_END();
 
-  sample_index++;
   return {
     pixels,
     width,

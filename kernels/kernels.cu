@@ -7,6 +7,7 @@
 namespace nova {
 
 KERNEL void kernel_raytrace(SceneParams params,
+                            int sample_index,
                             uint time,
                             image2d_write_t temp_pixels1,
                             image2d_write_t temp_pixels2,
@@ -22,7 +23,7 @@ KERNEL void kernel_raytrace(SceneParams params,
     return;
   }
   int2 pixel_coords = packed_pixel_coords;
-  pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
+  pixel_coords.y = 2 * pixel_coords.y + ((pixel_coords.x & 1) ^ (sample_index % 2 == 0));
   uint rng_state = hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + hash(time));
 
   float3 color =
@@ -32,7 +33,8 @@ KERNEL void kernel_raytrace(SceneParams params,
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
 }
 
-KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
+KERNEL void kernel_interpolate(int sample_index,
+                               image2d_read_t temp_pixels1,
                                image2d_write_t temp_pixels2,
                                uint2 pixel_dims,
                                GLOBAL uint* rem_pixels_counter,
@@ -41,7 +43,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
   if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y / 2) {
     return;
   }
-  pixel_coords.y = 2 * pixel_coords.y + 1 - (pixel_coords.x & 1);
+  pixel_coords.y = 2 * pixel_coords.y + ((pixel_coords.x & 1) ^ (sample_index % 2 == 1));
 
   // Sample 4 neighbours
   constexpr int2 neighbor_offsets[] = { { 0, -1 }, { -1, 0 }, { 1, 0 }, { 0, 1 } };
@@ -49,7 +51,7 @@ KERNEL void kernel_interpolate(image2d_read_t temp_pixels1,
   for (uint i = 0; i < 4; i++) {
     // Lookup from the packed uchar4 texture
     int2 packed_coords = pixel_coords + neighbor_offsets[i];
-    packed_coords.y = (packed_coords.y - (packed_coords.x & 1)) / 2;
+    packed_coords.y = (packed_coords.y - ((packed_coords.x & 1) ^ (sample_index % 2 == 0))) / 2;
 
     neighbors[i] =
       xyz<float3>(read_image<float4>(temp_pixels1, coords_to_uv(packed_coords, pixel_dims)));
@@ -95,7 +97,7 @@ KERNEL void kernel_fill_remaining(SceneParams params,
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
 }
 
-KERNEL void kernel_accumulate(int sample_num,
+KERNEL void kernel_accumulate(int sample_index,
                               image2d_read_t temp_pixels2,
                               image2d_read_t prev_pixels,
                               image2d_write_t temp_pixels1,
@@ -108,9 +110,9 @@ KERNEL void kernel_accumulate(int sample_num,
   float2 pixel_uv = coords_to_uv(pixel_coords, pixel_dims);
   float3 color = xyz<float3>(read_image<float4>(temp_pixels2, pixel_uv));
 
-  if (sample_num != 0) {
+  if (sample_index != 0) {
     float3 prev_color = xyz<float3>(read_image<float4>(prev_pixels, pixel_uv));
-    color = (prev_color * sample_num + color) / static_cast<float>(sample_num + 1);
+    color = (prev_color * sample_index + color) / static_cast<float>(sample_index + 1);
   }
 
   write_image(temp_pixels1, pixel_coords, make_vector<float4>(color, 1.0f));

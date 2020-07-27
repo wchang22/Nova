@@ -179,13 +179,22 @@ void Scene::render_to_screen() {
   // If nothing has changed, no need to update
   if (settings != prev_settings) {
     raytracer.set_scene(*this);
+
+    // Hack: If only `num_samples` changed, don't restart
+    Settings temp_settings = settings;
+    temp_settings.num_samples = prev_settings.num_samples;
+
+    if (temp_settings != prev_settings) {
+      raytracer.start();
+    }
     prev_settings = settings;
   }
-  if (raytracer.get_sample_index() >= settings.num_samples) {
+  if (raytracer.is_done()) {
     return;
   }
 
   image_utils::image<uchar4> im = raytracer.raytrace();
+  raytracer.step();
 
   // Bind image data to OpenGL texture for rendering
   glBindTexture(GL_TEXTURE_2D, scene_texture_id);
@@ -194,16 +203,24 @@ void Scene::render_to_screen() {
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Scene::render_to_image() {
+void Scene::render_to_image(bool single) {
   PROFILE_SCOPE("Render to Image");
 
   image_utils::image<uchar4> im;
 
   PROFILE_SECTION_START("Profile Loop");
   for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
-    raytracer.set_scene(*this);
-    for (int j = 0; j < settings.num_samples; j++) {
+    if (!single || raytracer.get_sample_index() == 0) {
+      raytracer.set_scene(*this);
+      raytracer.start();
+    }
+    if (single) {
       im = raytracer.raytrace();
+    } else {
+      while (!raytracer.is_done()) {
+        im = raytracer.raytrace();
+        raytracer.step();
+      }
     }
   }
   PROFILE_SECTION_END();
