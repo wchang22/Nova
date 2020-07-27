@@ -3,7 +3,7 @@ dimensions = [1280, 720]
 file_path = "nova.jpg"
 
 [other]
-num_samples = 64
+num_samples = 1024
 ray_bounces = 5
 exposure = 1.0
 
@@ -118,7 +118,7 @@ ambient_occlusion = 1.0
 # sky = "sky/lakeside_4k.hdr"
 
 # [camera]
-# position = [0.0, 0.0, 4.0]
+# position = [0.0, 0.0, 5.0]
 # target = [0.0, 0.0, 0.0]
 # up = [0.0, 1.0, 0.0]
 # fovy = 30.0

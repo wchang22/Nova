@@ -23,7 +23,7 @@ KERNEL void kernel_raytrace(SceneParams params,
   }
   int2 pixel_coords = packed_pixel_coords;
   pixel_coords.y = 2 * pixel_coords.y + (pixel_coords.x & 1);
-  uint rng_state = wang_hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + wang_hash(time));
+  uint rng_state = hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + hash(time));
 
   float3 color =
     trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
@@ -87,7 +87,7 @@ KERNEL void kernel_fill_remaining(SceneParams params,
     return;
   }
   int2 pixel_coords = rem_coords[id];
-  uint rng_state = wang_hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + wang_hash(time));
+  uint rng_state = hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + hash(time));
 
   float3 color =
     trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);

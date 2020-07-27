@@ -6,7 +6,9 @@
 namespace nova {
 
 // http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
-DEVICE inline uint wang_hash(uint seed) {
+
+// Wang hash
+DEVICE inline uint hash(uint seed) {
   seed = (seed ^ 61) ^ (seed >> 16);
   seed *= 9;
   seed = seed ^ (seed >> 4);
@@ -15,7 +17,8 @@ DEVICE inline uint wang_hash(uint seed) {
   return seed;
 }
 
-DEVICE inline float xorshift_rand(uint& rng_state) {
+// xorshift
+DEVICE inline float rand(uint& rng_state) {
   rng_state ^= rng_state << 13;
   rng_state ^= rng_state >> 17;
   rng_state ^= rng_state << 5;
