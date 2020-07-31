@@ -7,6 +7,7 @@
 #include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/math_constants.hpp"
+#include "kernels/brdf.hpp"
 #include "kernels/constants.hpp"
 #include "kernels/intersection.hpp"
 #include "kernels/material.hpp"
@@ -130,10 +131,10 @@ DEVICE float3 trace_ray(uint& rng_state,
     // clang-format off
     float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
                                    params.shading_diffuse) * meta.kD;
-    // float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
-    //                                make_vector<float3>(params.shading_metallic)).x;
-    // float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
-    //                                 make_vector<float3>(params.shading_roughness)).x;
+    float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
+                                   make_vector<float3>(params.shading_metallic)).x;
+    float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
+                                    make_vector<float3>(params.shading_roughness)).x;
     // float ambient_occlusion =
     //   read_material(materials, meta, texture_coord, meta.ambient_occlusion_index,
     //                 make_vector<float3>(params.shading_ambient_occlusion)).x;
@@ -141,10 +142,10 @@ DEVICE float3 trace_ray(uint& rng_state,
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
 
-    // // Sample area light source
+    // // // Sample area light source
     // const AreaLight& light = params.light;
-    // offset = light.size * make_vector<float2>(rand(rng_state) * 2.0f - 1.0f,
-    //                                           rand(rng_state) * 2.0f - 1.0f);
+    // offset = light.size *
+    //          make_vector<float2>(rand(rng_state) * 2.0f - 1.0f, rand(rng_state) * 2.0f - 1.0f);
     // Mat3x3 light_basis = create_basis(normalize(light.normal));
     // float3 light_position =
     //   light.position + light_basis * make_vector<float3>(offset.x, 0.0f, offset.y);
@@ -154,28 +155,33 @@ DEVICE float3 trace_ray(uint& rng_state,
     // float3 view_dir = -ray.direction;
     // float3 half_dir = normalize(light_dir + view_dir);
     // float light_distance = distance(light_position, intrs_point);
-    // float3 kS = specularity(view_dir, half_dir, diffuse, metallic) * meta.kS;
 
-    // float3 brdf = shade(params, light_dir, view_dir, half_dir, light_distance, normal,
-    //                            diffuse, kS, metallic, roughness);
+    // float3 light_brdf =
+    //   get_light_brdf(light_dir, view_dir, half_dir, normal, diffuse, metallic, roughness,
+    //   meta.kS);
 
+    // float3 intrs_color = meta.kE;
     // // Only cast a shadow ray if it will produce a color change
-    // if (any(isgreaterequal(local_illum, make_vector<float3>(COLOR_EPSILON)))) {
-    //   // Cast a shadow ray to the light
-    //   Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
-    //   Intersection light_intrs;
-    //   // Ensure objects blocking light are not behind the light
-    //   light_intrs.length = light_distance;
+    // // Cast a shadow ray to the light
+    // Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
+    // Intersection light_intrs;
+    // // Ensure objects blocking light are not behind the light
+    // light_intrs.length = light_distance;
 
-    //   // Shade the pixel if ray is not blocked
-    //   if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-    //     intrs_color += local_illum;
-    //   }
+    // // Shade the pixel if ray is not blocked
+    // if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
+    //   intrs_color += light_brdf * max(dot(normal, light_dir), 0.0f) * params.light.intensity /
+    //                  max(light_distance * light_distance, 1.0f);
     // }
-    float3 brdf = diffuse / M_PI_F;
+
+    float3 out_dir = normalize(params.eye_coords.eye_pos - intrs_point);
+    float3 in_dir = -ray_dir;
+
+    float3 brdf = brdf_eval(in_dir, out_dir, normal, diffuse, metallic, roughness);
+    float3 pdf = max(brdf_pdf(in_dir, out_dir, normal, diffuse, metallic, roughness), 1e-3f);
 
     color += weight * meta.kE;
-    weight *= brdf * M_PI_F;
+    weight *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
 
     // Russian roulette
     if (indirect) {
@@ -186,16 +192,9 @@ DEVICE float3 trace_ray(uint& rng_state,
       weight *= 1.0f / (1.0f - q);
     }
 
-    // Use cosine importance sampling to sample direction
-    Mat3x3 ray_basis = transpose(create_basis(normal));
-
-    float phi = 2.0f * M_PI_F * rand(rng_state);
-    float theta = acos(sqrt(rand(rng_state)));
-    float3 random_dir =
-      ray_basis * make_vector<float3>(sin(theta) * cos(phi), cos(theta), -sin(theta) * sin(phi));
-
+    // Use ggx importance sampling to sample direction
     ray_pos = intrs_point;
-    ray_dir = random_dir;
+    ray_dir = brdf_sample(rng_state, in_dir, out_dir, normal, diffuse, metallic, roughness);
 
     indirect = true;
   }
