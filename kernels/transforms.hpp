@@ -43,6 +43,18 @@ DEVICE inline float2 coords_to_uv(const int2& coords, const uint2& dims) {
   return (make_vector<float2>(coords) + 0.5f) / make_vector<float2>(dims);
 }
 
+DEVICE inline float3 spherical_to_cartesian(float theta, float phi) {
+  return make_vector<float3>(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
+}
+
+constexpr float NON_ZERO_EPSILON = 1e-5f;
+
+DEVICE inline float make_non_zero(float x) { return max(x, NON_ZERO_EPSILON); }
+
+DEVICE inline float3 make_non_zero(const float3& x) {
+  return max(x, make_vector<float3>(NON_ZERO_EPSILON));
+}
+
 }
 
 #endif // KERNEL_TRANSFORMS_HPP

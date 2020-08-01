@@ -174,11 +174,13 @@ DEVICE float3 trace_ray(uint& rng_state,
     //                  max(light_distance * light_distance, 1.0f);
     // }
 
-    float3 out_dir = normalize(params.eye_coords.eye_pos - intrs_point);
-    float3 in_dir = -ray_dir;
+    float3 out_dir = -ray_dir;
 
-    float3 brdf = brdf_eval(in_dir, out_dir, normal, diffuse, metallic, roughness);
-    float3 pdf = max(brdf_pdf(in_dir, out_dir, normal, diffuse, metallic, roughness), 1e-3f);
+    CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);
+
+    float3 in_dir = ct_brdf.sample(rng_state);
+    float3 brdf = ct_brdf.eval();
+    float3 pdf = ct_brdf.pdf();
 
     color += weight * meta.kE;
     weight *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
@@ -192,9 +194,8 @@ DEVICE float3 trace_ray(uint& rng_state,
       weight *= 1.0f / (1.0f - q);
     }
 
-    // Use ggx importance sampling to sample direction
     ray_pos = intrs_point;
-    ray_dir = brdf_sample(rng_state, in_dir, out_dir, normal, diffuse, metallic, roughness);
+    ray_dir = in_dir;
 
     indirect = true;
   }

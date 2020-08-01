@@ -62,7 +62,7 @@ __device__ constexpr W make_vector(U&& u) {
   return w;
 }
 
-#define VECTOR_SCALAR_FUNC(func, scalar_func, vector_type, scalar_type)                      \
+#define VECTOR_SCALAR_OPERATOR(func, scalar_func, vector_type, scalar_type)                  \
   template <typename U, typename T,                                                          \
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(const U& u, T t) {                                             \
@@ -97,6 +97,10 @@ __device__ constexpr W make_vector(U&& u) {
     });                                                                                      \
     return w;                                                                                \
   }
+
+#define VECTOR_SCALAR_FUNC(func, scalar_func, vector_type, scalar_type) \
+  VECTOR_SCALAR_OPERATOR(func, scalar_func, vector_type, scalar_type)   \
+  __device__ constexpr scalar_type func(scalar_type s, scalar_type t) { return scalar_func(s, t); }
 
 #define VECTOR_VECTOR_FUNC(func, scalar_func, vector_type, scalar_type)     \
   template <typename T, std::enable_if_t<is_##scalar_type##_v<T>, int> = 0> \
@@ -260,10 +264,10 @@ __device__ constexpr W make_vector(U&& u) {
     return a > b ? a : b; \
   }
 
-VECTOR_SCALAR_FUNC(operator+, op_add, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator-, op_sub, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator*, op_mul, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator/, op_div, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator+, op_add, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator-, op_sub, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator*, op_mul, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator/, op_div, vector, arithmetic)
 VECTOR_SCALAR_FUNC(pow, powf, float_vector, float)
 
 VECTOR_VECTOR_FUNC(operator+, op_add, vector, arithmetic)
