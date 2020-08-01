@@ -1,14 +1,11 @@
 [output]
 dimensions = [1280, 720]
 file_path = "nova.jpg"
-
-[other]
 num_samples = 1024
-ray_bounces = 5
-exposure = 1.0
 
 [post_processing]
 anti_aliasing = false
+exposure = 1.0
 
 #---------------------------------------------------------------------------------------------------
 # Aircraft

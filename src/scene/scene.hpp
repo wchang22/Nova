@@ -13,7 +13,9 @@ public:
   struct Settings {
     vec2i output_dimensions;
     std::string output_file_path;
+    int num_samples;
     bool anti_aliasing;
+    float exposure;
     std::string model_path;
     std::string sky_path;
     Camera camera;
@@ -25,15 +27,14 @@ public:
     float shading_metallic;
     float shading_roughness;
     float shading_ambient_occlusion;
-    int num_samples;
-    int ray_bounces;
-    float exposure;
 
     bool operator==(const Settings& other) const {
       // clang-format off
       return output_dimensions == other.output_dimensions &&
              output_file_path == other.output_file_path &&
+             num_samples == other.num_samples &&
              anti_aliasing == other.anti_aliasing &&
+             exposure == other.exposure &&
              model_path == other.model_path &&
              sky_path == other.sky_path &&
              camera == other.camera &&
@@ -44,10 +45,7 @@ public:
              shading_diffuse == other.shading_diffuse &&
              shading_metallic == other.shading_metallic &&
              shading_roughness == other.shading_roughness &&
-             shading_ambient_occlusion == other.shading_ambient_occlusion &&
-             num_samples == other.num_samples &&
-             ray_bounces == other.ray_bounces &&
-             exposure == other.exposure;
+             shading_ambient_occlusion == other.shading_ambient_occlusion;
       // clang-format on
     }
     bool operator!=(const Settings& other) const { return !(*this == other); }
@@ -62,6 +60,8 @@ public:
   const std::string& get_sky_path() const;
   bool set_anti_aliasing(bool anti_aliasing);
   bool get_anti_aliasing() const;
+  float set_exposure(float exposure);
+  float get_exposure() const;
   vec3f set_camera_position(const vec3f& position);
   vec3f get_camera_position() const;
   vec3f set_camera_target(const vec3f& target);
@@ -88,17 +88,13 @@ public:
   float get_shading_roughness() const;
   float set_shading_ambient_occlusion(float ambient_occlusion);
   float get_shading_ambient_occlusion() const;
-  int set_num_samples(int num_samples);
-  int get_num_samples() const;
-  int set_ray_bounces(int bounces);
-  int get_ray_bounces() const;
-  float set_exposure(float exposure);
-  float get_exposure() const;
 
   const vec2i& set_output_dimensions(const vec2i& dimensions);
   const vec2i& get_output_dimensions() const;
   const std::string& set_output_file_path(const std::string& path);
   const std::string& get_output_file_path() const;
+  int set_num_samples(int num_samples);
+  int get_num_samples() const;
 
   void render_to_screen();
   void render_to_image(bool single = true);

@@ -181,7 +181,6 @@ void Window::display_scene_settings() {
   static float shading_roughness = scene.get_shading_roughness();
   static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
   static int num_samples = scene.get_num_samples();
-  static int ray_bounces = scene.get_ray_bounces();
   static float exposure = scene.get_exposure();
 
   // Render lambdas that check for errors
@@ -239,8 +238,10 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Post Processing##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Anti-Aliasing (FXAA)##Rendering", &anti_aliasing);
+      ImGui::InputFloat("Exposure##Other", &exposure);
 
       anti_aliasing = scene.set_anti_aliasing(anti_aliasing);
+      exposure = scene.set_exposure(exposure);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -287,14 +288,6 @@ void Window::display_scene_settings() {
       shading_metallic = scene.set_shading_metallic(shading_metallic);
       shading_roughness = scene.set_shading_roughness(shading_roughness);
       shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
-    }
-
-    if (ImGui::CollapsingHeader("Other##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputInt("Ray Bounces##Other", &ray_bounces);
-      ImGui::InputFloat("Exposure##Other", &exposure);
-
-      ray_bounces = scene.set_ray_bounces(ray_bounces);
-      exposure = scene.set_exposure(exposure);
     }
 
     if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {

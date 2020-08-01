@@ -15,7 +15,6 @@ struct SceneParams {
   float shading_roughness;
   float shading_ambient_occlusion;
   int num_samples;
-  int ray_bounces;
   float exposure;
   char anti_aliasing;
 };

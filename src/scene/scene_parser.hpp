@@ -11,6 +11,7 @@ namespace nova {
 struct OutputSettings {
   vec2i dimensions;
   std::string file_path;
+  int num_samples;
 };
 
 struct ModelSettings {
@@ -20,6 +21,7 @@ struct ModelSettings {
 
 struct PostProcessingSettings {
   bool anti_aliasing;
+  float exposure;
 };
 
 struct CameraSettings {
@@ -43,12 +45,6 @@ struct LightSettings {
   float size;
 };
 
-struct OtherSettings {
-  int max_num_samples;
-  int ray_bounces;
-  float exposure;
-};
-
 class SceneParser {
 public:
   SceneParser();
@@ -59,7 +55,6 @@ public:
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;
-  OtherSettings get_other_settings() const;
 
 private:
   toml::value parsed_data;

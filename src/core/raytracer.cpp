@@ -40,16 +40,14 @@ void Raytracer::set_scene(const Scene& scene) {
   const float3 light_normal = vec_to_float3(scene.get_light_normal());
   float light_size = scene.get_light_size();
   const int num_samples = scene.get_num_samples();
-  const int ray_bounces = scene.get_ray_bounces();
   const float exposure = scene.get_exposure();
   const bool anti_aliasing = scene.get_anti_aliasing();
 
   AreaLight light { light_intensity, light_position, light_normal, light_size };
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { eye_coords, light, shading_diffuse, shading_metallic,
-                  shading_roughness, shading_ambient_occlusion, num_samples,
-                  ray_bounces, exposure, anti_aliasing });
+    SceneParams { eye_coords, light, shading_diffuse, shading_metallic, shading_roughness,
+                  shading_ambient_occlusion, num_samples, exposure, anti_aliasing });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {

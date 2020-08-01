@@ -10,29 +10,26 @@ namespace nova {
 Scene::Scene() {
   SceneParser scene_parser;
 
-  const auto [output_dimensions, output_file_path] = scene_parser.get_output_settings();
+  const auto [output_dimensions, output_file_path, num_samples] =
+    scene_parser.get_output_settings();
   const auto [model_paths, sky_path] = scene_parser.get_model_settings();
-  const auto [anti_aliasing] = scene_parser.get_post_processing_settings();
+  const auto [anti_aliasing, exposure] = scene_parser.get_post_processing_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [light_intensity, light_position, light_normal, light_size] =
     scene_parser.get_light_settings();
-  const auto [num_samples, ray_bounces, exposure] = scene_parser.get_other_settings();
   const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
     scene_parser.get_shading_default_settings();
 
   Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
                 { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
-  settings = { output_dimensions, output_file_path,
-               anti_aliasing,     model_paths.front(),
-               sky_path,          camera,
-               light_intensity,   light_position,
-               light_normal,      light_size,
-               default_diffuse,   default_metallic,
-               default_roughness, default_ambient_occlusion,
-               num_samples,       ray_bounces,
-               exposure };
+  settings = {
+    output_dimensions, output_file_path,    num_samples,       anti_aliasing,
+    exposure,          model_paths.front(), sky_path,          camera,
+    light_intensity,   light_position,      light_normal,      light_size,
+    default_diffuse,   default_metallic,    default_roughness, default_ambient_occlusion
+  };
 }
 
 void Scene::init_texture() {
@@ -63,6 +60,10 @@ vec3f Scene::set_camera_position(const vec3f& position) {
 bool Scene::set_anti_aliasing(bool anti_aliasing) { return settings.anti_aliasing = anti_aliasing; }
 
 bool Scene::get_anti_aliasing() const { return settings.anti_aliasing; }
+
+float Scene::set_exposure(float exposure) { return settings.exposure = std::max(exposure, 0.01f); }
+
+float Scene::get_exposure() const { return settings.exposure; }
 
 vec3f Scene::get_camera_position() const { return glm_to_vec(settings.camera.get_position()); }
 
@@ -146,20 +147,6 @@ float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
 
 float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
-int Scene::set_num_samples(int num_samples) {
-  return settings.num_samples = std::max(1, num_samples);
-}
-
-int Scene::get_num_samples() const { return settings.num_samples; }
-
-int Scene::set_ray_bounces(int bounces) { return settings.ray_bounces = std::max(1, bounces); }
-
-int Scene::get_ray_bounces() const { return settings.ray_bounces; }
-
-float Scene::set_exposure(float exposure) { return settings.exposure = std::max(exposure, 0.01f); }
-
-float Scene::get_exposure() const { return settings.exposure; }
-
 const vec2i& Scene::set_output_dimensions(const vec2i& dimensions) {
   settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);
   settings.output_dimensions[1] = std::clamp(dimensions[1], 1, MAX_RESOLUTION.second);
@@ -174,6 +161,12 @@ const std::string& Scene::set_output_file_path(const std::string& path) {
 }
 
 const std::string& Scene::get_output_file_path() const { return settings.output_file_path; }
+
+int Scene::set_num_samples(int num_samples) {
+  return settings.num_samples = std::max(1, num_samples);
+}
+
+int Scene::get_num_samples() const { return settings.num_samples; }
 
 void Scene::render_to_screen() {
   // If nothing has changed, no need to update
@@ -209,18 +202,16 @@ void Scene::render_to_image(bool single) {
   image_utils::image<uchar4> im;
 
   PROFILE_SECTION_START("Profile Loop");
-  for (int i = 0; i < NUM_PROFILE_ITERATIONS; i++) {
-    if (!single || raytracer.get_sample_index() == 0) {
-      raytracer.set_scene(*this);
-      raytracer.start();
-    }
-    if (single) {
+  if (!single || raytracer.get_sample_index() == 0) {
+    raytracer.set_scene(*this);
+    raytracer.start();
+  }
+  if (single) {
+    im = raytracer.raytrace();
+  } else {
+    while (!raytracer.is_done()) {
       im = raytracer.raytrace();
-    } else {
-      while (!raytracer.is_done()) {
-        im = raytracer.raytrace();
-        raytracer.step();
-      }
+      raytracer.step();
     }
   }
   PROFILE_SECTION_END();

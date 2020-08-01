@@ -8,14 +8,16 @@ SceneParser::SceneParser() : parsed_data(toml::parse(SCENE_PATH)) {}
 OutputSettings SceneParser::get_output_settings() const {
   vec2i dimensions = toml::find<vec2i>(parsed_data, "output", "dimensions");
   std::string file_path = toml::find<std::string>(parsed_data, "output", "file_path");
+  int num_samples = toml::find<int>(parsed_data, "output", "num_samples");
 
-  return { dimensions, file_path };
+  return { dimensions, file_path, num_samples };
 }
 
 PostProcessingSettings SceneParser::get_post_processing_settings() const {
   bool anti_aliasing = toml::find<bool>(parsed_data, "post_processing", "anti_aliasing");
+  float exposure = toml::find<float>(parsed_data, "post_processing", "exposure");
 
-  return { anti_aliasing };
+  return { anti_aliasing, exposure };
 }
 
 ModelSettings SceneParser::get_model_settings() const {
@@ -54,14 +56,6 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   float ambient_occlusion = toml::find<float>(parsed_data, "shading_defaults", "ambient_occlusion");
 
   return { diffuse, metallic, roughness, ambient_occlusion };
-}
-
-OtherSettings SceneParser::get_other_settings() const {
-  int num_samples = toml::find<int>(parsed_data, "other", "num_samples");
-  int ray_bounces = toml::find<int>(parsed_data, "other", "ray_bounces");
-  float exposure = toml::find<float>(parsed_data, "other", "exposure");
-
-  return { num_samples, ray_bounces, exposure };
 }
 
 }
