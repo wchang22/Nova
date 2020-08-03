@@ -97,7 +97,7 @@ public:
   int get_num_samples() const;
 
   void render_to_screen();
-  void render_to_image(bool single = true);
+  void render_to_image(bool single = false);
   GLuint get_scene_texture_id() const;
 
   int get_sample_index() const { return raytracer.get_sample_index(); };

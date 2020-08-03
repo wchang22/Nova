@@ -203,7 +203,7 @@ void Window::display_scene_settings() {
       return;
     }
     try {
-      scene.render_to_image();
+      scene.render_to_image(true);
       model_path_error = false;
       file_path_error = false;
       sky_path_error = false;
@@ -418,7 +418,7 @@ void Window::handle_mouse_wheel() {
 void Window::main_loop() {
   if (headless) {
     PROFILE_SCOPE("Main Loop");
-    scene.render_to_image(true);
+    scene.render_to_image();
   } else {
     while (!glfwWindowShouldClose(window)) {
       PROFILE_SCOPE("Main Loop");

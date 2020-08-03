@@ -201,11 +201,11 @@ void Scene::render_to_image(bool single) {
 
   image_utils::image<uchar4> im;
 
-  PROFILE_SECTION_START("Profile Loop");
   if (!single || raytracer.get_sample_index() == 0) {
     raytracer.set_scene(*this);
     raytracer.start();
   }
+  PROFILE_SECTION_START("Profile Loop");
   if (single) {
     im = raytracer.raytrace();
   } else {
