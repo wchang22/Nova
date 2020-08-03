@@ -106,7 +106,7 @@ public:
                          t * D * n_dot_m / make_non_zero(4.0f * i_dot_m));
   }
 
-private:
+protected:
   // NDF_GGXTR(n,m,α) = (α^2)/(π((n⋅m)^2(α^2−1)+1)^2)
   DEVICE inline float distribution_ggx(float n_dot_m, float alpha) {
     float alpha_2 = alpha * alpha;
@@ -137,11 +137,13 @@ private:
 
     i_dot_m = dot(in_dir, m_normal);
     i_dot_n = dot(in_dir, normal);
+    o_dot_n = max(dot(out_dir, normal), 0.0f);
     n_dot_m = max(dot(normal, m_normal), 0.0f);
 
     float alpha = roughness * roughness;
     D = distribution_ggx(n_dot_m, alpha);
 
+    f0 = mix(make_vector<float3>(0.04f), diffuse, metallic);
     F = fresnel_schlick(i_dot_m, f0);
 
     float k_direct = roughness + 1.0f;
@@ -175,6 +177,28 @@ private:
   float i_dot_n;
   float o_dot_n;
   float n_dot_m;
+};
+
+class CookTorranceLightBRDF : public CookTorranceBRDF {
+public:
+  DEVICE CookTorranceLightBRDF(const float3& in_dir,
+                               const float3& out_dir,
+                               const float3& normal,
+                               const float3& diffuse,
+                               float metallic,
+                               float roughness)
+    : CookTorranceBRDF(out_dir, normal, diffuse, metallic, roughness) {
+    this->in_dir = in_dir;
+    this->m_normal = normalize(in_dir + out_dir);
+  }
+
+  /**
+   * Online Computer Graphics II: Rendering: Importance Sampling and BRDFs: BRDF Sampling
+   * pdf(ω) = R^2 / ((ω⋅n_light)A)
+   */
+  DEVICE float light_pdf(const float3& l_normal, float distance, float area) {
+    return distance * distance / make_non_zero(fabs(dot(l_normal, in_dir)) * area);
+  }
 };
 
 }

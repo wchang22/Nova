@@ -26,6 +26,8 @@ struct Intersection {
   int tri_index;
 
   DEVICE Intersection() : barycentric(make_vector<float3>(0.0f)), length(FLT_MAX), tri_index(-1) {}
+  DEVICE Intersection(float length)
+    : barycentric(make_vector<float3>(0.0f)), length(length), tri_index(-1) {}
 };
 
 }

@@ -10,27 +10,27 @@ exposure = 1.0
 #---------------------------------------------------------------------------------------------------
 # Aircraft
 #---------------------------------------------------------------------------------------------------
-[model]
-paths = ["aircraft/aircraft.obj"]
-sky = "sky/lakeside_4k.hdr"
+# [model]
+# paths = ["aircraft/aircraft.obj"]
+# sky = "sky/lakeside_4k.hdr"
 
-[camera]
-position = [-1.9, 0.7, 1.6]
-target = [0.0, 0.0, 0.0]
-up = [0.0, 1.0, 0.0]
-fovy = 45.0
+# [camera]
+# position = [-1.9, 0.7, 1.6]
+# target = [0.0, 0.0, 0.0]
+# up = [0.0, 1.0, 0.0]
+# fovy = 45.0
 
-[light]
-position = [-4.0, 2.8, 7.0]
-normal = [0.0, -1.0, 0.0]
-size = 0.2
-intensity = [500.0, 500.0, 500.0]
+# [light]
+# position = [-1.4, 1.0, 2.5]
+# normal = [0.0, -1.0, 0.0]
+# size = 0.5
+# intensity = [500.0, 500.0, 500.0]
 
-[shading_defaults]
-diffuse = [1.0, 1.0, 1.0]
-metallic = 0.8
-roughness = 0.5
-ambient_occlusion = 1.0
+# [shading_defaults]
+# diffuse = [1.0, 1.0, 1.0]
+# metallic = 0.8
+# roughness = 0.5
+# ambient_occlusion = 1.0
 
 #---------------------------------------------------------------------------------------------------
 # Dragon
@@ -41,14 +41,14 @@ ambient_occlusion = 1.0
 
 # [camera]
 # position = [-1.7, 1.1, -0.8]
-# target = [0.0, 0.0, 0.0]
+# target = [0.0, -0.1, 0.0]
 # up = [0.0, 1.0, 0.0]
 # fovy = 45.0
 
 # [light]
-# position = [-4.0, 5.0, -6.0]
+# position = [-1.4, 1.7, -2.0]
 # normal = [0.0, -1.0, 0.0]
-# size = 0.2
+# size = 0.5
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -60,27 +60,27 @@ ambient_occlusion = 1.0
 #---------------------------------------------------------------------------------------------------
 # Fireplace
 #---------------------------------------------------------------------------------------------------
-# [model]
-# paths = ["fireplace_room/fireplace_room.glb"]
-# sky = "sky/lakeside_4k.hdr"
+[model]
+paths = ["fireplace_room/fireplace_room.glb"]
+sky = "sky/lakeside_4k.hdr"
 
-# [camera]
-# position = [1.0, 0.3, -0.4]
-# target = [0.0, 0.0, 0.0]
-# up = [0.0, 1.0, 0.0]
-# fovy = 45.0
+[camera]
+position = [1.0, 0.3, -0.4]
+target = [0.0, 0.0, 0.0]
+up = [0.0, 1.0, 0.0]
+fovy = 45.0
 
-# [light]
-# position = [0.8, 0.4, -0.6]
-# normal = [0.0, -1.0, 0.0]
-# size = 0.2
-# intensity = [5.0, 5.0, 5.0]
+[light]
+position = [0.8, 0.5, -0.6]
+normal = [0.0, -1.0, 0.0]
+size = 0.2
+intensity = [50.0, 50.0, 50.0]
 
-# [shading_defaults]
-# diffuse = [1.0, 1.0, 1.0]
-# metallic = 0.5
-# roughness = 0.1
-# ambient_occlusion = 1.0
+[shading_defaults]
+diffuse = [1.0, 1.0, 1.0]
+metallic = 0.5
+roughness = 0.1
+ambient_occlusion = 1.0
 
 #---------------------------------------------------------------------------------------------------
 # Gun
@@ -96,9 +96,9 @@ ambient_occlusion = 1.0
 # fovy = 45.0
 
 # [light]
-# position = [3.0, 1.0, 4.5]
+# position = [1.6, 0.5, 2.5]
 # normal = [0.0, -1.0, 0.0]
-# size = 0.2
+# size = 1.0
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -121,10 +121,10 @@ ambient_occlusion = 1.0
 # fovy = 30.0
 
 # [light]
-# position = [0.8, 0.4, -0.6]
+# position = [0.0, 0.96, -0.0]
 # normal = [0.0, -1.0, 0.0]
 # size = 0.2
-# intensity = [5.0, 5.0, 5.0]
+# intensity = [50.0, 50.0, 50.0]
 
 # [shading_defaults]
 # diffuse = [1.0, 1.0, 1.0]

@@ -10,6 +10,7 @@
 #include "kernels/brdf.hpp"
 #include "kernels/constants.hpp"
 #include "kernels/intersection.hpp"
+#include "kernels/light.hpp"
 #include "kernels/material.hpp"
 #include "kernels/matrix.hpp"
 #include "kernels/random.hpp"
@@ -102,7 +103,7 @@ DEVICE float3 trace_ray(uint& rng_state,
 
   float3 color = make_vector<float3>(0.0f);
   float3 weight = make_vector<float3>(1.0f);
-  bool indirect = false;
+  bool direct = true;
 
   while (true) {
     Ray ray(ray_pos, ray_dir, RAY_EPSILON);
@@ -112,7 +113,7 @@ DEVICE float3 trace_ray(uint& rng_state,
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, intrs, false)) {
       // TODO: IBL instead of just skymap
-      if (!indirect) {
+      if (direct) {
         color = read_sky(sky, ray_dir);
       }
       break;
@@ -135,69 +136,59 @@ DEVICE float3 trace_ray(uint& rng_state,
                                    make_vector<float3>(params.shading_metallic)).x;
     float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
                                     make_vector<float3>(params.shading_roughness)).x;
-    // float ambient_occlusion =
-    //   read_material(materials, meta, texture_coord, meta.ambient_occlusion_index,
-    //                 make_vector<float3>(params.shading_ambient_occlusion)).x;
     // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
-
-    // // // Sample area light source
-    // const AreaLight& light = params.light;
-    // offset = light.size *
-    //          make_vector<float2>(rand(rng_state) * 2.0f - 1.0f, rand(rng_state) * 2.0f - 1.0f);
-    // Mat3x3 light_basis = create_basis(normalize(light.normal));
-    // float3 light_position =
-    //   light.position + light_basis * make_vector<float3>(offset.x, 0.0f, offset.y);
-
-    // // Calculate lighting params
-    // float3 light_dir = normalize(light_position - intrs_point);
-    // float3 view_dir = -ray.direction;
-    // float3 half_dir = normalize(light_dir + view_dir);
-    // float light_distance = distance(light_position, intrs_point);
-
-    // float3 light_brdf =
-    //   get_light_brdf(light_dir, view_dir, half_dir, normal, diffuse, metallic, roughness,
-    //   meta.kS);
-
-    // float3 intrs_color = meta.kE;
-    // // Only cast a shadow ray if it will produce a color change
-    // // Cast a shadow ray to the light
-    // Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
-    // Intersection light_intrs;
-    // // Ensure objects blocking light are not behind the light
-    // light_intrs.length = light_distance;
-
-    // // Shade the pixel if ray is not blocked
-    // if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-    //   intrs_color += light_brdf * max(dot(normal, light_dir), 0.0f) * params.light.intensity /
-    //                  max(light_distance * light_distance, 1.0f);
-    // }
-
     float3 out_dir = -ray_dir;
 
+    float3 intrs_color = meta.kE;
+
+    // Sample area light source
+    const AreaLight& light = params.light;
+    float3 light_position = sample(light, rng_state);
+
+    // Calculate lighting params
+    float3 light_dir = normalize(light_position - intrs_point);
+    float light_distance = distance(light_position, intrs_point);
+    float light_area = light.size * light.size;
+
+    // Cast a shadow ray to the light, ensuring objects blocking light are not behind the light
+    Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
+    Intersection light_intrs(light_distance);
+
+    // Add light contribution if ray is not blocked
+    if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
+      CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic, roughness);
+      float3 light_brdf = ct_light_brdf.eval();
+      float light_pdf =
+        ct_light_brdf.light_pdf(normalize(light.normal), light_distance, light_area);
+
+      intrs_color += light.intensity * light_brdf / light_pdf * max(dot(normal, light_dir), 0.0f);
+    }
+
+    // Sample material brdf for next direction
     CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);
 
     float3 in_dir = ct_brdf.sample(rng_state);
     float3 brdf = ct_brdf.eval();
     float3 pdf = ct_brdf.pdf();
 
-    color += weight * meta.kE;
+    color += weight * intrs_color;
     weight *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
 
     // Russian roulette
-    if (indirect) {
-      float q = 1.0f - min(max(weight.x, max(weight.y, weight.z)), 1.0f);
-      if (rand(rng_state) <= q) {
+    if (!direct) {
+      float p = min(max(weight.x, max(weight.y, weight.z)), 1.0f);
+      if (rand(rng_state) > p) {
         break;
       }
-      weight *= 1.0f / (1.0f - q);
+      weight *= 1.0f / p;
     }
 
     ray_pos = intrs_point;
     ray_dir = in_dir;
 
-    indirect = true;
+    direct = false;
   }
 
   return color;
