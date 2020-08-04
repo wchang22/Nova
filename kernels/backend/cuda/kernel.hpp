@@ -8,6 +8,8 @@
 #define LOCAL __shared__
 #define CONSTANT
 
+#include <cstdio>
+
 namespace nova {
 
 __device__ constexpr int get_global_id(int i) {

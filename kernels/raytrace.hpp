@@ -4,6 +4,7 @@
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
+#include "kernels/backend/assertion.hpp"
 #include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
 #include "kernels/backend/math_constants.hpp"
@@ -62,6 +63,9 @@ DEVICE bool find_intersection(
 
         node_index = stack[node_ptr--];
       }
+
+      assert(node_ptr < STACK_SIZE);
+
       // Make sure tri_ptr and node_ptr do not collide
     } while (node_index && tri_ptr > node_ptr + 2);
 
@@ -175,6 +179,10 @@ DEVICE float3 trace_ray(uint& rng_state,
 
     color += weight * intrs_color;
     weight *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
+
+    assert(all(isfinite(in_dir)));
+    assert(all(isfinite(color)));
+    assert(all(isfinite(weight)));
 
     // Russian roulette
     if (!direct) {
