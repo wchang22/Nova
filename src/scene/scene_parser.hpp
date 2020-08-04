@@ -35,7 +35,6 @@ struct ShadingDefaultSettings {
   vec3f diffuse;
   float metallic;
   float roughness;
-  float ambient_occlusion;
 };
 
 struct LightSettings {

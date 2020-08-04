@@ -179,7 +179,6 @@ void Window::display_scene_settings() {
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
-  static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
   static int num_samples = scene.get_num_samples();
   static float exposure = scene.get_exposure();
 
@@ -282,12 +281,10 @@ void Window::display_scene_settings() {
       ImGui::InputFloat3("Diffuse##ShadingDefaults", shading_diffuse.data());
       ImGui::InputFloat("Metallic##ShadingDefaults", &shading_metallic);
       ImGui::InputFloat("Roughness##ShadingDefaults", &shading_roughness);
-      ImGui::InputFloat("AO##ShadingDefaults", &shading_ambient_occlusion);
 
       shading_diffuse = scene.set_shading_diffuse(shading_diffuse);
       shading_metallic = scene.set_shading_metallic(shading_metallic);
       shading_roughness = scene.set_shading_roughness(shading_roughness);
-      shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
     }
 
     if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {

@@ -26,7 +26,6 @@ public:
     vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
-    float shading_ambient_occlusion;
 
     bool operator==(const Settings& other) const {
       // clang-format off
@@ -44,8 +43,7 @@ public:
              light_size == other.light_size &&
              shading_diffuse == other.shading_diffuse &&
              shading_metallic == other.shading_metallic &&
-             shading_roughness == other.shading_roughness &&
-             shading_ambient_occlusion == other.shading_ambient_occlusion;
+             shading_roughness == other.shading_roughness;
       // clang-format on
     }
     bool operator!=(const Settings& other) const { return !(*this == other); }
@@ -86,8 +84,6 @@ public:
   float get_shading_metallic() const;
   float set_shading_roughness(float roughness);
   float get_shading_roughness() const;
-  float set_shading_ambient_occlusion(float ambient_occlusion);
-  float get_shading_ambient_occlusion() const;
 
   const vec2i& set_output_dimensions(const vec2i& dimensions);
   const vec2i& get_output_dimensions() const;

@@ -53,9 +53,8 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   vec3f diffuse = toml::find<vec3f>(parsed_data, "shading_defaults", "diffuse");
   float metallic = toml::find<float>(parsed_data, "shading_defaults", "metallic");
   float roughness = toml::find<float>(parsed_data, "shading_defaults", "roughness");
-  float ambient_occlusion = toml::find<float>(parsed_data, "shading_defaults", "ambient_occlusion");
 
-  return { diffuse, metallic, roughness, ambient_occlusion };
+  return { diffuse, metallic, roughness };
 }
 
 }

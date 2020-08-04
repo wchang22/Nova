@@ -18,7 +18,7 @@ DEVICE inline float3 read_material(image2d_array_read_t materials,
                                    int index,
                                    const float3& default_material) {
   if (meta.diffuse_index == -1 && meta.metallic_index == -1 && meta.roughness_index == -1 &&
-      meta.ambient_occlusion_index == -1 && meta.normal_index == -1) {
+      meta.normal_index == -1) {
     return default_material;
   }
   if (index == -1) {

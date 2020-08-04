@@ -34,7 +34,6 @@ void Raytracer::set_scene(const Scene& scene) {
   const float3 shading_diffuse = vec_to_float3(scene.get_shading_diffuse());
   const float shading_metallic = scene.get_shading_metallic();
   const float shading_roughness = scene.get_shading_roughness();
-  const float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
   const float3 light_intensity = vec_to_float3(scene.get_light_intensity());
   const float3 light_position = vec_to_float3(scene.get_light_position());
   const float3 light_normal = vec_to_float3(scene.get_light_normal());
@@ -47,7 +46,7 @@ void Raytracer::set_scene(const Scene& scene) {
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
     SceneParams { eye_coords, light, shading_diffuse, shading_metallic, shading_roughness,
-                  shading_ambient_occlusion, num_samples, exposure, anti_aliasing });
+                  num_samples, exposure, anti_aliasing });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {

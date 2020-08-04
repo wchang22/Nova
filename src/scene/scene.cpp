@@ -18,7 +18,7 @@ Scene::Scene() {
     scene_parser.get_camera_settings();
   const auto [light_intensity, light_position, light_normal, light_size] =
     scene_parser.get_light_settings();
-  const auto [default_diffuse, default_metallic, default_roughness, default_ambient_occlusion] =
+  const auto [default_diffuse, default_metallic, default_roughness] =
     scene_parser.get_shading_default_settings();
 
   Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
@@ -28,7 +28,7 @@ Scene::Scene() {
     output_dimensions, output_file_path,    num_samples,       anti_aliasing,
     exposure,          model_paths.front(), sky_path,          camera,
     light_intensity,   light_position,      light_normal,      light_size,
-    default_diffuse,   default_metallic,    default_roughness, default_ambient_occlusion
+    default_diffuse,   default_metallic,    default_roughness
   };
 }
 
@@ -140,12 +140,6 @@ float Scene::set_shading_roughness(float roughness) {
 }
 
 float Scene::get_shading_roughness() const { return settings.shading_roughness; }
-
-float Scene::set_shading_ambient_occlusion(float ambient_occlusion) {
-  return settings.shading_ambient_occlusion = std::clamp(ambient_occlusion, 0.0f, 1.0f);
-}
-
-float Scene::get_shading_ambient_occlusion() const { return settings.shading_ambient_occlusion; }
 
 const vec2i& Scene::set_output_dimensions(const vec2i& dimensions) {
   settings.output_dimensions[0] = std::clamp(dimensions[0], 1, MAX_RESOLUTION.first);
