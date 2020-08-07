@@ -3,7 +3,9 @@
 
 #include "backend/accelerator.hpp"
 #include "intersectables/intersectable_manager.hpp"
+#include "kernel_types/area_light.hpp"
 #include "kernel_types/scene_params.hpp"
+#include "light/area_light.hpp"
 #include "material/material_loader.hpp"
 #include "material/sky_loader.hpp"
 
@@ -32,6 +34,7 @@ private:
   // Scene params and buffers
   std::string loaded_model;
   std::string loaded_sky;
+  AreaLight loaded_light;
   uint32_t width;
   uint32_t height;
   Image2DWrite<uchar4> pixel_im;
@@ -43,6 +46,8 @@ private:
   Buffer<TriangleData> triangle_buf;
   Buffer<TriangleMetaData> tri_meta_buf;
   Buffer<FlatBVHNode> bvh_buf;
+  Buffer<AreaLightData> light_buf;
+  Wrapper<uint32_t> num_lights_wrapper;
   Buffer<int2> rem_coords_buf;
   Buffer<uint32_t> rem_pixels_buf;
   Image2DArray<float4> material_ims;

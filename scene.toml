@@ -23,7 +23,7 @@ exposure = 1.0
 # [light]
 # position = [-1.4, 1.0, 2.5]
 # normal = [0.0, -1.0, 0.0]
-# size = 0.5
+# dims = [0.5, 0.5]
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -47,7 +47,7 @@ exposure = 1.0
 # [light]
 # position = [-1.4, 1.7, -2.0]
 # normal = [0.0, -1.0, 0.0]
-# size = 0.5
+# dims = [0.5, 0.5]
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -71,7 +71,7 @@ fovy = 45.0
 [light]
 position = [0.8, 0.5, -0.6]
 normal = [0.0, -1.0, 0.0]
-size = 0.2
+dims = [0.2, 0.2]
 intensity = [50.0, 50.0, 50.0]
 
 [shading_defaults]
@@ -95,7 +95,7 @@ roughness = 0.1
 # [light]
 # position = [1.6, 0.5, 2.5]
 # normal = [0.0, -1.0, 0.0]
-# size = 1.0
+# dims = [1.0, 1.0]
 # intensity = [500.0, 500.0, 500.0]
 
 # [shading_defaults]
@@ -119,7 +119,7 @@ roughness = 0.1
 # [light]
 # position = [0.0, 0.96, -0.0]
 # normal = [0.0, -1.0, 0.0]
-# size = 0.2
+# dims = [0.2, 0.2]
 # intensity = [50.0, 50.0, 50.0]
 
 # [shading_defaults]

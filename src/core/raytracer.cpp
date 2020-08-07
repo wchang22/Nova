@@ -34,19 +34,13 @@ void Raytracer::set_scene(const Scene& scene) {
   const float3 shading_diffuse = vec_to_float3(scene.get_shading_diffuse());
   const float shading_metallic = scene.get_shading_metallic();
   const float shading_roughness = scene.get_shading_roughness();
-  const float3 light_intensity = vec_to_float3(scene.get_light_intensity());
-  const float3 light_position = vec_to_float3(scene.get_light_position());
-  const float3 light_normal = vec_to_float3(scene.get_light_normal());
-  float light_size = scene.get_light_size();
   const int num_samples = scene.get_num_samples();
   const float exposure = scene.get_exposure();
   const bool anti_aliasing = scene.get_anti_aliasing();
 
-  AreaLight light { light_intensity, light_position, light_normal, light_size };
-
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { eye_coords, light, shading_diffuse, shading_metallic, shading_roughness,
-                  num_samples, exposure, anti_aliasing });
+    SceneParams { eye_coords, shading_diffuse, shading_metallic, shading_roughness, num_samples,
+                  exposure, anti_aliasing });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
@@ -68,19 +62,27 @@ void Raytracer::set_scene(const Scene& scene) {
       accelerator.create_buffer<int2>(MemFlags::READ_WRITE, std::max(width * height / 2, 1U));
   }
 
-  // Update Model
+  // Update Model And Light
+  // TODO: Make this so don't need to regenerate everything
   const std::string& model_path = scene.get_model_path();
-  if (model_path != loaded_model) {
+  const AreaLight& light = scene.get_light();
+
+  if (model_path != loaded_model || light != loaded_light) {
     intersectable_manager.clear();
     material_loader.clear();
 
     Model model(model_path, material_loader);
     intersectable_manager.add_model(model);
+    intersectable_manager.add_light(light);
 
-    auto [triangle_data, triangle_meta_data, bvh_data] = intersectable_manager.build();
+    auto [triangle_data, triangle_meta_data, bvh_data, light_data] = intersectable_manager.build();
     triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
     tri_meta_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_meta_data);
     bvh_buf = accelerator.create_buffer(MemFlags::READ_ONLY, bvh_data);
+    if (!light_data.empty()) {
+      light_buf = accelerator.create_buffer(MemFlags::READ_ONLY, light_data);
+    }
+    num_lights_wrapper = accelerator.create_wrapper<uint32_t>(1);
 
     MaterialData material_data = material_loader.build();
     // Create a dummy array
@@ -93,6 +95,7 @@ void Raytracer::set_scene(const Scene& scene) {
       std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
 
     loaded_model = model_path;
+    loaded_light = light;
   }
 
   // Update Sky
@@ -134,8 +137,8 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
                             scene_params_wrapper, sample_index_wrapper, time_wrapper,
                             temp_pixel_im1.write_access(), temp_pixel_im2.write_access(),
-                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
-                            sky_im);
+                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, light_buf,
+                            num_lights_wrapper, material_ims, sky_im);
     PROFILE_SECTION_END();
   }
   {
@@ -153,10 +156,10 @@ image_utils::image<uchar4> Raytracer::raytrace() {
     uint32_t counter = accelerator.read_buffer(rem_pixels_buf);
     uint2 global_dims { counter, 1 };
     uint2 local_dims { 32, 1 };
-    accelerator.call_kernel(RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims,
-                            scene_params_wrapper, time_wrapper, temp_pixel_im2.write_access(),
-                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, material_ims,
-                            sky_im, rem_pixels_buf, rem_coords_buf);
+    accelerator.call_kernel(
+      RESOLVE_KERNEL(kernel_fill_remaining), global_dims, local_dims, scene_params_wrapper,
+      time_wrapper, temp_pixel_im2.write_access(), pixel_dims_wrapper, triangle_buf, tri_meta_buf,
+      bvh_buf, light_buf, num_lights_wrapper, material_ims, sky_im, rem_pixels_buf, rem_coords_buf);
     PROFILE_SECTION_END();
   }
   {

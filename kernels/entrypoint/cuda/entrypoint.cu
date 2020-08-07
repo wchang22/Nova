@@ -14,11 +14,13 @@ void kernel_raytrace(dim3 num_blocks,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
+                     AreaLightData* lights,
+                     uint num_lights,
                      cudaTextureObject_t materials,
                      cudaTextureObject_t sky) {
   kernel_raytrace<<<num_blocks, block_size>>>(scene_params, sample_index, time, temp_pixels1,
                                               temp_pixels2, pixel_dims, triangles, tri_meta, bvh,
-                                              materials, sky);
+                                              lights, num_lights, materials, sky);
 }
 
 void kernel_interpolate(dim3 num_blocks,
@@ -42,13 +44,15 @@ void kernel_fill_remaining(dim3 num_blocks,
                            TriangleData* triangles,
                            TriangleMetaData* tri_meta,
                            FlatBVHNode* bvh,
+                           AreaLightData* lights,
+                           uint num_lights,
                            cudaTextureObject_t materials,
                            cudaTextureObject_t sky,
                            uint* rem_pixels_counter,
                            int2* rem_coords) {
   kernel_fill_remaining<<<num_blocks, block_size>>>(scene_params, time, temp_pixels2, pixel_dims,
-                                                    triangles, tri_meta, bvh, materials, sky,
-                                                    rem_pixels_counter, rem_coords);
+                                                    triangles, tri_meta, bvh, lights, num_lights,
+                                                    materials, sky, rem_pixels_counter, rem_coords);
 }
 
 void kernel_accumulate(dim3 num_blocks,

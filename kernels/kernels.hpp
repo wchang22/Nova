@@ -1,6 +1,7 @@
 #ifndef KERNEL_KERNELS_HPP
 #define KERNEL_KERNELS_HPP
 
+#include "kernel_types/area_light.hpp"
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
@@ -18,6 +19,8 @@ KERNEL void kernel_raytrace(SceneParams params,
                             GLOBAL TriangleData* triangles,
                             GLOBAL TriangleMetaData* tri_meta,
                             GLOBAL FlatBVHNode* bvh,
+                            GLOBAL AreaLightData* lights,
+                            uint num_lights,
                             image2d_array_read_t materials,
                             image2d_read_t sky);
 
@@ -35,6 +38,8 @@ KERNEL void kernel_fill_remaining(SceneParams params,
                                   GLOBAL TriangleData* triangles,
                                   GLOBAL TriangleMetaData* tri_meta,
                                   GLOBAL FlatBVHNode* bvh,
+                                  GLOBAL AreaLightData* lights,
+                                  uint num_lights,
                                   image2d_array_read_t materials,
                                   image2d_read_t sky,
                                   GLOBAL uint* rem_pixels_counter,

@@ -15,6 +15,8 @@ KERNEL void kernel_raytrace(SceneParams params,
                             GLOBAL TriangleData* triangles,
                             GLOBAL TriangleMetaData* tri_meta,
                             GLOBAL FlatBVHNode* bvh,
+                            GLOBAL AreaLightData* lights,
+                            uint num_lights,
                             image2d_array_read_t materials,
                             image2d_read_t sky) {
   int2 packed_pixel_coords = { static_cast<int>(get_global_id(0)),
@@ -26,8 +28,8 @@ KERNEL void kernel_raytrace(SceneParams params,
   pixel_coords.y = 2 * pixel_coords.y + ((pixel_coords.x & 1) ^ (sample_index % 2 == 0));
   uint rng_state = hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + hash(time));
 
-  float3 color =
-    trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+  float3 color = trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, lights,
+                           num_lights, materials, sky);
 
   write_image(temp_pixels1, packed_pixel_coords, make_vector<float4>(color, 1.0f));
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
@@ -80,6 +82,8 @@ KERNEL void kernel_fill_remaining(SceneParams params,
                                   GLOBAL TriangleData* triangles,
                                   GLOBAL TriangleMetaData* tri_meta,
                                   GLOBAL FlatBVHNode* bvh,
+                                  GLOBAL AreaLightData* lights,
+                                  uint num_lights,
                                   image2d_array_read_t materials,
                                   image2d_read_t sky,
                                   GLOBAL uint* rem_pixels_counter,
@@ -91,8 +95,8 @@ KERNEL void kernel_fill_remaining(SceneParams params,
   int2 pixel_coords = rem_coords[id];
   uint rng_state = hash(pixel_coords.y * pixel_dims.x + pixel_coords.x + hash(time));
 
-  float3 color =
-    trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, materials, sky);
+  float3 color = trace_ray(rng_state, params, pixel_coords, triangles, tri_meta, bvh, lights,
+                           num_lights, materials, sky);
 
   write_image(temp_pixels2, pixel_coords, make_vector<float4>(color, 1.0f));
 }

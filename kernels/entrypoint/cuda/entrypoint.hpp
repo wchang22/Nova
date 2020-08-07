@@ -1,6 +1,7 @@
 #ifndef KERNEL_CUDA_ENTRYPOINT_HPP
 #define KERNEL_CUDA_ENTRYPOINT_HPP
 
+#include "kernel_types/area_light.hpp"
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/eye_coords.hpp"
 #include "kernel_types/scene_params.hpp"
@@ -19,6 +20,8 @@ void kernel_raytrace(dim3 num_blocks,
                      TriangleData* triangles,
                      TriangleMetaData* tri_meta,
                      FlatBVHNode* bvh,
+                     AreaLightData* lights,
+                     uint num_lights,
                      cudaTextureObject_t materials,
                      cudaTextureObject_t sky);
 
@@ -40,6 +43,8 @@ void kernel_fill_remaining(dim3 num_blocks,
                            TriangleData* triangles,
                            TriangleMetaData* tri_meta,
                            FlatBVHNode* bvh,
+                           AreaLightData* lights,
+                           uint num_lights,
                            cudaTextureObject_t materials,
                            cudaTextureObject_t sky,
                            uint* rem_pixels_counter,

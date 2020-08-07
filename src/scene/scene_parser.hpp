@@ -41,7 +41,7 @@ struct LightSettings {
   vec3f intensity;
   vec3f position;
   vec3f normal;
-  float size;
+  vec2f dims;
 };
 
 class SceneParser {

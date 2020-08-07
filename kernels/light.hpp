@@ -9,9 +9,9 @@
 namespace nova {
 
 // Randomly sample light source uniformly
-DEVICE inline float3 sample(const AreaLight& light, uint& rng_state) {
+DEVICE inline float3 sample(const AreaLightData& light, uint& rng_state) {
   float2 offset =
-    light.size * (make_vector<float2>(rand(rng_state), rand(rng_state)) * 2.0f - 1.0f);
+    light.dims * (make_vector<float2>(rand(rng_state), rand(rng_state)) * 2.0f - 1.0f);
   Mat3x3 light_basis = create_basis(normalize(light.normal));
   return light.position + light_basis * make_vector<float3>(offset.x, 0.0f, offset.y);
 }

@@ -1,6 +1,7 @@
 #ifndef KERNEL_RAYTRACE_HPP
 #define KERNEL_RAYTRACE_HPP
 
+#include "kernel_types/area_light.hpp"
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
@@ -94,6 +95,8 @@ DEVICE float3 trace_ray(uint& rng_state,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
+                        AreaLightData* lights,
+                        uint num_lights,
                         image2d_array_read_t materials,
                         image2d_read_t sky) {
   // Jitter ray to get free anti-aliasing
@@ -145,30 +148,44 @@ DEVICE float3 trace_ray(uint& rng_state,
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
     float3 out_dir = -ray_dir;
 
-    float3 intrs_color = meta.kE;
+    float3 intrs_color = make_vector<float3>(0.0f);
 
-    // Sample area light source
-    const AreaLight& light = params.light;
-    float3 light_position = sample(light, rng_state);
+    bool is_light = false;
+    for (uint i = 0; i < num_lights; i++) {
+      AreaLightData& light = lights[i];
 
-    // Calculate lighting params
-    float3 light_dir = normalize(light_position - intrs_point);
-    float light_distance = distance(light_position, intrs_point);
-    float light_area = light.size * light.size;
+      // Don't double count lights
+      if (intrs.tri_index == light.tri_index1 || intrs.tri_index == light.tri_index2) {
+        is_light = true;
+        continue;
+      }
 
-    // Cast a shadow ray to the light, ensuring objects blocking light are not behind the light
-    Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
-    Intersection light_intrs(light_distance);
+      // Sample area light source
+      float3 light_position = sample(light, rng_state);
 
-    // Add light contribution if ray is not blocked
-    if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-      CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic, roughness);
-      float3 light_brdf = ct_light_brdf.eval();
-      float light_pdf =
-        ct_light_brdf.light_pdf(normalize(light.normal), light_distance, light_area);
+      // Calculate lighting params
+      float3 light_dir = normalize(light_position - intrs_point);
+      float light_distance = distance(light_position, intrs_point);
+      float light_area = light.dims.x * light.dims.y;
 
-      intrs_color += light.intensity * light_brdf / light_pdf * max(dot(normal, light_dir), 0.0f);
+      // Cast a shadow ray to the light, ensuring objects blocking light are not behind the light
+      Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs(light_distance - RAY_EPSILON);
+
+      // Add light contribution if ray is not blocked
+      if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
+        CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic,
+                                            roughness);
+        float3 light_brdf = ct_light_brdf.eval();
+        float light_pdf =
+          ct_light_brdf.light_pdf(normalize(light.normal), light_distance, light_area);
+
+        intrs_color += light.intensity * light_brdf / light_pdf * max(dot(normal, light_dir), 0.0f);
+      }
     }
+
+    // Only add emissive on first bounce, or if not a light
+    intrs_color += (direct || !is_light) ? meta.kE : make_vector<float3>(0.0f);
 
     // Sample material brdf for next direction
     CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);

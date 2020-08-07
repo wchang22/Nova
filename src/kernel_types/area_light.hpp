@@ -5,11 +5,13 @@
 
 namespace nova {
 
-struct AreaLight {
+struct AreaLightData {
   float3 intensity;
   float3 position;
   float3 normal;
-  float size;
+  float2 dims;
+  int tri_index1 = -1;
+  int tri_index2 = -1;
 };
 
 }

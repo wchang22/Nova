@@ -21,9 +21,39 @@ void IntersectableManager::add_model(const Model& model) {
   }
 }
 
+void IntersectableManager::add_light(const AreaLight& light) {
+  const auto& [intensity, position, normal, dims] = light;
+  glm::vec3 v = normal;
+  glm::vec3 aux = std::abs(v.y) > 0.1 ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 u = glm::normalize(glm::cross(v, aux));
+  glm::vec3 w = glm::cross(u, v);
+
+  Triangle tri1 {
+    position - dims.x * u - dims.y * w,
+    position - dims.x * u + dims.y * w,
+    position + dims.x * u + dims.y * w,
+  };
+  Triangle tri2 {
+    position + dims.x * u + dims.y * w,
+    position + dims.x * u - dims.y * w,
+    position - dims.x * u - dims.y * w,
+  };
+  TriangleMeta meta {
+    light.normal, light.normal,    light.normal,    {}, {}, {}, {}, {}, {}, {}, {},
+    {},           glm::vec3(1.0f), light.intensity, -1, -1, -1, -1
+  };
+  add_triangle(tri1, meta);
+  add_triangle(tri2, meta);
+  triangle_light_map[tri1] = lights.size();
+  triangle_light_map[tri2] = lights.size();
+  lights.push_back(light);
+}
+
 void IntersectableManager::clear() {
   triangles.clear();
   triangle_map.clear();
+  lights.clear();
+  triangle_light_map.clear();
 }
 
 IntersectableData IntersectableManager::build() {
@@ -35,10 +65,12 @@ IntersectableData IntersectableManager::build() {
   // intersection, and this reduces cache pressure
   std::vector<TriangleData> triangle_data;
   std::vector<TriangleMetaData> triangle_meta_data;
+  std::vector<AreaLightData> light_data(lights.size());
   triangle_data.reserve(triangles.size());
   triangle_meta_data.reserve(triangles.size());
 
-  for (const auto& tri : triangles) {
+  for (uint32_t i = 0; i < triangles.size(); i++) {
+    const auto& tri = triangles[i];
     const auto& [v1, v2, v3] = tri;
     glm::vec3 e1 = v2 - v1;
     glm::vec3 e2 = v3 - v1;
@@ -77,9 +109,29 @@ IntersectableData IntersectableManager::build() {
       meta.roughness_index,
       meta.normal_index,
     });
+
+    // Correspond lights with the triangle indices
+    const auto& light_it = triangle_light_map.find(tri);
+    if (light_it != triangle_light_map.end()) {
+      uint32_t light_index = light_it->second;
+      auto& light = light_data[light_index];
+
+      if (light.tri_index1 == -1) {
+        light = {
+          glm_to_float3(lights[light_index].intensity),
+          glm_to_float3(lights[light_index].position),
+          glm_to_float3(lights[light_index].normal),
+          glm_to_float2(lights[light_index].dims),
+          static_cast<int>(i),
+          -1,
+        };
+      } else {
+        light.tri_index2 = i;
+      }
+    }
   }
 
-  return { triangle_data, triangle_meta_data, bvh_data };
+  return { triangle_data, triangle_meta_data, bvh_data, light_data };
 }
 
 }

@@ -2,6 +2,7 @@
 
 #include "camera/camera.hpp"
 #include "core/raytracer.hpp"
+#include "light/area_light.hpp"
 #include "vector/vector_types.hpp"
 
 namespace nova {
@@ -19,10 +20,7 @@ public:
     std::string model_path;
     std::string sky_path;
     Camera camera;
-    vec3f light_intensity;
-    vec3f light_position;
-    vec3f light_normal;
-    float light_size;
+    AreaLight light;
     vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
@@ -37,10 +35,7 @@ public:
              model_path == other.model_path &&
              sky_path == other.sky_path &&
              camera == other.camera &&
-             light_intensity == other.light_intensity &&
-             light_position == other.light_position &&
-             light_normal == other.light_normal &&
-             light_size == other.light_size &&
+             light == other.light &&
              shading_diffuse == other.shading_diffuse &&
              shading_metallic == other.shading_metallic &&
              shading_roughness == other.shading_roughness;
@@ -70,14 +65,15 @@ public:
   float get_camera_fovy() const;
   void move_camera(Camera::Direction direction, float speed);
   EyeCoords get_camera_eye_coords() const;
-  const vec3f& set_light_position(const vec3f& position);
-  const vec3f& get_light_position() const;
-  const vec3f& set_light_normal(const vec3f& normal);
-  const vec3f& get_light_normal() const;
-  float set_light_size(float size);
-  float get_light_size() const;
-  const vec3f& set_light_intensity(const vec3f& intensity);
-  const vec3f& get_light_intensity() const;
+  vec3f set_light_position(const vec3f& position);
+  vec3f get_light_position() const;
+  vec3f set_light_normal(const vec3f& normal);
+  vec3f get_light_normal() const;
+  vec2f set_light_dims(const vec2f& dims);
+  vec2f get_light_dims() const;
+  vec3f set_light_intensity(const vec3f& intensity);
+  vec3f get_light_intensity() const;
+  const AreaLight& get_light() const;
   const vec3f& set_shading_diffuse(const vec3f& diffuse);
   const vec3f& get_shading_diffuse() const;
   float set_shading_metallic(float metallic);
