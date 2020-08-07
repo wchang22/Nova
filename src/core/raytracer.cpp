@@ -173,9 +173,7 @@ image_utils::image<uchar4> Raytracer::raytrace() {
   }
   {
     PROFILE_SECTION_START("Copy previous image");
-    if (sample_index != 0) {
-      accelerator.copy_image2D(prev_pixel_im, temp_pixel_im1, width, height);
-    }
+    accelerator.copy_image2D(prev_pixel_im, temp_pixel_im1, width, height);
     PROFILE_SECTION_END();
   }
   {
