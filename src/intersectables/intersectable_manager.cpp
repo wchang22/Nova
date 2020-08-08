@@ -6,6 +6,42 @@
 
 namespace nova {
 
+std::vector<Triangle> create_plane(const glm::vec3& position,
+                                   const glm::vec3& normal,
+                                   const glm::vec2& dims,
+                                   const glm::uvec2& divisons = { 2, 2 }) {
+  glm::vec3 v = normal;
+  glm::vec3 aux = std::abs(v.y) > 0.1 ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 u = glm::normalize(glm::cross(v, aux));
+  glm::vec3 w = glm::cross(u, v);
+
+  std::vector<Triangle> tris;
+
+  glm::vec3 corner = position - dims.x / 2.0f * u - dims.y / 2.0f * w;
+  glm::vec2 divison_size = dims / glm::vec2(divisons);
+
+  for (uint32_t j = 0; j < divisons.y; j++) {
+    for (uint32_t i = 0; i < divisons.x; i++) {
+      glm::vec3 offset_position =
+        corner + (i + 0.5f) * divison_size.x * u + (j + 0.5f) * divison_size.y * w;
+      Triangle tri1 {
+        offset_position - divison_size.x * u - divison_size.y * w,
+        offset_position - divison_size.x * u + divison_size.y * w,
+        offset_position + divison_size.x * u + divison_size.y * w,
+      };
+      Triangle tri2 {
+        offset_position + divison_size.x * u + divison_size.y * w,
+        offset_position + divison_size.x * u - divison_size.y * w,
+        offset_position - divison_size.x * u - divison_size.y * w,
+      };
+      tris.emplace_back(tri1);
+      tris.emplace_back(tri2);
+    }
+  }
+
+  return tris;
+}
+
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
   if (triangles.size() >= MAX_TRIANGLES) {
     throw TriangleException("Max number of triangles exceeded");
@@ -23,21 +59,8 @@ void IntersectableManager::add_model(const Model& model) {
 
 void IntersectableManager::add_light(const AreaLight& light) {
   const auto& [intensity, position, normal, dims] = light;
-  glm::vec3 v = normal;
-  glm::vec3 aux = std::abs(v.y) > 0.1 ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
-  glm::vec3 u = glm::normalize(glm::cross(v, aux));
-  glm::vec3 w = glm::cross(u, v);
 
-  Triangle tri1 {
-    position - dims.x * u - dims.y * w,
-    position - dims.x * u + dims.y * w,
-    position + dims.x * u + dims.y * w,
-  };
-  Triangle tri2 {
-    position + dims.x * u + dims.y * w,
-    position + dims.x * u - dims.y * w,
-    position - dims.x * u - dims.y * w,
-  };
+  std::vector<Triangle> plane = create_plane(position, normal, dims, { 2, 2 });
   TriangleMeta meta { light.normal,
                       light.normal,
                       light.normal,
@@ -52,14 +75,27 @@ void IntersectableManager::add_light(const AreaLight& light) {
                       {},
                       glm::vec3(1.0f),
                       light.intensity,
+                      -1.0f,
+                      -1.0f,
                       -1,
                       -1,
                       -1,
                       -1,
                       static_cast<int>(lights.size()) };
-  add_triangle(tri1, meta);
-  add_triangle(tri2, meta);
+  for (const auto& tri : plane) {
+    add_triangle(tri, meta);
+  }
   lights.push_back(light);
+}
+
+void IntersectableManager::add_ground_plane(const GroundPlane& ground_plane) {
+  const auto& [position, normal, dims, diffuse, metallic, roughness] = ground_plane;
+  std::vector<Triangle> plane = create_plane(position, normal, dims, { 4, 4 });
+  TriangleMeta meta { normal, normal,  normal, {},       {},        {}, {}, {}, {}, {}, {},
+                      {},     diffuse, {},     metallic, roughness, -1, -1, -1, -1, -1 };
+  for (const auto& tri : plane) {
+    add_triangle(tri, meta);
+  }
 }
 
 void IntersectableManager::clear() {
@@ -116,6 +152,8 @@ IntersectableData IntersectableManager::build() {
       glm_to_float2(meta.texture_coord3),
       glm_to_float3(meta.kD),
       glm_to_float3(meta.kE),
+      meta.metallic,
+      meta.roughness,
       meta.diffuse_index,
       meta.metallic_index,
       meta.roughness_index,

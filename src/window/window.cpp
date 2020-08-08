@@ -301,6 +301,39 @@ void Window::display_scene_settings() {
       }
     }
 
+    if (ImGui::CollapsingHeader("Ground Plane##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (scene.get_ground_plane().has_value()) {
+        vec3f ground_plane_position = scene.get_ground_plane_position();
+        vec3f ground_plane_normal = scene.get_ground_plane_normal();
+        vec2f ground_plane_dims = scene.get_ground_plane_dims();
+        vec3f ground_plane_diffuse = scene.get_ground_plane_diffuse();
+        float ground_plane_metallic = scene.get_ground_plane_metallic();
+        float ground_plane_roughness = scene.get_ground_plane_roughness();
+
+        ImGui::InputFloat3("Position##Ground Plane", ground_plane_position.data());
+        ImGui::InputFloat3("Normal##Ground Plane", ground_plane_normal.data());
+        ImGui::InputFloat2("Dimensions##Ground Plane", ground_plane_dims.data());
+        ImGui::InputFloat3("Diffuse##Ground Plane", ground_plane_diffuse.data());
+        ImGui::InputFloat("Metallic##Ground Plane", &ground_plane_metallic);
+        ImGui::InputFloat("Roughness##Ground Plane", &ground_plane_roughness);
+
+        scene.set_ground_plane_position(ground_plane_position);
+        scene.set_ground_plane_normal(ground_plane_normal);
+        scene.set_ground_plane_dims(ground_plane_dims);
+        scene.set_ground_plane_diffuse(ground_plane_diffuse);
+        scene.set_ground_plane_metallic(ground_plane_metallic);
+        scene.set_ground_plane_roughness(ground_plane_roughness);
+
+        if (ImGui::Button("Delete##Ground Plane", { button_width, 0.0f })) {
+          scene.delete_ground_plane();
+        }
+      } else {
+        if (ImGui::Button("Add new##Ground Plane", { button_width, 0.0f })) {
+          scene.add_ground_plane();
+        }
+      }
+    }
+
     if (ImGui::CollapsingHeader("Shading Defaults##SceneSettings",
                                 ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::InputFloat3("Diffuse##ShadingDefaults", shading_diffuse.data());

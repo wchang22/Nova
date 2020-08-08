@@ -8,8 +8,9 @@
 #include "intersectables/triangle.hpp"
 #include "kernel_types/area_light.hpp"
 #include "kernel_types/bvh_node.hpp"
-#include "light/area_light.hpp"
 #include "model/model.hpp"
+#include "scene/area_light.hpp"
+#include "scene/ground_plane.hpp"
 
 namespace nova {
 
@@ -25,6 +26,7 @@ public:
   void add_triangle(const Triangle& tri, const TriangleMeta& meta);
   void add_model(const Model& model);
   void add_light(const AreaLight& light);
+  void add_ground_plane(const GroundPlane& ground_plane);
   void clear();
   IntersectableData build();
 

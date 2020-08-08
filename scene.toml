@@ -21,13 +21,7 @@ exposure = 1.0
 # fovy = 45.0
 
 # [[light]]
-# position = [-1.4, 1.0, 2.5]
-# normal = [0.0, -1.0, 0.0]
-# dims = [0.5, 0.5]
-# intensity = [500.0, 500.0, 500.0]
-
-# [[light]]
-# position = [1.4, 1.0, 2.5]
+# position = [-1.4, 2.0, 2.5]
 # normal = [0.0, -1.0, 0.0]
 # dims = [0.5, 0.5]
 # intensity = [500.0, 500.0, 500.0]
@@ -36,6 +30,14 @@ exposure = 1.0
 # diffuse = [1.0, 1.0, 1.0]
 # metallic = 0.8
 # roughness = 0.5
+
+# [ground]
+# position = [0.0, -0.8, 0.0]
+# normal = [0.0, 1.0, 0.0]
+# dims = [5.0, 5.0]
+# diffuse = [0.6, 0.6, 0.6]
+# metallic = 0.01
+# roughness = 0.01
 
 #---------------------------------------------------------------------------------------------------
 # Dragon
@@ -58,8 +60,16 @@ exposure = 1.0
 
 # [shading_defaults]
 # diffuse = [1.0, 1.0, 1.0]
-# metallic = 0.8
+# metallic = 0.4
 # roughness = 0.1
+
+# [ground]
+# position = [0.0, -0.8, 0.0]
+# normal = [0.0, 1.0, 0.0]
+# dims = [5.0, 5.0]
+# diffuse = [0.2, 0.2, 0.2]
+# metallic = 0.01
+# roughness = 0.01
 
 #---------------------------------------------------------------------------------------------------
 # Fireplace

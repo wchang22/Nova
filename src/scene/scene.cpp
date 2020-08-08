@@ -1,6 +1,5 @@
 #include "scene.hpp"
 #include "constants.hpp"
-#include "scene/scene_parser.hpp"
 #include "util/image/imageutils.hpp"
 #include "util/profiling/profiling.hpp"
 #include "vector/vector_conversions.hpp"
@@ -17,6 +16,7 @@ Scene::Scene() {
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [parsed_lights] = scene_parser.get_light_settings();
+  const auto [parsed_ground_plane] = scene_parser.get_ground_settings();
   const auto [default_diffuse, default_metallic, default_roughness] =
     scene_parser.get_shading_default_settings();
 
@@ -35,9 +35,20 @@ Scene::Scene() {
                    };
                  });
 
-  settings = { output_dimensions,   output_file_path, num_samples, anti_aliasing, exposure,
-               model_paths.front(), sky_path,         camera,      lights,        default_diffuse,
-               default_metallic,    default_roughness };
+  std::optional<GroundPlane> ground_plane {};
+
+  if (parsed_ground_plane.has_value()) {
+    const auto& [gp_position, gp_normal, gp_dims, gp_diffuse, gp_metallic, gp_roughness] =
+      parsed_ground_plane.value();
+    ground_plane = {
+      vec_to_glm(gp_position), vec_to_glm(gp_normal), vec_to_glm(gp_dims),
+      vec_to_glm(gp_diffuse),  gp_metallic,           gp_roughness,
+    };
+  }
+
+  settings = { output_dimensions,   output_file_path, num_samples,      anti_aliasing, exposure,
+               model_paths.front(), sky_path,         camera,           lights,        ground_plane,
+               default_diffuse,     default_metallic, default_roughness };
 }
 
 void Scene::init_texture() {
@@ -157,6 +168,52 @@ vec3f Scene::get_light_intensity(uint32_t index) const {
 }
 
 const std::vector<AreaLight>& Scene::get_lights() const { return settings.lights; }
+
+void Scene::add_ground_plane() {
+  if (!settings.ground_plane.has_value()) {
+    settings.ground_plane.emplace();
+  }
+}
+void Scene::delete_ground_plane() { settings.ground_plane.reset(); }
+vec3f Scene::set_ground_plane_position(const vec3f& position) {
+  settings.ground_plane->position = vec_to_glm(position);
+  return glm_to_vec(settings.ground_plane->position);
+}
+vec3f Scene::get_ground_plane_position() const {
+  return glm_to_vec(settings.ground_plane->position);
+  ;
+}
+vec3f Scene::set_ground_plane_normal(const vec3f& normal) {
+  settings.ground_plane->normal = vec_to_glm(normal);
+  return glm_to_vec(settings.ground_plane->normal);
+}
+vec3f Scene::get_ground_plane_normal() const { return glm_to_vec(settings.ground_plane->normal); }
+vec2f Scene::set_ground_plane_dims(const vec2f& dims) {
+  settings.ground_plane->dims = vec_to_glm(vec2f {
+    std::max(dims[0], 0.0f),
+    std::max(dims[1], 0.0f),
+  });
+  return glm_to_vec(settings.ground_plane->dims);
+}
+vec2f Scene::get_ground_plane_dims() const { return glm_to_vec(settings.ground_plane->dims); }
+vec3f Scene::set_ground_plane_diffuse(const vec3f& diffuse) {
+  settings.ground_plane->diffuse = vec_to_glm(vec3f {
+    std::clamp(diffuse[0], 0.0f, 1.0f),
+    std::clamp(diffuse[1], 0.0f, 1.0f),
+    std::clamp(diffuse[2], 0.0f, 1.0f),
+  });
+  return glm_to_vec(settings.ground_plane->diffuse);
+}
+vec3f Scene::get_ground_plane_diffuse() const { return glm_to_vec(settings.ground_plane->diffuse); }
+float Scene::set_ground_plane_metallic(float metallic) {
+  return settings.ground_plane->metallic = std::clamp(metallic, 0.0f, 1.0f);
+}
+float Scene::get_ground_plane_metallic() const { return settings.ground_plane->metallic; }
+float Scene::set_ground_plane_roughness(float roughness) {
+  return settings.ground_plane->roughness = std::clamp(roughness, 0.0f, 1.0f);
+}
+float Scene::get_ground_plane_roughness() const { return settings.ground_plane->roughness; }
+const std::optional<GroundPlane>& Scene::get_ground_plane() const { return settings.ground_plane; }
 
 const vec3f& Scene::set_shading_diffuse(const vec3f& diffuse) {
   return settings.shading_diffuse = {

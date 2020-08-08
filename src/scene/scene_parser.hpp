@@ -1,6 +1,7 @@
 #ifndef SCENE_PARSER_HPP
 #define SCENE_PARSER_HPP
 
+#include <optional>
 #include <toml.hpp>
 
 #include "kernel_types/area_light.hpp"
@@ -37,7 +38,7 @@ struct ShadingDefaultSettings {
   float roughness;
 };
 
-struct Light {
+struct ParsedLight {
   vec3f intensity;
   vec3f position;
   vec3f normal;
@@ -45,7 +46,20 @@ struct Light {
 };
 
 struct LightSettings {
-  std::vector<Light> lights;
+  std::vector<ParsedLight> lights;
+};
+
+struct ParsedGroundPlane {
+  vec3f position;
+  vec3f normal;
+  vec2f dims;
+  vec3f diffuse;
+  float metallic;
+  float roughness;
+};
+
+struct GroundSettings {
+  std::optional<ParsedGroundPlane> ground;
 };
 
 class SceneParser {
@@ -58,6 +72,7 @@ public:
   CameraSettings get_camera_settings() const;
   LightSettings get_light_settings() const;
   ShadingDefaultSettings get_shading_default_settings() const;
+  GroundSettings get_ground_settings() const;
 
 private:
   toml::value parsed_data;

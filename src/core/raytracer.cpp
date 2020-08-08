@@ -62,12 +62,14 @@ void Raytracer::set_scene(const Scene& scene) {
       accelerator.create_buffer<int2>(MemFlags::READ_WRITE, std::max(width * height / 2, 1U));
   }
 
-  // Update Model And Light
+  // Update Model, lights, ground
   // TODO: Make this so don't need to regenerate everything
   const std::string& model_path = scene.get_model_path();
   const std::vector<AreaLight>& lights = scene.get_lights();
+  const std::optional<GroundPlane>& ground_plane = scene.get_ground_plane();
 
-  if (model_path != loaded_model || lights != loaded_lights) {
+  if (model_path != loaded_model || lights != loaded_lights ||
+      ground_plane != loaded_ground_plane) {
     intersectable_manager.clear();
     material_loader.clear();
 
@@ -75,6 +77,9 @@ void Raytracer::set_scene(const Scene& scene) {
     intersectable_manager.add_model(model);
     for (const auto& light : lights) {
       intersectable_manager.add_light(light);
+    }
+    if (ground_plane.has_value()) {
+      intersectable_manager.add_ground_plane(ground_plane.value());
     }
 
     auto [triangle_data, triangle_meta_data, bvh_data, light_data] = intersectable_manager.build();
@@ -98,6 +103,7 @@ void Raytracer::set_scene(const Scene& scene) {
 
     loaded_model = model_path;
     loaded_lights = lights;
+    loaded_ground_plane = ground_plane;
   }
 
   // Update Sky

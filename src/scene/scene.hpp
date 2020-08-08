@@ -1,8 +1,11 @@
 #include <glad/glad.h>
+#include <optional>
 
 #include "camera/camera.hpp"
 #include "core/raytracer.hpp"
-#include "light/area_light.hpp"
+#include "scene/area_light.hpp"
+#include "scene/ground_plane.hpp"
+#include "scene/scene_parser.hpp"
 #include "vector/vector_types.hpp"
 
 namespace nova {
@@ -21,6 +24,7 @@ public:
     std::string sky_path;
     Camera camera;
     std::vector<AreaLight> lights;
+    std::optional<GroundPlane> ground_plane;
     vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
@@ -36,6 +40,7 @@ public:
              sky_path == other.sky_path &&
              camera == other.camera &&
              lights == other.lights &&
+             ground_plane == other.ground_plane &&
              shading_diffuse == other.shading_diffuse &&
              shading_metallic == other.shading_metallic &&
              shading_roughness == other.shading_roughness;
@@ -76,6 +81,21 @@ public:
   vec3f set_light_intensity(uint32_t index, const vec3f& intensity);
   vec3f get_light_intensity(uint32_t index) const;
   const std::vector<AreaLight>& get_lights() const;
+  void add_ground_plane();
+  void delete_ground_plane();
+  vec3f set_ground_plane_position(const vec3f& position);
+  vec3f get_ground_plane_position() const;
+  vec3f set_ground_plane_normal(const vec3f& normal);
+  vec3f get_ground_plane_normal() const;
+  vec2f set_ground_plane_dims(const vec2f& dims);
+  vec2f get_ground_plane_dims() const;
+  vec3f set_ground_plane_diffuse(const vec3f& diffuse);
+  vec3f get_ground_plane_diffuse() const;
+  float set_ground_plane_metallic(float metallic);
+  float get_ground_plane_metallic() const;
+  float set_ground_plane_roughness(float roughness);
+  float get_ground_plane_roughness() const;
+  const std::optional<GroundPlane>& get_ground_plane() const;
   const vec3f& set_shading_diffuse(const vec3f& diffuse);
   const vec3f& get_shading_diffuse() const;
   float set_shading_metallic(float metallic);

@@ -140,9 +140,11 @@ DEVICE float3 trace_ray(uint& rng_state,
     float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
                                    params.shading_diffuse) * meta.kD;
     float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
-                                   make_vector<float3>(params.shading_metallic)).x;
+                                   make_vector<float3>(meta.metallic == -1.0f ?
+                                   params.shading_metallic : meta.metallic)).x;
     float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
-                                    make_vector<float3>(params.shading_roughness)).x;
+                                    make_vector<float3>(meta.roughness == -1.0f ?
+                                    params.shading_roughness : meta.roughness)).x;
     // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);

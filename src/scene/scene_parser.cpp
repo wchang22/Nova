@@ -45,11 +45,11 @@ CameraSettings SceneParser::get_camera_settings() const {
 LightSettings SceneParser::get_light_settings() const {
   std::vector<toml::table> lights_table =
     toml::find<std::vector<toml::table>>(parsed_data, "light");
-  std::vector<Light> lights;
+  std::vector<ParsedLight> lights;
 
   std::transform(
     lights_table.begin(), lights_table.end(), std::back_inserter(lights),
-    [](const auto& table) -> Light {
+    [](const auto& table) -> ParsedLight {
       return { toml::get<vec3f>(table.at("intensity")), toml::get<vec3f>(table.at("position")),
                toml::get<vec3f>(table.at("normal")), toml::get<vec2f>(table.at("dims")) };
     });
@@ -63,6 +63,18 @@ ShadingDefaultSettings SceneParser::get_shading_default_settings() const {
   float roughness = toml::find<float>(parsed_data, "shading_defaults", "roughness");
 
   return { diffuse, metallic, roughness };
+}
+
+GroundSettings SceneParser::get_ground_settings() const {
+  try {
+    toml::table table = toml::find<toml::table>(parsed_data, "ground");
+    return { ParsedGroundPlane {
+      toml::get<vec3f>(table.at("position")), toml::get<vec3f>(table.at("normal")),
+      toml::get<vec2f>(table.at("dims")), toml::get<vec3f>(table.at("diffuse")),
+      toml::get<float>(table.at("metallic")), toml::get<float>(table.at("roughness")) } };
+  } catch (const std::out_of_range& error) {
+    return {};
+  }
 }
 
 }

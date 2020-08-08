@@ -5,9 +5,10 @@
 #include "intersectables/intersectable_manager.hpp"
 #include "kernel_types/area_light.hpp"
 #include "kernel_types/scene_params.hpp"
-#include "light/area_light.hpp"
 #include "material/material_loader.hpp"
 #include "material/sky_loader.hpp"
+#include "scene/area_light.hpp"
+#include "scene/ground_plane.hpp"
 
 namespace nova {
 
@@ -35,6 +36,7 @@ private:
   std::string loaded_model;
   std::string loaded_sky;
   std::vector<AreaLight> loaded_lights;
+  std::optional<GroundPlane> loaded_ground_plane;
   uint32_t width;
   uint32_t height;
   Image2DWrite<uchar4> pixel_im;
