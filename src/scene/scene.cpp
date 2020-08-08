@@ -16,23 +16,27 @@ Scene::Scene() {
   const auto [anti_aliasing, exposure] = scene_parser.get_post_processing_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
-  const auto [light_intensity, light_position, light_normal, light_dims] =
-    scene_parser.get_light_settings();
+  const auto [parsed_lights] = scene_parser.get_light_settings();
   const auto [default_diffuse, default_metallic, default_roughness] =
     scene_parser.get_shading_default_settings();
 
   Camera camera(vec_to_glm(camera_position), vec_to_glm(camera_forward), vec_to_glm(camera_up),
                 { output_dimensions[0], output_dimensions[1] }, camera_fovy);
 
-  AreaLight light {
-    vec_to_glm(light_intensity),
-    vec_to_glm(light_position),
-    vec_to_glm(light_normal),
-    vec_to_glm(light_dims),
-  };
+  std::vector<AreaLight> lights;
+  std::transform(parsed_lights.begin(), parsed_lights.end(), std::back_inserter(lights),
+                 [](const auto& light) -> AreaLight {
+                   const auto& [light_intensity, light_position, light_normal, light_dims] = light;
+                   return {
+                     vec_to_glm(light_intensity),
+                     vec_to_glm(light_position),
+                     vec_to_glm(light_normal),
+                     vec_to_glm(light_dims),
+                   };
+                 });
 
   settings = { output_dimensions,   output_file_path, num_samples, anti_aliasing, exposure,
-               model_paths.front(), sky_path,         camera,      light,         default_diffuse,
+               model_paths.front(), sky_path,         camera,      lights,        default_diffuse,
                default_metallic,    default_roughness };
 }
 
@@ -99,42 +103,60 @@ void Scene::move_camera(Camera::Direction direction, float speed) {
 
 EyeCoords Scene::get_camera_eye_coords() const { return settings.camera.get_eye_coords(); }
 
-vec3f Scene::set_light_position(const vec3f& position) {
-  settings.light.position = vec_to_glm(position);
+void Scene::add_light() {
+  if (settings.lights.empty()) {
+    settings.lights.emplace_back();
+  } else {
+    settings.lights.emplace_back(settings.lights.back());
+  }
+}
+
+void Scene::delete_light(uint32_t index) { settings.lights.erase(settings.lights.begin() + index); }
+
+vec3f Scene::set_light_position(uint32_t index, const vec3f& position) {
+  settings.lights[index].position = vec_to_glm(position);
   return position;
 }
 
-vec3f Scene::get_light_position() const { return glm_to_vec(settings.light.position); }
+vec3f Scene::get_light_position(uint32_t index) const {
+  return glm_to_vec(settings.lights[index].position);
+}
 
-vec3f Scene::set_light_normal(const vec3f& normal) {
-  settings.light.normal = vec_to_glm(normal);
+vec3f Scene::set_light_normal(uint32_t index, const vec3f& normal) {
+  settings.lights[index].normal = vec_to_glm(normal);
   return normal;
 }
 
-vec3f Scene::get_light_normal() const { return glm_to_vec(settings.light.normal); }
+vec3f Scene::get_light_normal(uint32_t index) const {
+  return glm_to_vec(settings.lights[index].normal);
+}
 
-vec2f Scene::set_light_dims(const vec2f& dims) {
-  settings.light.dims = vec_to_glm(vec2f {
+vec2f Scene::set_light_dims(uint32_t index, const vec2f& dims) {
+  settings.lights[index].dims = vec_to_glm(vec2f {
     std::max(dims[0], 0.0f),
     std::max(dims[1], 0.0f),
   });
-  return glm_to_vec(settings.light.dims);
+  return glm_to_vec(settings.lights[index].dims);
 }
 
-vec2f Scene::get_light_dims() const { return glm_to_vec(settings.light.dims); }
+vec2f Scene::get_light_dims(uint32_t index) const {
+  return glm_to_vec(settings.lights[index].dims);
+}
 
-vec3f Scene::set_light_intensity(const vec3f& intensity) {
-  settings.light.intensity = vec_to_glm(vec3f {
+vec3f Scene::set_light_intensity(uint32_t index, const vec3f& intensity) {
+  settings.lights[index].intensity = vec_to_glm(vec3f {
     std::max(intensity[0], 0.0f),
     std::max(intensity[1], 0.0f),
     std::max(intensity[2], 0.0f),
   });
-  return glm_to_vec(settings.light.intensity);
+  return glm_to_vec(settings.lights[index].intensity);
 }
 
-vec3f Scene::get_light_intensity() const { return glm_to_vec(settings.light.intensity); }
+vec3f Scene::get_light_intensity(uint32_t index) const {
+  return glm_to_vec(settings.lights[index].intensity);
+}
 
-const AreaLight& Scene::get_light() const { return settings.light; }
+const std::vector<AreaLight>& Scene::get_lights() const { return settings.lights; }
 
 const vec3f& Scene::set_shading_diffuse(const vec3f& diffuse) {
   return settings.shading_diffuse = {

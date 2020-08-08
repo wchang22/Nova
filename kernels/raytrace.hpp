@@ -150,15 +150,20 @@ DEVICE float3 trace_ray(uint& rng_state,
 
     float3 intrs_color = make_vector<float3>(0.0f);
 
-    bool is_light = false;
-    for (uint i = 0; i < num_lights; i++) {
-      AreaLightData& light = lights[i];
-
-      // Don't double count lights
-      if (intrs.tri_index == light.tri_index1 || intrs.tri_index == light.tri_index2) {
-        is_light = true;
-        continue;
+    const auto estimate_direct_lighting = [&]() {
+      // If there are no lights, or if the only light is the light we've intersected, don't
+      // add any light contribution
+      if (num_lights == 0 || (num_lights == 1 && meta.light_index != -1)) {
+        return make_vector<float3>(0.0f);
       }
+
+      // Randomly sample a single light
+      uint random_light_index;
+      do {
+        random_light_index = min(static_cast<uint>(rand(rng_state) * num_lights), num_lights - 1);
+      } while (meta.light_index == random_light_index);
+
+      AreaLightData& light = lights[random_light_index];
 
       // Sample area light source
       float3 light_position = sample(light, rng_state);
@@ -180,12 +185,18 @@ DEVICE float3 trace_ray(uint& rng_state,
         float light_pdf =
           ct_light_brdf.light_pdf(normalize(light.normal), light_distance, light_area);
 
-        intrs_color += light.intensity * light_brdf / light_pdf * max(dot(normal, light_dir), 0.0f);
+        // Divide by (1 / num lights) to account for sampling a single light
+        return num_lights * light.intensity * light_brdf / light_pdf *
+               max(dot(normal, light_dir), 0.0f);
       }
-    }
+
+      return make_vector<float3>(0.0f);
+    };
+
+    intrs_color += estimate_direct_lighting();
 
     // Only add emissive on first bounce, or if not a light
-    intrs_color += (direct || !is_light) ? meta.kE : make_vector<float3>(0.0f);
+    intrs_color += (direct || meta.light_index == -1) ? meta.kE : make_vector<float3>(0.0f);
 
     // Sample material brdf for next direction
     CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);

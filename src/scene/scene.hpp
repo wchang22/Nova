@@ -20,7 +20,7 @@ public:
     std::string model_path;
     std::string sky_path;
     Camera camera;
-    AreaLight light;
+    std::vector<AreaLight> lights;
     vec3f shading_diffuse;
     float shading_metallic;
     float shading_roughness;
@@ -35,7 +35,7 @@ public:
              model_path == other.model_path &&
              sky_path == other.sky_path &&
              camera == other.camera &&
-             light == other.light &&
+             lights == other.lights &&
              shading_diffuse == other.shading_diffuse &&
              shading_metallic == other.shading_metallic &&
              shading_roughness == other.shading_roughness;
@@ -65,15 +65,17 @@ public:
   float get_camera_fovy() const;
   void move_camera(Camera::Direction direction, float speed);
   EyeCoords get_camera_eye_coords() const;
-  vec3f set_light_position(const vec3f& position);
-  vec3f get_light_position() const;
-  vec3f set_light_normal(const vec3f& normal);
-  vec3f get_light_normal() const;
-  vec2f set_light_dims(const vec2f& dims);
-  vec2f get_light_dims() const;
-  vec3f set_light_intensity(const vec3f& intensity);
-  vec3f get_light_intensity() const;
-  const AreaLight& get_light() const;
+  void add_light();
+  void delete_light(uint32_t index);
+  vec3f set_light_position(uint32_t index, const vec3f& position);
+  vec3f get_light_position(uint32_t index) const;
+  vec3f set_light_normal(uint32_t index, const vec3f& normal);
+  vec3f get_light_normal(uint32_t index) const;
+  vec2f set_light_dims(uint32_t index, const vec2f& dims);
+  vec2f get_light_dims(uint32_t index) const;
+  vec3f set_light_intensity(uint32_t index, const vec3f& intensity);
+  vec3f get_light_intensity(uint32_t index) const;
+  const std::vector<AreaLight>& get_lights() const;
   const vec3f& set_shading_diffuse(const vec3f& diffuse);
   const vec3f& get_shading_diffuse() const;
   float set_shading_metallic(float metallic);

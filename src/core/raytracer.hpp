@@ -34,7 +34,7 @@ private:
   // Scene params and buffers
   std::string loaded_model;
   std::string loaded_sky;
-  AreaLight loaded_light;
+  std::vector<AreaLight> loaded_lights;
   uint32_t width;
   uint32_t height;
   Image2DWrite<uchar4> pixel_im;

@@ -1,5 +1,7 @@
-#include "scene_parser.hpp"
+#include <algorithm>
+
 #include "constants.hpp"
+#include "scene_parser.hpp"
 
 namespace nova {
 
@@ -41,12 +43,18 @@ CameraSettings SceneParser::get_camera_settings() const {
 }
 
 LightSettings SceneParser::get_light_settings() const {
-  vec3f intensity = toml::find<vec3f>(parsed_data, "light", "intensity");
-  vec3f position = toml::find<vec3f>(parsed_data, "light", "position");
-  vec3f normal = toml::find<vec3f>(parsed_data, "light", "normal");
-  vec2f dims = toml::find<vec2f>(parsed_data, "light", "dims");
+  std::vector<toml::table> lights_table =
+    toml::find<std::vector<toml::table>>(parsed_data, "light");
+  std::vector<Light> lights;
 
-  return { intensity, position, normal, dims };
+  std::transform(
+    lights_table.begin(), lights_table.end(), std::back_inserter(lights),
+    [](const auto& table) -> Light {
+      return { toml::get<vec3f>(table.at("intensity")), toml::get<vec3f>(table.at("position")),
+               toml::get<vec3f>(table.at("normal")), toml::get<vec2f>(table.at("dims")) };
+    });
+
+  return { lights };
 }
 
 ShadingDefaultSettings SceneParser::get_shading_default_settings() const {

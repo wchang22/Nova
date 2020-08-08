@@ -172,10 +172,6 @@ void Window::display_scene_settings() {
   static vec3f camera_target = scene.get_camera_target();
   static vec3f camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
-  static vec3f light_position = scene.get_light_position();
-  static vec3f light_normal = scene.get_light_normal();
-  static vec2f light_dims = scene.get_light_dims();
-  static vec3f light_intensity = scene.get_light_intensity();
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
@@ -265,15 +261,44 @@ void Window::display_scene_settings() {
     }
 
     if (ImGui::CollapsingHeader("Light##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputFloat3("Position##Light", light_position.data());
-      ImGui::InputFloat3("Normal##Light", light_normal.data());
-      ImGui::InputFloat2("Dims##Light", light_dims.data());
-      ImGui::InputFloat3("Intensity##Light", light_intensity.data());
+      int index_to_delete = -1;
+      for (uint32_t i = 0; i < scene.get_lights().size(); i++) {
+        vec3f light_position = scene.get_light_position(i);
+        vec3f light_normal = scene.get_light_normal(i);
+        vec2f light_dims = scene.get_light_dims(i);
+        vec3f light_intensity = scene.get_light_intensity(i);
 
-      light_position = scene.set_light_position(light_position);
-      light_normal = scene.set_light_normal(light_normal);
-      light_dims = scene.set_light_dims(light_dims);
-      light_intensity = scene.set_light_intensity(light_intensity);
+        std::string position_label = "Position##Light" + std::to_string(i);
+        std::string normal_label = "Normal##Light" + std::to_string(i);
+        std::string dimensions_label = "Dimensions##Light" + std::to_string(i);
+        std::string intensity_label = "Intensity##Light" + std::to_string(i);
+        std::string delete_label = "Delete##Light" + std::to_string(i);
+
+        ImGui::Text("Light %d", i + 1);
+        ImGui::SameLine();
+        ImGui::Indent(button_indent);
+        if (ImGui::Button(delete_label.c_str(), { button_width, 0.0f })) {
+          index_to_delete = static_cast<int>(i);
+        }
+        ImGui::Indent(-button_indent);
+
+        ImGui::InputFloat3(position_label.c_str(), light_position.data());
+        ImGui::InputFloat3(normal_label.c_str(), light_normal.data());
+        ImGui::InputFloat2(dimensions_label.c_str(), light_dims.data());
+        ImGui::InputFloat3(intensity_label.c_str(), light_intensity.data());
+
+        scene.set_light_position(i, light_position);
+        scene.set_light_normal(i, light_normal);
+        scene.set_light_dims(i, light_dims);
+        scene.set_light_intensity(i, light_intensity);
+      }
+
+      if (ImGui::Button("Add new##Light", { button_width, 0.0f })) {
+        scene.add_light();
+      }
+      if (index_to_delete != -1) {
+        scene.delete_light(index_to_delete);
+      }
     }
 
     if (ImGui::CollapsingHeader("Shading Defaults##SceneSettings",

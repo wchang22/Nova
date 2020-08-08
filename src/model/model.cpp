@@ -157,7 +157,7 @@ void Model::process_mesh(aiMesh* mesh, const aiScene* scene) {
     triangles.emplace_back<std::pair<Triangle, TriangleMeta>>(
       { { v1, v2, v3 },
         { n1, n2, n3, tan1, tan2, tan3, fixed_bit1, fixed_bit2, fixed_bit3, t1, t2, t3, kD, kE,
-          diffuse_index, metallic_index, roughness_index, normal_index } });
+          diffuse_index, metallic_index, roughness_index, normal_index, -1 } });
   }
 }
 

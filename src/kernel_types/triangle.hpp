@@ -30,6 +30,7 @@ struct TriangleMetaData {
   int metallic_index;
   int roughness_index;
   int normal_index;
+  int light_index;
 };
 
 }

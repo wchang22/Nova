@@ -65,15 +65,17 @@ void Raytracer::set_scene(const Scene& scene) {
   // Update Model And Light
   // TODO: Make this so don't need to regenerate everything
   const std::string& model_path = scene.get_model_path();
-  const AreaLight& light = scene.get_light();
+  const std::vector<AreaLight>& lights = scene.get_lights();
 
-  if (model_path != loaded_model || light != loaded_light) {
+  if (model_path != loaded_model || lights != loaded_lights) {
     intersectable_manager.clear();
     material_loader.clear();
 
     Model model(model_path, material_loader);
     intersectable_manager.add_model(model);
-    intersectable_manager.add_light(light);
+    for (const auto& light : lights) {
+      intersectable_manager.add_light(light);
+    }
 
     auto [triangle_data, triangle_meta_data, bvh_data, light_data] = intersectable_manager.build();
     triangle_buf = accelerator.create_buffer(MemFlags::READ_ONLY, triangle_data);
@@ -82,7 +84,7 @@ void Raytracer::set_scene(const Scene& scene) {
     if (!light_data.empty()) {
       light_buf = accelerator.create_buffer(MemFlags::READ_ONLY, light_data);
     }
-    num_lights_wrapper = accelerator.create_wrapper<uint32_t>(1);
+    num_lights_wrapper = accelerator.create_wrapper<uint32_t>(lights.size());
 
     MaterialData material_data = material_loader.build();
     // Create a dummy array
@@ -95,7 +97,7 @@ void Raytracer::set_scene(const Scene& scene) {
       std::max(material_data.width, 1U), std::max(material_data.height, 1U), material_data.data);
 
     loaded_model = model_path;
-    loaded_light = light;
+    loaded_lights = lights;
   }
 
   // Update Sky

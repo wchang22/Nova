@@ -32,7 +32,6 @@ private:
   std::vector<Triangle> triangles;
   std::unordered_map<Triangle, TriangleMeta, TriangleHash> triangle_map;
   std::vector<AreaLight> lights;
-  std::unordered_map<Triangle, uint32_t, TriangleHash> triangle_light_map;
 };
 
 }

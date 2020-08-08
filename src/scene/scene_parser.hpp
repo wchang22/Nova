@@ -37,11 +37,15 @@ struct ShadingDefaultSettings {
   float roughness;
 };
 
-struct LightSettings {
+struct Light {
   vec3f intensity;
   vec3f position;
   vec3f normal;
   vec2f dims;
+};
+
+struct LightSettings {
+  std::vector<Light> lights;
 };
 
 class SceneParser {
