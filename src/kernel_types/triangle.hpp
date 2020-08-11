@@ -25,7 +25,6 @@ struct TriangleMetaData {
   float2 texture_coord2;
   float2 texture_coord3;
   float3 kD;
-  float3 kE;
   float metallic;
   float roughness;
   int diffuse_index;

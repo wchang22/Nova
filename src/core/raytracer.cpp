@@ -89,7 +89,7 @@ void Raytracer::set_scene(const Scene& scene) {
     if (!light_data.empty()) {
       light_buf = accelerator.create_buffer(MemFlags::READ_ONLY, light_data);
     }
-    num_lights_wrapper = accelerator.create_wrapper<uint32_t>(lights.size());
+    num_lights_wrapper = accelerator.create_wrapper<uint32_t>(light_data.size());
 
     MaterialData material_data = material_loader.build();
     // Create a dummy array

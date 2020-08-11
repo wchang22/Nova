@@ -132,12 +132,6 @@ roughness = 0.1
 # up = [0.0, 1.0, 0.0]
 # fovy = 30.0
 
-# [[light]]
-# position = [0.0, 0.96, -0.0]
-# normal = [0.0, -1.0, 0.0]
-# dims = [0.2, 0.2]
-# intensity = [50.0, 50.0, 50.0]
-
 # [shading_defaults]
 # diffuse = [1.0, 1.0, 1.0]
 # metallic = 0.5

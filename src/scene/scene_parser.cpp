@@ -43,18 +43,22 @@ CameraSettings SceneParser::get_camera_settings() const {
 }
 
 LightSettings SceneParser::get_light_settings() const {
-  std::vector<toml::table> lights_table =
-    toml::find<std::vector<toml::table>>(parsed_data, "light");
-  std::vector<ParsedLight> lights;
+  try {
+    std::vector<toml::table> lights_table =
+      toml::find<std::vector<toml::table>>(parsed_data, "light");
+    std::vector<ParsedLight> lights;
 
-  std::transform(
-    lights_table.begin(), lights_table.end(), std::back_inserter(lights),
-    [](const auto& table) -> ParsedLight {
-      return { toml::get<vec3f>(table.at("intensity")), toml::get<vec3f>(table.at("position")),
-               toml::get<vec3f>(table.at("normal")), toml::get<vec2f>(table.at("dims")) };
-    });
+    std::transform(
+      lights_table.begin(), lights_table.end(), std::back_inserter(lights),
+      [](const auto& table) -> ParsedLight {
+        return { toml::get<vec3f>(table.at("intensity")), toml::get<vec3f>(table.at("position")),
+                 toml::get<vec3f>(table.at("normal")), toml::get<vec2f>(table.at("dims")) };
+      });
 
-  return { lights };
+    return { lights };
+  } catch (const std::out_of_range& error) {
+    return {};
+  }
 }
 
 ShadingDefaultSettings SceneParser::get_shading_default_settings() const {

@@ -118,6 +118,19 @@ IntersectableData IntersectableManager::build() {
   triangle_meta_data.reserve(triangles.size());
   light_data.reserve(lights.size());
 
+  std::transform(lights.begin(), lights.end(), std::back_inserter(light_data),
+                 [](const auto& light) -> AreaLightData {
+                   return {
+                     glm_to_float3(light.intensity),
+                     {
+                       glm_to_float3(light.position),
+                       glm_to_float3(light.normal),
+                       glm_to_float3(glm::vec3(light.dims, 0.0f)),
+                     },
+                     AreaLightType::RECT,
+                   };
+                 });
+
   for (const auto& tri : triangles) {
     const auto& [v1, v2, v3] = tri;
     glm::vec3 e1 = v2 - v1;
@@ -137,6 +150,19 @@ IntersectableData IntersectableManager::build() {
       { glm_to_float4(transform[0]), glm_to_float4(transform[1]), glm_to_float4(transform[2]) });
 
     const auto& meta = triangle_map[tri];
+
+    int light_index = meta.light_index;
+    if (light_index == -1 && glm::length(meta.kE) > 0.0f) {
+      light_index = light_data.size();
+      light_data.push_back({ glm_to_float3(meta.kE),
+                             {
+                               glm_to_float3(v1),
+                               glm_to_float3(v2),
+                               glm_to_float3(v3),
+                             },
+                             AreaLightType::TRI });
+    }
+
     triangle_meta_data.push_back({
       glm_to_float3(meta.normal1),
       glm_to_float3(meta.normal2),
@@ -151,26 +177,15 @@ IntersectableData IntersectableManager::build() {
       glm_to_float2(meta.texture_coord2),
       glm_to_float2(meta.texture_coord3),
       glm_to_float3(meta.kD),
-      glm_to_float3(meta.kE),
       meta.metallic,
       meta.roughness,
       meta.diffuse_index,
       meta.metallic_index,
       meta.roughness_index,
       meta.normal_index,
-      meta.light_index,
+      light_index,
     });
   }
-
-  std::transform(lights.begin(), lights.end(), std::back_inserter(light_data),
-                 [](const auto& light) -> AreaLightData {
-                   return {
-                     glm_to_float3(light.intensity),
-                     glm_to_float3(light.position),
-                     glm_to_float3(light.normal),
-                     glm_to_float2(light.dims),
-                   };
-                 });
 
   return { triangle_data, triangle_meta_data, bvh_data, light_data };
 }

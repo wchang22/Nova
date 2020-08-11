@@ -201,6 +201,13 @@ public:
   }
 };
 
+DEVICE float3 power_heuristic(const float3& primary_pdf, const float3& secondary_pdf) {
+  float3 primary_pdf_2 = primary_pdf * primary_pdf;
+  float3 secondary_pdf_2 = secondary_pdf * secondary_pdf;
+
+  return primary_pdf_2 / (primary_pdf_2 + secondary_pdf_2);
+}
+
 }
 
 #endif // KERNEL_BRDF_HPP
