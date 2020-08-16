@@ -173,6 +173,8 @@ DEVICE float3 trace_ray(uint& rng_state,
         } while (meta.light_index == random_light_index);
 
         const AreaLightData& light = lights[random_light_index];
+        float3 light_normal = compute_normal(light);
+        float light_area = compute_area(light);
 
         // Sample area light source
         float3 light_position = sample(light, rng_state);
@@ -180,8 +182,6 @@ DEVICE float3 trace_ray(uint& rng_state,
         // Calculate lighting params
         float3 light_dir = normalize(light_position - intrs_point);
         float light_distance = distance(light_position, intrs_point);
-        float3 light_normal = compute_normal(light);
-        float light_area = compute_area(light);
 
         // Ensuring objects blocking light are not behind the light
         Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
@@ -214,7 +214,7 @@ DEVICE float3 trace_ray(uint& rng_state,
         if (find_intersection(triangles, bvh, light_ray, light_intrs, false)) {
           const TriangleMetaData& light_meta = tri_meta[light_intrs.tri_index];
 
-          // Make sure we actually hit a light and that the light is not double counted
+          // Make sure we actually hit the light
           if (light_meta.light_index != -1 && light_meta.light_index != meta.light_index) {
             float3 light_position = light_ray.origin + light_ray.direction * light_intrs.length;
             float light_distance = light_intrs.length;

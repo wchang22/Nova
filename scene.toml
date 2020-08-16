@@ -84,12 +84,6 @@ target = [0.0, 0.0, 0.0]
 up = [0.0, 1.0, 0.0]
 fovy = 45.0
 
-[[light]]
-position = [0.8, 0.5, -0.6]
-normal = [0.0, -1.0, 0.0]
-dims = [0.2, 0.2]
-intensity = [50.0, 50.0, 50.0]
-
 [shading_defaults]
 diffuse = [1.0, 1.0, 1.0]
 metallic = 0.5

@@ -47,7 +47,7 @@ DEVICE inline float3 spherical_to_cartesian(float theta, float phi) {
   return make_vector<float3>(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
 }
 
-constexpr float NON_ZERO_EPSILON = 1e-5f;
+constexpr float NON_ZERO_EPSILON = 1e-7f;
 
 DEVICE inline float make_non_zero(float x) { return max(x, NON_ZERO_EPSILON); }
 
