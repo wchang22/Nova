@@ -62,7 +62,7 @@ __device__ constexpr W make_vector(U&& u) {
   return w;
 }
 
-#define VECTOR_SCALAR_FUNC(func, scalar_func, vector_type, scalar_type)                      \
+#define VECTOR_SCALAR_OPERATOR(func, scalar_func, vector_type, scalar_type)                  \
   template <typename U, typename T,                                                          \
             std::enable_if_t<(is_##vector_type##_v<U> && is_##scalar_type##_v<T>), int> = 0> \
   __device__ constexpr U func(const U& u, T t) {                                             \
@@ -97,6 +97,10 @@ __device__ constexpr W make_vector(U&& u) {
     });                                                                                      \
     return w;                                                                                \
   }
+
+#define VECTOR_SCALAR_FUNC(func, scalar_func, vector_type, scalar_type) \
+  VECTOR_SCALAR_OPERATOR(func, scalar_func, vector_type, scalar_type)   \
+  __device__ constexpr scalar_type func(scalar_type s, scalar_type t) { return scalar_func(s, t); }
 
 #define VECTOR_VECTOR_FUNC(func, scalar_func, vector_type, scalar_type)     \
   template <typename T, std::enable_if_t<is_##scalar_type##_v<T>, int> = 0> \
@@ -143,7 +147,25 @@ __device__ constexpr W make_vector(U&& u) {
     return w;                                                                   \
   }
 
-#define VECTOR_COMP_FUNC(func, scalar_func)                                                \
+#define VECTOR_COMP_UNARY_FUNC(func, scalar_func)                                          \
+  template <typename T, std::enable_if_t<is_arithmetic_v<T>, int> = 0>                     \
+  __device__ constexpr int func(T s) {                                                     \
+    return scalar_func(s);                                                                 \
+  }                                                                                        \
+  template <typename U, std::enable_if_t<(is_vector_v<U> && num_comp_v<U> == 2), int> = 0> \
+  __device__ constexpr int2 func(const U& u) {                                             \
+    return { scalar_func(u.x), scalar_func(u.y) };                                         \
+  }                                                                                        \
+  template <typename U, std::enable_if_t<(is_vector_v<U> && num_comp_v<U> == 3), int> = 0> \
+  __device__ constexpr int3 func(const U& u) {                                             \
+    return { scalar_func(u.x), scalar_func(u.y), scalar_func(u.z) };                       \
+  }                                                                                        \
+  template <typename U, std::enable_if_t<(is_vector_v<U> && num_comp_v<U> == 4), int> = 0> \
+  __device__ constexpr int4 func(const U& u) {                                             \
+    return { scalar_func(u.x), scalar_func(u.y), scalar_func(u.z), scalar_func(u.w) };     \
+  }
+
+#define VECTOR_COMP_BINARY_FUNC(func, scalar_func)                                         \
   template <typename T, std::enable_if_t<is_arithmetic_v<T>, int> = 0>                     \
   __device__ constexpr int func(T s, T t) {                                                \
     return scalar_func(s, t);                                                              \
@@ -260,10 +282,10 @@ __device__ constexpr W make_vector(U&& u) {
     return a > b ? a : b; \
   }
 
-VECTOR_SCALAR_FUNC(operator+, op_add, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator-, op_sub, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator*, op_mul, vector, arithmetic)
-VECTOR_SCALAR_FUNC(operator/, op_div, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator+, op_add, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator-, op_sub, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator*, op_mul, vector, arithmetic)
+VECTOR_SCALAR_OPERATOR(operator/, op_div, vector, arithmetic)
 VECTOR_SCALAR_FUNC(pow, powf, float_vector, float)
 
 VECTOR_VECTOR_FUNC(operator+, op_add, vector, arithmetic)
@@ -281,12 +303,17 @@ VECTOR_UNARY_FUNC(operator-, op_neg, vector, arithmetic)
 VECTOR_UNARY_FUNC(exp, expf, float_vector, float)
 VECTOR_UNARY_FUNC(fabs, fabsf, float_vector, float)
 
-VECTOR_COMP_FUNC(isless, op_less)
-VECTOR_COMP_FUNC(islessequal, op_lessequal)
-VECTOR_COMP_FUNC(isgreater, op_greater)
-VECTOR_COMP_FUNC(isgreaterequal, op_greaterequal)
-VECTOR_COMP_FUNC(isequal, op_equal)
-VECTOR_COMP_FUNC(isnotequal, op_notequal)
+VECTOR_COMP_UNARY_FUNC(isfinite, std::isfinite)
+VECTOR_COMP_UNARY_FUNC(isinf, std::isinf)
+VECTOR_COMP_UNARY_FUNC(isnormal, std::isnormal)
+VECTOR_COMP_UNARY_FUNC(isnan, std::isnan)
+
+VECTOR_COMP_BINARY_FUNC(isless, op_less)
+VECTOR_COMP_BINARY_FUNC(islessequal, op_lessequal)
+VECTOR_COMP_BINARY_FUNC(isgreater, op_greater)
+VECTOR_COMP_BINARY_FUNC(isgreaterequal, op_greaterequal)
+VECTOR_COMP_BINARY_FUNC(isequal, op_equal)
+VECTOR_COMP_BINARY_FUNC(isnotequal, op_notequal)
 
 VECTOR_ASSIGNMENT(+=)
 VECTOR_ASSIGNMENT(-=)

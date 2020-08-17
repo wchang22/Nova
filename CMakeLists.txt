@@ -65,12 +65,17 @@ set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS
 if (OpenCL_FOUND)
     set(OPENCL_LIB_NAME opencl)
     set(OPENCL_KERNEL_BINARY ${PROJECT_NAME}.spv)
+    if (RELEASE)
+        set(OPENCL_NDEBUG -DNDEBUG)
+    else()
+        set(OPENCL_KERNEL_DEBUG -DKERNEL_DEBUG)
+    endif()
     add_custom_target(
         ${OPENCL_LIB_NAME} ALL
         COMMAND ${CMAKE_CXX_COMPILER} -c -target spir64-unknown-unknown -emit-llvm -Xclang 
         -finclude-default-header -cl-std=clc++
         -I${CMAKE_SOURCE_DIR}/src -I${CMAKE_SOURCE_DIR}
-        -DKERNEL_BACKEND_OPENCL
+        -DKERNEL_BACKEND_OPENCL ${OPENCL_NDEBUG} ${OPENCL_KERNEL_DEBUG}
         ${CMAKE_SOURCE_DIR}/kernels/entrypoint/opencl/entrypoint.cpp -o ${PROJECT_NAME}.bc &&
         llvm-spirv --spirv-max-version=1.0 ${PROJECT_NAME}.bc
     )
@@ -88,6 +93,11 @@ else()
     )
     target_compile_definitions(${CUDA_LIB_NAME} PRIVATE KERNEL_BACKEND_CUDA)
     set_target_properties(${CUDA_LIB_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    if (RELEASE)
+        target_compile_definitions(${CUDA_LIB_NAME} PRIVATE NDEBUG)
+    else()
+        target_compile_definitions(${CUDA_LIB_NAME} PRIVATE KERNEL_DEBUG)
+    endif()
 endif()
 
 # Link and build

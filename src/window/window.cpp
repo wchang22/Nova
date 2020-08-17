@@ -159,7 +159,7 @@ void Window::display_scene_settings() {
     window_width - 2.0f * style.FramePadding.x - 4.0f * style.FrameBorderSize - button_width;
 
   // UI element variables
-  static bool real_time = false;
+  static bool interactive = false;
   static vec2i output_dimensions = scene.get_output_dimensions();
   static std::string output_file_path = scene.get_output_file_path();
   static bool anti_aliasing = scene.get_anti_aliasing();
@@ -172,13 +172,10 @@ void Window::display_scene_settings() {
   static vec3f camera_target = scene.get_camera_target();
   static vec3f camera_up = scene.get_camera_up();
   static float camera_fovy = scene.get_camera_fovy();
-  static vec3f light_position = scene.get_light_position();
-  static vec3f light_intensity = scene.get_light_intensity();
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
-  static float shading_ambient_occlusion = scene.get_shading_ambient_occlusion();
-  static int ray_bounces = scene.get_ray_bounces();
+  static int num_samples = scene.get_num_samples();
   static float exposure = scene.get_exposure();
 
   // Render lambdas that check for errors
@@ -201,7 +198,7 @@ void Window::display_scene_settings() {
       return;
     }
     try {
-      scene.render_to_image();
+      scene.render_to_image(true);
       model_path_error = false;
       file_path_error = false;
       sky_path_error = false;
@@ -219,22 +216,27 @@ void Window::display_scene_settings() {
     ImGui::SetWindowSize({ window_width, window_height }, true);
 
     ImGui::TextWrapped("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::TextWrapped("Sample %d", scene.get_sample_index());
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
+      ImGui::Checkbox("Enable Interactive##Rendering", &interactive);
       ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
+      ImGui::InputInt("Num Samples##Other", &num_samples);
 
       display_input_text_error(file_path_error, "Save Path##Rendering", output_file_path);
       display_file_dialog(button_indent, button_width, "Browse##Rendering", IMAGE_EXTENSION,
                           output_file_path);
 
+      num_samples = scene.set_num_samples(num_samples);
       output_dimensions = scene.set_output_dimensions(output_dimensions);
     }
 
     if (ImGui::CollapsingHeader("Post Processing##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Anti-Aliasing (FXAA)##Rendering", &anti_aliasing);
+      ImGui::InputFloat("Exposure##Other", &exposure);
 
       anti_aliasing = scene.set_anti_aliasing(anti_aliasing);
+      exposure = scene.set_exposure(exposure);
     }
 
     if (ImGui::CollapsingHeader("Model##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -259,11 +261,77 @@ void Window::display_scene_settings() {
     }
 
     if (ImGui::CollapsingHeader("Light##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputFloat3("Position##Light", light_position.data());
-      ImGui::InputFloat3("Intensity##Light", light_intensity.data());
+      int index_to_delete = -1;
+      for (uint32_t i = 0; i < scene.get_lights().size(); i++) {
+        vec3f light_position = scene.get_light_position(i);
+        vec3f light_normal = scene.get_light_normal(i);
+        vec2f light_dims = scene.get_light_dims(i);
+        vec3f light_intensity = scene.get_light_intensity(i);
 
-      light_position = scene.set_light_position(light_position);
-      light_intensity = scene.set_light_intensity(light_intensity);
+        std::string position_label = "Position##Light" + std::to_string(i);
+        std::string normal_label = "Normal##Light" + std::to_string(i);
+        std::string dimensions_label = "Dimensions##Light" + std::to_string(i);
+        std::string intensity_label = "Intensity##Light" + std::to_string(i);
+        std::string delete_label = "Delete##Light" + std::to_string(i);
+
+        ImGui::Text("Light %d", i + 1);
+        ImGui::SameLine();
+        ImGui::Indent(button_indent);
+        if (ImGui::Button(delete_label.c_str(), { button_width, 0.0f })) {
+          index_to_delete = static_cast<int>(i);
+        }
+        ImGui::Indent(-button_indent);
+
+        ImGui::InputFloat3(position_label.c_str(), light_position.data());
+        ImGui::InputFloat3(normal_label.c_str(), light_normal.data());
+        ImGui::InputFloat2(dimensions_label.c_str(), light_dims.data());
+        ImGui::InputFloat3(intensity_label.c_str(), light_intensity.data());
+
+        scene.set_light_position(i, light_position);
+        scene.set_light_normal(i, light_normal);
+        scene.set_light_dims(i, light_dims);
+        scene.set_light_intensity(i, light_intensity);
+      }
+
+      if (ImGui::Button("Add new##Light", { button_width, 0.0f })) {
+        scene.add_light();
+      }
+      if (index_to_delete != -1) {
+        scene.delete_light(index_to_delete);
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Ground Plane##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (scene.get_ground_plane().has_value()) {
+        vec3f ground_plane_position = scene.get_ground_plane_position();
+        vec3f ground_plane_normal = scene.get_ground_plane_normal();
+        vec2f ground_plane_dims = scene.get_ground_plane_dims();
+        vec3f ground_plane_diffuse = scene.get_ground_plane_diffuse();
+        float ground_plane_metallic = scene.get_ground_plane_metallic();
+        float ground_plane_roughness = scene.get_ground_plane_roughness();
+
+        ImGui::InputFloat3("Position##Ground Plane", ground_plane_position.data());
+        ImGui::InputFloat3("Normal##Ground Plane", ground_plane_normal.data());
+        ImGui::InputFloat2("Dimensions##Ground Plane", ground_plane_dims.data());
+        ImGui::InputFloat3("Diffuse##Ground Plane", ground_plane_diffuse.data());
+        ImGui::InputFloat("Metallic##Ground Plane", &ground_plane_metallic);
+        ImGui::InputFloat("Roughness##Ground Plane", &ground_plane_roughness);
+
+        scene.set_ground_plane_position(ground_plane_position);
+        scene.set_ground_plane_normal(ground_plane_normal);
+        scene.set_ground_plane_dims(ground_plane_dims);
+        scene.set_ground_plane_diffuse(ground_plane_diffuse);
+        scene.set_ground_plane_metallic(ground_plane_metallic);
+        scene.set_ground_plane_roughness(ground_plane_roughness);
+
+        if (ImGui::Button("Delete##Ground Plane", { button_width, 0.0f })) {
+          scene.delete_ground_plane();
+        }
+      } else {
+        if (ImGui::Button("Add new##Ground Plane", { button_width, 0.0f })) {
+          scene.add_ground_plane();
+        }
+      }
     }
 
     if (ImGui::CollapsingHeader("Shading Defaults##SceneSettings",
@@ -271,20 +339,10 @@ void Window::display_scene_settings() {
       ImGui::InputFloat3("Diffuse##ShadingDefaults", shading_diffuse.data());
       ImGui::InputFloat("Metallic##ShadingDefaults", &shading_metallic);
       ImGui::InputFloat("Roughness##ShadingDefaults", &shading_roughness);
-      ImGui::InputFloat("AO##ShadingDefaults", &shading_ambient_occlusion);
 
       shading_diffuse = scene.set_shading_diffuse(shading_diffuse);
       shading_metallic = scene.set_shading_metallic(shading_metallic);
       shading_roughness = scene.set_shading_roughness(shading_roughness);
-      shading_ambient_occlusion = scene.set_shading_ambient_occlusion(shading_ambient_occlusion);
-    }
-
-    if (ImGui::CollapsingHeader("Other##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::InputInt("Ray Bounces##Other", &ray_bounces);
-      ImGui::InputFloat("Exposure##Other", &exposure);
-
-      ray_bounces = scene.set_ray_bounces(ray_bounces);
-      exposure = scene.set_exposure(exposure);
     }
 
     if (ImGui::Button("Save Image##SceneSettings", { button_width, 0.0f })) {
@@ -303,7 +361,7 @@ void Window::display_scene_settings() {
       sky_path = scene.set_sky_path(sky_path);
       sky_path_error = false;
       // No need to render on click if already rendering
-      if (!real_time) {
+      if (!interactive) {
         render_to_screen();
       }
     }
@@ -312,7 +370,7 @@ void Window::display_scene_settings() {
   }
 
   // Handle IO events and render per frame if real time
-  if (real_time) {
+  if (interactive) {
     handle_mouse_drag();
     handle_mouse_wheel();
     handle_keyboard();

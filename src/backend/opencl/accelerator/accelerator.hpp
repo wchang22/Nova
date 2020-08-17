@@ -184,6 +184,25 @@ public:
   }
 
   template <typename T>
+  void copy_image2D(Image2DRead<T>& dst,
+                    const Image2DReadWrite<T>& src,
+                    size_t width,
+                    size_t height) const {
+    queue.enqueueCopyImage(src.read_access().data(), dst.data(),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, 1 }));
+    queue.finish();
+  }
+
+  template <typename T>
+  void fill_image2D(Image2DRead<T>& image, size_t width, size_t height, const T& t) const {
+    queue.enqueueFillImage(image.data(), t, compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, 1 }));
+    queue.finish();
+  }
+
+  template <typename T>
   Buffer<T> create_buffer(MemFlags mem_flags, std::vector<T>& data) const {
     if (data.empty()) {
       throw AcceleratorException("Cannot build an empty Buffer");

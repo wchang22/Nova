@@ -19,7 +19,7 @@ intersects_triangle(const Ray& ray, Intersection& intrs, int tri_index, const Tr
   woop_ray.direction = make_mat3x3(tri.transform) * ray.direction;
 
   float t = -woop_ray.origin.z / woop_ray.direction.z;
-  if (t < 0.0f || t >= intrs.length) {
+  if (t < 0.0f || t >= intrs.length || !isfinite(t)) {
     return false;
   }
 

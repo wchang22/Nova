@@ -24,15 +24,14 @@ struct TriangleMetaData {
   float2 texture_coord1;
   float2 texture_coord2;
   float2 texture_coord3;
-  float3 kA;
   float3 kD;
-  float3 kS;
-  float3 kE;
+  float metallic;
+  float roughness;
   int diffuse_index;
   int metallic_index;
   int roughness_index;
-  int ambient_occlusion_index;
   int normal_index;
+  int light_index;
 };
 
 }

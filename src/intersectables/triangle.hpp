@@ -45,15 +45,15 @@ struct TriangleMeta {
   glm::vec2 texture_coord1;
   glm::vec2 texture_coord2;
   glm::vec2 texture_coord3;
-  glm::vec3 kA;
   glm::vec3 kD;
-  glm::vec3 kS;
   glm::vec3 kE;
+  float metallic;
+  float roughness;
   int diffuse_index;
   int metallic_index;
   int roughness_index;
-  int ambient_occlusion_index;
   int normal_index;
+  int light_index;
 };
 
 }

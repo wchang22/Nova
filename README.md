@@ -8,9 +8,6 @@
 <p align="center">
   <img src="examples/dragon.jpg" alt="Dragon" />
 </p>
-<p align="center">
-  <img src="examples/aircraft.jpg" alt="aircraft" />
-</p>
 
 ## Supported Hardware
 Either:

@@ -11,12 +11,6 @@
   #define ASSETS_PATH ""
 #endif
 
-#ifndef NDEBUG
-  #define NUM_PROFILE_ITERATIONS 100
-#else
-  #define NUM_PROFILE_ITERATIONS 1
-#endif
-
 #include <cstddef>
 #include <utility>
 

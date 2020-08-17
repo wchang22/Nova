@@ -1,14 +1,21 @@
 #ifndef KERNEL_RAYTRACE_HPP
 #define KERNEL_RAYTRACE_HPP
 
+#include "kernel_types/area_light.hpp"
 #include "kernel_types/bvh_node.hpp"
 #include "kernel_types/scene_params.hpp"
 #include "kernel_types/triangle.hpp"
+#include "kernels/backend/assertion.hpp"
 #include "kernels/backend/image.hpp"
 #include "kernels/backend/kernel.hpp"
+#include "kernels/backend/math_constants.hpp"
+#include "kernels/brdf.hpp"
 #include "kernels/constants.hpp"
 #include "kernels/intersection.hpp"
+#include "kernels/light.hpp"
 #include "kernels/material.hpp"
+#include "kernels/matrix.hpp"
+#include "kernels/random.hpp"
 #include "kernels/transforms.hpp"
 #include "kernels/types.hpp"
 
@@ -57,6 +64,9 @@ DEVICE bool find_intersection(
 
         node_index = stack[node_ptr--];
       }
+
+      assert(node_ptr < STACK_SIZE);
+
       // Make sure tri_ptr and node_ptr do not collide
     } while (node_index && tri_ptr > node_ptr + 2);
 
@@ -79,24 +89,31 @@ DEVICE bool find_intersection(
   return min_intrs.tri_index != -1;
 }
 
-DEVICE float3 trace_ray(const SceneParams& params,
+DEVICE float3 trace_ray(uint& rng_state,
+                        const SceneParams& params,
                         const int2& pixel_coords,
                         TriangleData* triangles,
                         TriangleMetaData* tri_meta,
                         FlatBVHNode* bvh,
+                        AreaLightData* lights,
+                        uint num_lights,
                         image2d_array_read_t materials,
                         image2d_read_t sky) {
+  // Jitter ray to get free anti-aliasing
+  float2 offset = make_vector<float2>(rand(rng_state), rand(rng_state));
+
   float2 alpha_beta = params.eye_coords.coord_scale *
-                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + 0.5f);
-  float3 ray_dir = normalize(alpha_beta.x * params.eye_coords.eye_coord_frame.x -
-                             alpha_beta.y * params.eye_coords.eye_coord_frame.y -
-                             params.eye_coords.eye_coord_frame.z);
+                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + offset);
+  float3 ray_dir = normalize(transpose(params.eye_coords.eye_coord_frame) *
+                             make_vector<float3>(alpha_beta.x, -alpha_beta.y, -1.0f));
   float3 ray_pos = params.eye_coords.eye_pos;
 
   float3 color = make_vector<float3>(0.0f);
-  float3 reflectance = make_vector<float3>(1.0f);
+  float3 throughput = make_vector<float3>(1.0f);
 
-  for (int depth = 0; depth < params.ray_bounces; depth++) {
+  bool direct = true;
+
+  while (true) {
     Ray ray(ray_pos, ray_dir, RAY_EPSILON);
 
     Intersection intrs;
@@ -104,13 +121,13 @@ DEVICE float3 trace_ray(const SceneParams& params,
     // Cast primary/reflection ray
     if (!find_intersection(triangles, bvh, ray, intrs, false)) {
       // TODO: IBL instead of just skymap
-      if (depth == 0) {
+      if (direct) {
         color = read_sky(sky, ray_dir);
       }
       break;
     }
 
-    TriangleMetaData meta = tri_meta[intrs.tri_index];
+    const TriangleMetaData& meta = tri_meta[intrs.tri_index];
 
     // Calculate intersection point
     float3 intrs_point = ray.origin + ray.direction * intrs.length;
@@ -124,62 +141,133 @@ DEVICE float3 trace_ray(const SceneParams& params,
     float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
                                    params.shading_diffuse) * meta.kD;
     float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
-                                   make_vector<float3>(params.shading_metallic)).x;
+                                   make_vector<float3>(meta.metallic == -1.0f ?
+                                   params.shading_metallic : meta.metallic)).x;
     float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
-                                    make_vector<float3>(params.shading_roughness)).x;
-    float ambient_occlusion =
-      read_material(materials, meta, texture_coord, meta.ambient_occlusion_index,
-                    make_vector<float3>(params.shading_ambient_occlusion)).x;
+                                    make_vector<float3>(meta.roughness == -1.0f ?
+                                    params.shading_roughness : meta.roughness)).x;
     // clang-format on
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
+    float3 out_dir = -ray_dir;
 
-    // Add ambient color even if pixel is in shadow
-    float3 intrs_color = diffuse * ambient_occlusion * 0.03f * meta.kA + meta.kE;
+    // Only add light on first bounce to prevent double counting
+    if (direct && meta.light_index != -1) {
+      color += throughput * lights[meta.light_index].intensity;
+    }
 
-    // Calculate lighting params
-    float3 light_dir = normalize(params.light_position - intrs_point);
-    float3 view_dir = -ray.direction;
-    float3 half_dir = normalize(light_dir + view_dir);
-    float light_distance = distance(params.light_position, intrs_point);
-    float3 kS = specularity(view_dir, half_dir, diffuse, metallic) * meta.kS;
+    const auto estimate_direct_lighting = [&]() {
+      float3 direct_color = make_vector<float3>(0.0f);
 
-    float3 local_illum = shade(params, light_dir, view_dir, half_dir, light_distance, normal,
-                               diffuse, kS, metallic, roughness);
-
-    // Only cast a shadow ray if it will produce a color change
-    if (any(isgreaterequal(local_illum, make_vector<float3>(COLOR_EPSILON)))) {
-      // Cast a shadow ray to the light
-      Ray shadow_ray(intrs_point, light_dir, RAY_EPSILON);
-      Intersection light_intrs;
-      // Ensure objects blocking light are not behind the light
-      light_intrs.length = light_distance;
-
-      // Shade the pixel if ray is not blocked
-      if (!find_intersection(triangles, bvh, shadow_ray, light_intrs, true)) {
-        intrs_color += local_illum;
+      // If there are no lights, or if the only light is the light we've intersected, don't
+      // add any light contribution
+      if (num_lights == 0 || (num_lights == 1 && meta.light_index != -1)) {
+        return direct_color;
       }
+
+      {
+        // Randomly sample a single light
+        uint random_light_index;
+        do {
+          random_light_index = min(static_cast<uint>(rand(rng_state) * num_lights), num_lights - 1);
+        } while (meta.light_index == random_light_index);
+
+        const AreaLightData& light = lights[random_light_index];
+        float3 light_normal = compute_normal(light);
+        float light_area = compute_area(light);
+
+        // Sample area light source
+        float3 light_position = sample(light, rng_state);
+
+        // Calculate lighting params
+        float3 light_dir = normalize(light_position - intrs_point);
+        float light_distance = distance(light_position, intrs_point);
+
+        // Ensuring objects blocking light are not behind the light
+        Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+        Intersection light_intrs(light_distance - RAY_EPSILON);
+
+        // Multiple importance sample lights: Add light contribution if ray is not blocked
+        if (!find_intersection(triangles, bvh, light_ray, light_intrs, true)) {
+          CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic,
+                                              roughness);
+          float3 light_brdf = ct_light_brdf.eval();
+          float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
+          float3 light_brdf_pdf = ct_light_brdf.pdf();
+          float3 weight = power_heuristic(make_vector<float3>(light_pdf), light_brdf_pdf);
+
+          // Divide by (1 / num lights) to account for sampling a single light
+          direct_color += num_lights * weight * light.intensity * light_brdf / light_pdf *
+                          max(dot(normal, light_dir), 0.0f);
+        }
+      }
+
+      {
+        // Multiple importance sample brdf for lighting
+        CookTorranceLightBRDF ct_light_brdf({}, out_dir, normal, diffuse, metallic, roughness);
+        float3 light_dir = ct_light_brdf.sample(rng_state);
+
+        Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+        Intersection light_intrs;
+
+        // Add light contribution if intersected light
+        if (find_intersection(triangles, bvh, light_ray, light_intrs, false)) {
+          const TriangleMetaData& light_meta = tri_meta[light_intrs.tri_index];
+
+          // Make sure we actually hit the light
+          if (light_meta.light_index != -1 && light_meta.light_index != meta.light_index) {
+            float3 light_position = light_ray.origin + light_ray.direction * light_intrs.length;
+            float light_distance = light_intrs.length;
+
+            const AreaLightData& light = lights[light_meta.light_index];
+            float3 light_normal = compute_normal(light);
+            float light_area = compute_area(light);
+
+            float3 light_brdf = ct_light_brdf.eval();
+            float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
+            float3 light_brdf_pdf = ct_light_brdf.pdf();
+            float3 weight = power_heuristic(light_brdf_pdf, make_vector<float3>(light_pdf));
+
+            direct_color += weight * light.intensity * light_brdf / light_brdf_pdf *
+                            max(dot(normal, light_dir), 0.0f);
+          }
+        }
+      }
+
+      return direct_color;
+    };
+
+    color += throughput * estimate_direct_lighting();
+
+    // Sample material brdf for next direction
+    CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);
+
+    float3 in_dir = ct_brdf.sample(rng_state);
+    float3 brdf = ct_brdf.eval();
+    float3 pdf = ct_brdf.pdf();
+
+    throughput *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
+
+    assert(all(isfinite(in_dir)));
+    assert(all(isfinite(color)));
+    assert(all(isfinite(throughput)));
+
+    // Russian roulette
+    if (!direct) {
+      float p = min(max(throughput.x, max(throughput.y, throughput.z)), 1.0f);
+      if (rand(rng_state) > p) {
+        break;
+      }
+      throughput *= 1.0f / p;
     }
 
-    /*
-     * Normally, color is calculated recursively:
-     * (intrs_color + specular * (intrs_color of reflected ray))
-     * So we use an additional "reflectance" value to unroll the recursion
-     */
-    color += reflectance * intrs_color;
-    reflectance *= kS;
-
-    // Stop if reflectance is too low to produce a color change
-    if (all(isless(reflectance, make_vector<float3>(COLOR_EPSILON)))) {
-      break;
-    }
-
-    // Reflect ray off of intersection point
     ray_pos = intrs_point;
-    ray_dir = reflect(ray_dir, normal);
+    ray_dir = in_dir;
+
+    direct = false;
   }
 
-  return gamma_correct(tone_map(color, params.exposure));
+  return color;
 }
 
 }

@@ -30,6 +30,12 @@ public:
       buffer, 0, 0, image.buffer, 0, 0, width * sizeof(T), height, cudaMemcpyDeviceToDevice))
   }
 
+  void fill(const T& t) {
+    std::vector<T> buf(width * height, t);
+    CUDA_CHECK_AND_THROW(cudaMemcpy2DToArray(buffer, 0, 0, buf.data(), width * sizeof(T),
+                                             width * sizeof(T), height, cudaMemcpyHostToDevice))
+  }
+
 protected:
   cudaArray_t buffer;
   size_t width;
