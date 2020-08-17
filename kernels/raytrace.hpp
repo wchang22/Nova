@@ -156,88 +156,85 @@ DEVICE float3 trace_ray(uint& rng_state,
       color += throughput * lights[meta.light_index].intensity;
     }
 
-    const auto estimate_direct_lighting = [&]() {
-      float3 direct_color = make_vector<float3>(0.0f);
+    // Estimate direct lighting
+    float3 direct_color = make_vector<float3>(0.0f);
 
-      // If there are no lights, or if the only light is the light we've intersected, don't
-      // add any light contribution
-      if (num_lights == 0 || (num_lights == 1 && meta.light_index != -1)) {
-        return direct_color;
+    // If there are no lights, or if the only light is the light we've intersected, don't
+    // add any light contribution
+    if (num_lights == 0 || (num_lights == 1 && meta.light_index != -1)) {
+      return direct_color;
+    }
+
+    {
+      // Randomly sample a single light
+      uint random_light_index;
+      do {
+        random_light_index = min(static_cast<uint>(rand(rng_state) * num_lights), num_lights - 1);
+      } while (meta.light_index == random_light_index);
+
+      const AreaLightData& light = lights[random_light_index];
+      float3 light_normal = compute_normal(light);
+      float light_area = compute_area(light);
+
+      // Sample area light source
+      float3 light_position = sample(light, rng_state);
+
+      // Calculate lighting params
+      float3 light_dir = normalize(light_position - intrs_point);
+      float light_distance = distance(light_position, intrs_point);
+
+      // Ensuring objects blocking light are not behind the light
+      Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs(light_distance - RAY_EPSILON);
+
+      // Multiple importance sample lights: Add light contribution if ray is not blocked
+      if (!find_intersection(triangles, bvh, light_ray, light_intrs, true)) {
+        CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic,
+                                            roughness);
+        float3 light_brdf = ct_light_brdf.eval();
+        float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
+        float3 light_brdf_pdf = ct_light_brdf.pdf();
+        float3 weight = power_heuristic(make_vector<float3>(light_pdf), light_brdf_pdf);
+
+        // Divide by (1 / num lights) to account for sampling a single light
+        direct_color += num_lights * weight * light.intensity * light_brdf / light_pdf *
+                        max(dot(normal, light_dir), 0.0f);
       }
+    }
 
-      {
-        // Randomly sample a single light
-        uint random_light_index;
-        do {
-          random_light_index = min(static_cast<uint>(rand(rng_state) * num_lights), num_lights - 1);
-        } while (meta.light_index == random_light_index);
+    {
+      // Multiple importance sample brdf for lighting
+      CookTorranceLightBRDF ct_light_brdf({}, out_dir, normal, diffuse, metallic, roughness);
+      float3 light_dir = ct_light_brdf.sample(rng_state);
 
-        const AreaLightData& light = lights[random_light_index];
-        float3 light_normal = compute_normal(light);
-        float light_area = compute_area(light);
+      Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs;
 
-        // Sample area light source
-        float3 light_position = sample(light, rng_state);
+      // Add light contribution if intersected light
+      if (find_intersection(triangles, bvh, light_ray, light_intrs, false)) {
+        const TriangleMetaData& light_meta = tri_meta[light_intrs.tri_index];
 
-        // Calculate lighting params
-        float3 light_dir = normalize(light_position - intrs_point);
-        float light_distance = distance(light_position, intrs_point);
+        // Make sure we actually hit the light
+        if (light_meta.light_index != -1 && light_meta.light_index != meta.light_index) {
+          float3 light_position = light_ray.origin + light_ray.direction * light_intrs.length;
+          float light_distance = light_intrs.length;
 
-        // Ensuring objects blocking light are not behind the light
-        Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
-        Intersection light_intrs(light_distance - RAY_EPSILON);
+          const AreaLightData& light = lights[light_meta.light_index];
+          float3 light_normal = compute_normal(light);
+          float light_area = compute_area(light);
 
-        // Multiple importance sample lights: Add light contribution if ray is not blocked
-        if (!find_intersection(triangles, bvh, light_ray, light_intrs, true)) {
-          CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic,
-                                              roughness);
           float3 light_brdf = ct_light_brdf.eval();
           float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
           float3 light_brdf_pdf = ct_light_brdf.pdf();
-          float3 weight = power_heuristic(make_vector<float3>(light_pdf), light_brdf_pdf);
+          float3 weight = power_heuristic(light_brdf_pdf, make_vector<float3>(light_pdf));
 
-          // Divide by (1 / num lights) to account for sampling a single light
-          direct_color += num_lights * weight * light.intensity * light_brdf / light_pdf *
+          direct_color += weight * light.intensity * light_brdf / light_brdf_pdf *
                           max(dot(normal, light_dir), 0.0f);
         }
       }
+    }
 
-      {
-        // Multiple importance sample brdf for lighting
-        CookTorranceLightBRDF ct_light_brdf({}, out_dir, normal, diffuse, metallic, roughness);
-        float3 light_dir = ct_light_brdf.sample(rng_state);
-
-        Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
-        Intersection light_intrs;
-
-        // Add light contribution if intersected light
-        if (find_intersection(triangles, bvh, light_ray, light_intrs, false)) {
-          const TriangleMetaData& light_meta = tri_meta[light_intrs.tri_index];
-
-          // Make sure we actually hit the light
-          if (light_meta.light_index != -1 && light_meta.light_index != meta.light_index) {
-            float3 light_position = light_ray.origin + light_ray.direction * light_intrs.length;
-            float light_distance = light_intrs.length;
-
-            const AreaLightData& light = lights[light_meta.light_index];
-            float3 light_normal = compute_normal(light);
-            float light_area = compute_area(light);
-
-            float3 light_brdf = ct_light_brdf.eval();
-            float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
-            float3 light_brdf_pdf = ct_light_brdf.pdf();
-            float3 weight = power_heuristic(light_brdf_pdf, make_vector<float3>(light_pdf));
-
-            direct_color += weight * light.intensity * light_brdf / light_brdf_pdf *
-                            max(dot(normal, light_dir), 0.0f);
-          }
-        }
-      }
-
-      return direct_color;
-    };
-
-    color += throughput * estimate_direct_lighting();
+    color += throughput * direct_color;
 
     // Sample material brdf for next direction
     CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);
