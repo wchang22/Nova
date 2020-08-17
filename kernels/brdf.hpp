@@ -127,7 +127,8 @@ protected:
 
   // F_Schlick(i,m,F0) = F0+(1−F0)(1−(i⋅m))^5
   DEVICE inline float3 fresnel_schlick(float i_dot_m, const float3& f0) {
-    return f0 + (1.0f - f0) * pow(1.0f - i_dot_m, 5.0f);
+    // CUDA requires x >= 0 for pow(x, y)
+    return f0 + (1.0f - f0) * pow(max(1.0f - i_dot_m, 0.0f), 5.0f);
   }
 
   DEVICE void compute_intermediates() {

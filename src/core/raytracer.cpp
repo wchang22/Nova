@@ -49,7 +49,6 @@ void Raytracer::set_scene(const Scene& scene) {
     prev_pixel_im = accelerator.create_image2D_read<float4>(
       ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
       true, width, height);
-    // Use a packed uchar4 image to save memory and bandwidth
     temp_pixel_im1 = accelerator.create_image2D_readwrite<float4>(
       ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
       true, width, height);
