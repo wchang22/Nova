@@ -159,7 +159,7 @@ void Window::display_scene_settings() {
     window_width - 2.0f * style.FramePadding.x - 4.0f * style.FrameBorderSize - button_width;
 
   // UI element variables
-  static bool real_time = false;
+  static bool interactive = false;
   static vec2i output_dimensions = scene.get_output_dimensions();
   static std::string output_file_path = scene.get_output_file_path();
   static bool anti_aliasing = scene.get_anti_aliasing();
@@ -219,7 +219,7 @@ void Window::display_scene_settings() {
     ImGui::TextWrapped("Sample %d", scene.get_sample_index());
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Enable Real-Time##Rendering", &real_time);
+      ImGui::Checkbox("Enable Interactive##Rendering", &interactive);
       ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
       ImGui::InputInt("Num Samples##Other", &num_samples);
 
@@ -361,7 +361,7 @@ void Window::display_scene_settings() {
       sky_path = scene.set_sky_path(sky_path);
       sky_path_error = false;
       // No need to render on click if already rendering
-      if (!real_time) {
+      if (!interactive) {
         render_to_screen();
       }
     }
@@ -370,7 +370,7 @@ void Window::display_scene_settings() {
   }
 
   // Handle IO events and render per frame if real time
-  if (real_time) {
+  if (interactive) {
     handle_mouse_drag();
     handle_mouse_wheel();
     handle_keyboard();
