@@ -21,6 +21,7 @@ struct ModelSettings {
 };
 
 struct PostProcessingSettings {
+  bool last_frame_denoise;
   bool anti_aliasing;
   float exposure;
 };

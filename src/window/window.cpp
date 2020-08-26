@@ -162,6 +162,7 @@ void Window::display_scene_settings() {
   static bool interactive = false;
   static vec2i output_dimensions = scene.get_output_dimensions();
   static std::string output_file_path = scene.get_output_file_path();
+  static bool last_frame_denoise = scene.get_last_frame_denoise();
   static bool anti_aliasing = scene.get_anti_aliasing();
   static bool file_path_error = false;
   static std::string model_path = scene.get_model_path();
@@ -220,6 +221,7 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Enable Interactive##Rendering", &interactive);
+      ImGui::Checkbox("Denoise Last Frame##Rendering", &last_frame_denoise);
       ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
       ImGui::InputInt("Num Samples##Other", &num_samples);
 
@@ -227,6 +229,7 @@ void Window::display_scene_settings() {
       display_file_dialog(button_indent, button_width, "Browse##Rendering", IMAGE_EXTENSION,
                           output_file_path);
 
+      last_frame_denoise = scene.set_last_frame_denoise(last_frame_denoise);
       num_samples = scene.set_num_samples(num_samples);
       output_dimensions = scene.set_output_dimensions(output_dimensions);
     }

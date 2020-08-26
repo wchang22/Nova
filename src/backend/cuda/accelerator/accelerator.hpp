@@ -129,7 +129,26 @@ public:
 
   template <typename T>
   std::vector<T> read_image2D(const Image2DWrite<T>& image, size_t width, size_t height) const {
-    return image.read(width, height);
+    (void) width;
+    (void) height;
+    return image.read();
+  }
+
+  template <typename T>
+  std::vector<T> read_image2D(const Image2DReadWrite<T>& image, size_t width, size_t height) const {
+    (void) width;
+    (void) height;
+    return image.read();
+  }
+
+  template <typename T>
+  void write_image2D(Image2DReadWrite<T>& image,
+                     size_t width,
+                     size_t height,
+                     const std::vector<T>& data) const {
+    (void) width;
+    (void) height;
+    return image.write(data);
   }
 
   template <typename T>

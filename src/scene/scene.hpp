@@ -18,6 +18,7 @@ public:
     vec2i output_dimensions;
     std::string output_file_path;
     int num_samples;
+    bool last_frame_denoise;
     bool anti_aliasing;
     float exposure;
     std::string model_path;
@@ -34,6 +35,7 @@ public:
       return output_dimensions == other.output_dimensions &&
              output_file_path == other.output_file_path &&
              num_samples == other.num_samples &&
+             last_frame_denoise == other.last_frame_denoise &&
              anti_aliasing == other.anti_aliasing &&
              exposure == other.exposure &&
              model_path == other.model_path &&
@@ -56,6 +58,8 @@ public:
   const std::string& get_model_path() const;
   const std::string& set_sky_path(const std::string& path);
   const std::string& get_sky_path() const;
+  bool set_last_frame_denoise(bool last_frame_denoise);
+  bool get_last_frame_denoise() const;
   bool set_anti_aliasing(bool anti_aliasing);
   bool get_anti_aliasing() const;
   float set_exposure(float exposure);

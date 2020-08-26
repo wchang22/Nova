@@ -36,6 +36,18 @@ public:
                                              width * sizeof(T), height, cudaMemcpyHostToDevice))
   }
 
+  std::vector<T> read() const {
+    std::vector<T> image_data(width * height);
+    CUDA_CHECK_AND_THROW(cudaMemcpy2DFromArray(image_data.data(), width * sizeof(T), buffer, 0, 0,
+                                               width * sizeof(T), height, cudaMemcpyDeviceToHost))
+    return image_data;
+  }
+
+  void write(const std::vector<T>& data) {
+    CUDA_CHECK_AND_THROW(cudaMemcpy2DToArray(buffer, 0, 0, data.data(), width * sizeof(T),
+                                             width * sizeof(T), height, cudaMemcpyHostToDevice))
+  }
+
 protected:
   cudaArray_t buffer;
   size_t width;

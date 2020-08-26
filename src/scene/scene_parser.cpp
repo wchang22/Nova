@@ -16,10 +16,11 @@ OutputSettings SceneParser::get_output_settings() const {
 }
 
 PostProcessingSettings SceneParser::get_post_processing_settings() const {
+  bool last_frame_denoise = toml::find<bool>(parsed_data, "post_processing", "last_frame_denoise");
   bool anti_aliasing = toml::find<bool>(parsed_data, "post_processing", "anti_aliasing");
   float exposure = toml::find<float>(parsed_data, "post_processing", "exposure");
 
-  return { anti_aliasing, exposure };
+  return { last_frame_denoise, anti_aliasing, exposure };
 }
 
 ModelSettings SceneParser::get_model_settings() const {

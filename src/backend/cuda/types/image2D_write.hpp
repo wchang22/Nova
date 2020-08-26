@@ -44,14 +44,6 @@ public:
 
   cudaSurfaceObject_t& data() { return surf; };
 
-  std::vector<T> read(size_t width, size_t height) const {
-    std::vector<T> image_data(width * height);
-    CUDA_CHECK_AND_THROW(cudaMemcpy2DFromArray(image_data.data(), width * sizeof(T), this->buffer,
-                                               0, 0, width * sizeof(T), height,
-                                               cudaMemcpyDeviceToHost))
-    return image_data;
-  }
-
 private:
   cudaSurfaceObject_t surf;
 };

@@ -1,6 +1,8 @@
 #ifndef RAYTRACER_HPP
 #define RAYTRACER_HPP
 
+#include <oidn.hpp>
+
 #include "backend/accelerator.hpp"
 #include "intersectables/intersectable_manager.hpp"
 #include "kernel_types/area_light.hpp"
@@ -20,7 +22,7 @@ public:
 
   void start();
   void set_scene(const Scene& scene);
-  image_utils::image<uchar4> raytrace();
+  image_utils::image<uchar4> raytrace(bool denoise = false);
 
   void step() { sample_index++; }
   bool is_done() const { return sample_index >= num_samples; }
@@ -31,6 +33,9 @@ private:
   MaterialLoader material_loader;
   SkyLoader sky_loader;
   Accelerator accelerator;
+  oidn::DeviceRef denoise_device;
+  oidn::FilterRef denoise_filter;
+  bool denoise_available;
 
   // Scene params and buffers
   std::string loaded_model;
@@ -39,10 +44,16 @@ private:
   std::optional<GroundPlane> loaded_ground_plane;
   uint32_t width;
   uint32_t height;
-  Image2DWrite<uchar4> pixel_im;
-  Image2DRead<float4> prev_pixel_im;
-  Image2DReadWrite<float4> temp_pixel_im1;
-  Image2DReadWrite<float4> temp_pixel_im2;
+  Image2DWrite<uchar4> color_img;
+  Image2DRead<float4> prev_color_img;
+  Image2DReadWrite<float4> temp_color_img1;
+  Image2DReadWrite<float4> temp_color_img2;
+  Image2DReadWrite<float4> albedo_img1;
+  Image2DReadWrite<float4> normal_img1;
+  Image2DReadWrite<float4> albedo_img2;
+  Image2DReadWrite<float4> normal_img2;
+  Image2DRead<float4> prev_albedo_img;
+  Image2DRead<float4> prev_normal_img;
   Wrapper<uint2> pixel_dims_wrapper;
   Wrapper<SceneParams> scene_params_wrapper;
   Buffer<TriangleData> triangle_buf;
@@ -50,10 +61,8 @@ private:
   Buffer<FlatBVHNode> bvh_buf;
   Buffer<AreaLightData> light_buf;
   Wrapper<uint32_t> num_lights_wrapper;
-  Buffer<int2> rem_coords_buf;
-  Buffer<uint32_t> rem_pixels_buf;
-  Image2DArray<float4> material_ims;
-  Image2DRead<float4> sky_im;
+  Image2DArray<float4> material_imgs;
+  Image2DRead<float4> sky_img;
   int num_samples = 0;
 
   // Local state

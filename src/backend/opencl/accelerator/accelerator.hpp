@@ -175,6 +175,25 @@ public:
   }
 
   template <typename T>
+  std::vector<T> read_image2D(const Image2DReadWrite<T>& image, size_t width, size_t height) const {
+    std::vector<T> image_buf(width * height);
+    queue.enqueueReadImage(
+      image.read_access().data(), true, compat_utils::create_size_t<3>({ 0, 0, 0 }),
+      compat_utils::create_size_t<3>({ width, height, 1 }), 0, 0, image_buf.data());
+    return image_buf;
+  }
+
+  template <typename T>
+  void write_image2D(Image2DReadWrite<T>& image,
+                     size_t width,
+                     size_t height,
+                     const std::vector<T>& data) const {
+    queue.enqueueWriteImage(
+      image.read_access().data(), true, compat_utils::create_size_t<3>({ 0, 0, 0 }),
+      compat_utils::create_size_t<3>({ width, height, 1 }), 0, 0, data.data());
+  }
+
+  template <typename T>
   void
   copy_image2D(Image2DRead<T>& dst, const Image2DWrite<T>& src, size_t width, size_t height) const {
     queue.enqueueCopyImage(src.data(), dst.data(), compat_utils::create_size_t<3>({ 0, 0, 0 }),

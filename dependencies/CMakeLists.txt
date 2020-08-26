@@ -14,3 +14,8 @@ set(GLFW_BUILD_EXAMPLES CACHE BOOL OFF)
 set(GLFW_BUILD_TESTS CACHE BOOL OFF)
 set(GLFW_BUILD_DOCS CACHE BOOL OFF)
 add_subdirectory(glfw)
+
+# OIDN
+include(${CMAKE_CURRENT_SOURCE_DIR}/oidn/lib/cmake/OpenImageDenoise/OpenImageDenoiseConfig.cmake)
+set_target_properties(OpenImageDenoise PROPERTIES IMPORTED_GLOBAL TRUE)
+set(OIDN_INCLUDE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/oidn/include/OpenImageDenoise PARENT_SCOPE)

@@ -12,7 +12,8 @@ Scene::Scene() {
   const auto [output_dimensions, output_file_path, num_samples] =
     scene_parser.get_output_settings();
   const auto [model_paths, sky_path] = scene_parser.get_model_settings();
-  const auto [anti_aliasing, exposure] = scene_parser.get_post_processing_settings();
+  const auto [last_frame_denoise, anti_aliasing, exposure] =
+    scene_parser.get_post_processing_settings();
   const auto [camera_position, camera_forward, camera_up, camera_fovy] =
     scene_parser.get_camera_settings();
   const auto [parsed_lights] = scene_parser.get_light_settings();
@@ -46,9 +47,22 @@ Scene::Scene() {
     };
   }
 
-  settings = { output_dimensions,   output_file_path, num_samples,      anti_aliasing, exposure,
-               model_paths.front(), sky_path,         camera,           lights,        ground_plane,
-               default_diffuse,     default_metallic, default_roughness };
+  settings = { output_dimensions,
+               output_file_path,
+               num_samples,
+               last_frame_denoise,
+               anti_aliasing,
+               exposure,
+               model_paths.front(),
+               sky_path,
+               camera,
+               lights,
+               ground_plane,
+               default_diffuse,
+               default_metallic,
+               default_roughness };
+
+  prev_settings.last_frame_denoise = last_frame_denoise;
 }
 
 void Scene::init_texture() {
@@ -75,6 +89,11 @@ vec3f Scene::set_camera_position(const vec3f& position) {
   settings.camera.set_position(vec_to_glm(position));
   return position;
 }
+
+bool Scene::set_last_frame_denoise(bool last_frame_denoise) {
+  return settings.last_frame_denoise = last_frame_denoise;
+}
+bool Scene::get_last_frame_denoise() const { return settings.last_frame_denoise; }
 
 bool Scene::set_anti_aliasing(bool anti_aliasing) { return settings.anti_aliasing = anti_aliasing; }
 
@@ -259,24 +278,29 @@ int Scene::set_num_samples(int num_samples) {
 int Scene::get_num_samples() const { return settings.num_samples; }
 
 void Scene::render_to_screen() {
+  bool needs_denoise = settings.last_frame_denoise && !prev_settings.last_frame_denoise;
+
   // If nothing has changed, no need to update
   if (settings != prev_settings) {
     raytracer.set_scene(*this);
 
-    // Hack: If only `num_samples` changed, don't restart
+    // Hack: If only `num_samples` or `last_frame_denoise` changed, don't restart
     Settings temp_settings = settings;
     temp_settings.num_samples = prev_settings.num_samples;
+    temp_settings.last_frame_denoise = prev_settings.last_frame_denoise;
 
     if (temp_settings != prev_settings) {
       raytracer.start();
     }
     prev_settings = settings;
   }
-  if (raytracer.is_done()) {
+  if (raytracer.is_done() && !needs_denoise) {
     return;
   }
 
-  image_utils::image<uchar4> im = raytracer.raytrace();
+  needs_denoise |=
+    settings.last_frame_denoise && raytracer.get_sample_index() == settings.num_samples - 1;
+  image_utils::image<uchar4> im = raytracer.raytrace(needs_denoise);
   raytracer.step();
 
   // Bind image data to OpenGL texture for rendering
@@ -289,7 +313,7 @@ void Scene::render_to_screen() {
 void Scene::render_to_image(bool single) {
   PROFILE_SCOPE("Render to Image");
 
-  image_utils::image<uchar4> im;
+  image_utils::image<uchar4> img;
 
   if (!single || raytracer.get_sample_index() == 0) {
     raytracer.set_scene(*this);
@@ -297,17 +321,20 @@ void Scene::render_to_image(bool single) {
   }
   PROFILE_SECTION_START("Profile Loop");
   if (single) {
-    im = raytracer.raytrace();
+    img = raytracer.raytrace(settings.last_frame_denoise);
   } else {
     while (!raytracer.is_done()) {
-      im = raytracer.raytrace();
+      img = raytracer.raytrace(false);
       raytracer.step();
+    }
+    if (settings.last_frame_denoise) {
+      img = raytracer.raytrace(true);
     }
   }
   PROFILE_SECTION_END();
 
   PROFILE_SECTION_START("Write Image");
-  image_utils::write_image(settings.output_file_path.c_str(), im);
+  image_utils::write_image(settings.output_file_path.c_str(), img);
   PROFILE_SECTION_END();
 }
 
