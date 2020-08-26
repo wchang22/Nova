@@ -201,8 +201,10 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
   {
     PROFILE_SECTION_START("Copy previous image");
     accelerator.copy_image2D(prev_color_img, temp_color_img2, width, height);
-    accelerator.copy_image2D(prev_albedo_img, albedo_img2, width, height);
-    accelerator.copy_image2D(prev_normal_img, normal_img2, width, height);
+    if (denoise_available) {
+      accelerator.copy_image2D(prev_albedo_img, albedo_img2, width, height);
+      accelerator.copy_image2D(prev_normal_img, normal_img2, width, height);
+    }
     PROFILE_SECTION_END();
   }
   if (denoise_available && denoise) {

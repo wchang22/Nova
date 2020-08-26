@@ -44,23 +44,23 @@ public:
   ~Image2DReadWrite() = default;
 
   struct ReadAccessor {
-    cl::Image2D& image;
+    Image2DReadWrite& image;
 
-    const cl::Image2D& data() const { return image; }
+    const cl::Image2D& data() const { return image.image; }
   };
 
   struct WriteAccessor {
-    cl::Image2D& image;
+    Image2DReadWrite& image;
 
-    const cl::Image2D& data() const { return image; }
+    const cl::Image2D& data() const { return image.image; }
   };
 
   const ReadAccessor read_access() const { return read_accessor; }
   const WriteAccessor write_access() const { return write_accessor; }
 
 private:
-  ReadAccessor read_accessor { this->image };
-  WriteAccessor write_accessor { this->image };
+  ReadAccessor read_accessor { *this };
+  WriteAccessor write_accessor { *this };
 };
 
 }

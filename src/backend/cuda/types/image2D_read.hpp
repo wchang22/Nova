@@ -14,7 +14,7 @@ namespace nova {
 template <typename T>
 class Image2DRead : public Image2D<T> {
 public:
-  Image2DRead() = default;
+  Image2DRead() : tex(0) {}
 
   Image2DRead(AddressMode address_mode,
               FilterMode filter_mode,
@@ -47,8 +47,7 @@ public:
     CUDA_CHECK_AND_THROW(cudaCreateTextureObject(&tex, &res_desc, &tex_desc, nullptr))
   }
 
-  ~Image2DRead() { CUDA_CHECK(cudaDestroyTextureObject(tex))
-                     CUDA_CHECK(cudaFreeArray(this->buffer)) }
+  ~Image2DRead() { CUDA_CHECK(cudaDestroyTextureObject(tex)) }
 
   Image2DRead(Image2DRead&& other)
     : tex(other.tex),
