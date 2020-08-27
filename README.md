@@ -9,6 +9,10 @@
   <img src="examples/dragon.jpg" alt="Dragon" />
 </p>
 
+## Supported Operating Systems
+* Linux
+* Any operating system capable of running Linux Docker containers (though exposing the GPU and GUI may be tricky)
+
 ## Supported Hardware
 Either:
 * Any CPU or GPU supporting OpenCL 2.1+
