@@ -98,7 +98,10 @@ DEVICE float3 trace_ray(uint& rng_state,
                         AreaLightData* lights,
                         uint num_lights,
                         image2d_array_read_t materials,
-                        image2d_read_t sky) {
+                        image2d_read_t sky,
+                        bool denoise_available,
+                        float3& albedo_feature,
+                        float3& normal_feature) {
   // Jitter ray to get free anti-aliasing
   float2 offset = make_vector<float2>(rand(rng_state), rand(rng_state));
 
@@ -123,6 +126,10 @@ DEVICE float3 trace_ray(uint& rng_state,
       // TODO: IBL instead of just skymap
       if (direct) {
         color = read_sky(sky, ray_dir);
+        if (denoise_available) {
+          albedo_feature = color / (color + 1.0f);
+          normal_feature = make_vector<float3>(0.0f);
+        }
       }
       break;
     }
@@ -150,6 +157,11 @@ DEVICE float3 trace_ray(uint& rng_state,
 
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
     float3 out_dir = -ray_dir;
+
+    if (direct && denoise_available) {
+      albedo_feature = diffuse;
+      normal_feature = normal;
+    }
 
     // Only add light on first bounce to prevent double counting
     if (direct && meta.light_index != -1) {

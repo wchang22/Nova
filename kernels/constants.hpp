@@ -9,10 +9,6 @@ namespace nova {
 constexpr int STACK_SIZE = 96;
 
 constexpr float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
-// Min epsilon to produce significant change in 8 bit colour channels
-constexpr float COLOR_EPSILON = 0.5f / 255.0f;
-// Min neighbour colour difference required to raytrace instead of interpolate
-constexpr float INTERP_THRESHOLD = M_SQRT3_3F;
 
 // Anti-aliasing edge thresholds
 constexpr float EDGE_THRESHOLD_MIN = 0.0312f;

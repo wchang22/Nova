@@ -13,7 +13,7 @@ namespace nova {
 template <typename T>
 class Image2DArray {
 public:
-  Image2DArray() : buffer(nullptr) {}
+  Image2DArray() : tex(0), buffer(nullptr) {}
 
   Image2DArray(AddressMode address_mode,
                FilterMode filter_mode,

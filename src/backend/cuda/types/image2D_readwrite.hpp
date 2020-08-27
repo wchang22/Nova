@@ -14,7 +14,7 @@ namespace nova {
 template <typename T>
 class Image2DReadWrite : public Image2D<T> {
 public:
-  Image2DReadWrite() = default;
+  Image2DReadWrite() : tex(0), surf(0) {}
 
   Image2DReadWrite(AddressMode address_mode,
                    FilterMode filter_mode,
@@ -49,13 +49,13 @@ public:
   }
 
   ~Image2DReadWrite() { CUDA_CHECK(cudaDestroyTextureObject(tex))
-                          CUDA_CHECK(cudaDestroySurfaceObject(surf))
-                            CUDA_CHECK(cudaFreeArray(this->buffer)) }
+                          CUDA_CHECK(cudaDestroySurfaceObject(surf)) }
 
   Image2DReadWrite(Image2DReadWrite&& other)
     : tex(other.tex),
   surf(other.surf), Image2D<T>(std::move(other)) {
     other.tex = 0;
+    other.surf = 0;
   }
   Image2DReadWrite& operator=(Image2DReadWrite&& other) {
     std::swap(tex, other.tex);
@@ -65,15 +65,15 @@ public:
   }
 
   struct ReadAccessor {
-    cudaTextureObject_t& tex;
+    Image2DReadWrite& image;
 
-    const cudaTextureObject_t& data() const { return tex; }
+    const cudaTextureObject_t& data() const { return image.tex; }
   };
 
   struct WriteAccessor {
-    cudaSurfaceObject_t& surf;
+    Image2DReadWrite& image;
 
-    const cudaSurfaceObject_t& data() const { return surf; }
+    const cudaSurfaceObject_t& data() const { return image.surf; }
   };
 
   const ReadAccessor read_access() const { return read_accessor; }
@@ -82,8 +82,8 @@ public:
 private:
   cudaTextureObject_t tex;
   cudaSurfaceObject_t surf;
-  ReadAccessor read_accessor { tex };
-  WriteAccessor write_accessor { surf };
+  ReadAccessor read_accessor { *this };
+  WriteAccessor write_accessor { *this };
 };
 
 }

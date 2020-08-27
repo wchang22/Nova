@@ -109,6 +109,7 @@ set(PROJECT_LIBS
     OpenMP::OpenMP_CXX
     stdc++fs
     glfw
+    OpenImageDenoise
 )
 add_executable(${PROJECT_NAME} ${SOURCES} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBS})
@@ -119,6 +120,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     kernels
     ${GLFW_INCLUDE_PATH}
+    ${OIDN_INCLUDE_PATH}
 )
 
 # Options
