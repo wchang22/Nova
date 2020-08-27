@@ -35,6 +35,17 @@ CUDA:
 * NVIDIA drivers
 * CUDA Toolkit
 
+## Included Dependencies
+* [Assimp](https://github.com/assimp/assimp)
+* [GLFW](https://github.com/glfw/glfw)
+* [Intel Open Image Denoise](https://www.openimagedenoise.org/downloads.html)
+* [GLAD](https://github.com/Dav1dde/glad)
+* [GLM](https://glm.g-truc.net/0.9.9/index.html)
+* [Dear ImGui](https://github.com/ocornut/imgui)
+* [ImGuiFileDialog](https://github.com/aiekick/ImGuiFileDialog)
+* [toml11](https://github.com/ToruNiina/toml11)
+* [CLI11](https://github.com/CLIUtils/CLI11)
+* [stb](https://github.com/nothings/stb)
 
 ## Build and Run
 
