@@ -6,6 +6,12 @@
   <img src="examples/fireplace.jpg" alt="fireplace" />
 </p>
 <p align="center">
+  <img src="examples/living_room.jpg" alt="LivingRoom" />
+</p>
+<p align="center">
+  <img src="examples/sponza.jpg" alt="Sponza" />
+</p>
+<p align="center">
   <img src="examples/dragon.jpg" alt="Dragon" />
 </p>
 
