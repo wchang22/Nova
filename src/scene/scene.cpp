@@ -9,7 +9,7 @@ namespace nova {
 Scene::Scene() {
   SceneParser scene_parser;
 
-  const auto [output_dimensions, output_file_path, num_samples] =
+  const auto [output_dimensions, output_file_path, path_tracing, num_samples] =
     scene_parser.get_output_settings();
   const auto [model_paths, sky_path] = scene_parser.get_model_settings();
   const auto [last_frame_denoise, anti_aliasing, exposure] =
@@ -47,20 +47,10 @@ Scene::Scene() {
     };
   }
 
-  settings = { output_dimensions,
-               output_file_path,
-               num_samples,
-               last_frame_denoise,
-               anti_aliasing,
-               exposure,
-               model_paths.front(),
-               sky_path,
-               camera,
-               lights,
-               ground_plane,
-               default_diffuse,
-               default_metallic,
-               default_roughness };
+  settings = { output_dimensions,  output_file_path, path_tracing,     num_samples,
+               last_frame_denoise, anti_aliasing,    exposure,         model_paths.front(),
+               sky_path,           camera,           lights,           ground_plane,
+               default_diffuse,    default_metallic, default_roughness };
 
   prev_settings.last_frame_denoise = last_frame_denoise;
 }
@@ -270,6 +260,10 @@ const std::string& Scene::set_output_file_path(const std::string& path) {
 }
 
 const std::string& Scene::get_output_file_path() const { return settings.output_file_path; }
+
+bool Scene::set_path_tracing(bool path_tracing) { return settings.path_tracing = path_tracing; }
+
+bool Scene::get_path_tracing() const { return settings.path_tracing; }
 
 int Scene::set_num_samples(int num_samples) {
   return settings.num_samples = std::max(1, num_samples);

@@ -12,6 +12,7 @@ namespace nova {
 struct OutputSettings {
   vec2i dimensions;
   std::string file_path;
+  bool path_tracing;
   int num_samples;
 };
 

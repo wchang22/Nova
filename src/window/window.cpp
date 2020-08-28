@@ -176,6 +176,7 @@ void Window::display_scene_settings() {
   static vec3f shading_diffuse = scene.get_shading_diffuse();
   static float shading_metallic = scene.get_shading_metallic();
   static float shading_roughness = scene.get_shading_roughness();
+  static bool path_tracing = scene.get_path_tracing();
   static int num_samples = scene.get_num_samples();
   static float exposure = scene.get_exposure();
 
@@ -221,6 +222,7 @@ void Window::display_scene_settings() {
 
     if (ImGui::CollapsingHeader("Rendering##SceneSettings", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Enable Interactive##Rendering", &interactive);
+      ImGui::Checkbox("Enable Path Tracing##Rendering", &path_tracing);
       ImGui::Checkbox("Denoise Last Frame##Rendering", &last_frame_denoise);
       ImGui::InputInt2("Resolution##Rendering", output_dimensions.data());
       ImGui::InputInt("Num Samples##Other", &num_samples);
@@ -230,6 +232,7 @@ void Window::display_scene_settings() {
                           output_file_path);
 
       last_frame_denoise = scene.set_last_frame_denoise(last_frame_denoise);
+      path_tracing = scene.set_path_tracing(path_tracing);
       num_samples = scene.set_num_samples(num_samples);
       output_dimensions = scene.set_output_dimensions(output_dimensions);
     }

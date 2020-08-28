@@ -1,6 +1,7 @@
 [output]
 dimensions = [1280, 720]
 file_path = "nova.jpg"
+path_tracing = true
 num_samples = 64
 
 [post_processing]

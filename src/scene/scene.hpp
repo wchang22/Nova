@@ -17,6 +17,7 @@ public:
   struct Settings {
     vec2i output_dimensions;
     std::string output_file_path;
+    bool path_tracing;
     int num_samples;
     bool last_frame_denoise;
     bool anti_aliasing;
@@ -34,6 +35,7 @@ public:
       // clang-format off
       return output_dimensions == other.output_dimensions &&
              output_file_path == other.output_file_path &&
+             path_tracing == other.path_tracing &&
              num_samples == other.num_samples &&
              last_frame_denoise == other.last_frame_denoise &&
              anti_aliasing == other.anti_aliasing &&
@@ -113,6 +115,8 @@ public:
   const std::string& get_output_file_path() const;
   int set_num_samples(int num_samples);
   int get_num_samples() const;
+  bool set_path_tracing(bool path_tracing);
+  bool get_path_tracing() const;
 
   void render_to_screen();
   void render_to_image(bool single = false);

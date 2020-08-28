@@ -10,9 +10,10 @@ SceneParser::SceneParser() : parsed_data(toml::parse(SCENE_PATH)) {}
 OutputSettings SceneParser::get_output_settings() const {
   vec2i dimensions = toml::find<vec2i>(parsed_data, "output", "dimensions");
   std::string file_path = toml::find<std::string>(parsed_data, "output", "file_path");
+  bool path_tracing = toml::find<bool>(parsed_data, "output", "path_tracing");
   int num_samples = toml::find<int>(parsed_data, "output", "num_samples");
 
-  return { dimensions, file_path, num_samples };
+  return { dimensions, file_path, path_tracing, num_samples };
 }
 
 PostProcessingSettings SceneParser::get_post_processing_settings() const {

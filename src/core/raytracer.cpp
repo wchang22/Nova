@@ -55,13 +55,14 @@ void Raytracer::set_scene(const Scene& scene) {
   const float3 shading_diffuse = vec_to_float3(scene.get_shading_diffuse());
   const float shading_metallic = scene.get_shading_metallic();
   const float shading_roughness = scene.get_shading_roughness();
+  const bool path_tracing = scene.get_path_tracing();
   const int num_samples = scene.get_num_samples();
   const float exposure = scene.get_exposure();
   const bool anti_aliasing = scene.get_anti_aliasing();
 
   scene_params_wrapper = accelerator.create_wrapper<SceneParams>(
-    SceneParams { eye_coords, shading_diffuse, shading_metallic, shading_roughness, num_samples,
-                  exposure, anti_aliasing });
+    SceneParams { eye_coords, shading_diffuse, shading_metallic, shading_roughness, path_tracing,
+                  num_samples, exposure, anti_aliasing });
 
   // Update buffers depending on width, height
   if (this->width != width || this->height != height) {
@@ -207,7 +208,7 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
     }
     PROFILE_SECTION_END();
   }
-  if (denoise_available && denoise) {
+  if (denoise_available && denoise && scene_params_wrapper.data().path_tracing) {
     PROFILE_SECTION_START("Denoise: read");
     std::vector<float> output_buffer(width * height * 3);
 

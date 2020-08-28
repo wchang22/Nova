@@ -155,6 +155,15 @@ DEVICE float3 trace_ray(uint& rng_state,
                                     params.shading_roughness : meta.roughness)).x;
     // clang-format on
 
+    if (!params.path_tracing) {
+      if (meta.light_index != -1) {
+        color += lights[meta.light_index].intensity;
+      } else {
+        color += diffuse;
+      }
+      break;
+    }
+
     float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
     float3 out_dir = -ray_dir;
 
