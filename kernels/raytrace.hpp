@@ -89,6 +89,209 @@ DEVICE bool find_intersection(
   return min_intrs.tri_index != -1;
 }
 
+DEVICE Ray generate_primary_ray(uint& rng_state,
+                                const SceneParams& params,
+                                const int2& pixel_coords) {
+  // Jitter ray to get free anti-aliasing
+  float2 offset = make_vector<float2>(rand(rng_state), rand(rng_state));
+
+  float2 alpha_beta = params.eye_coords.coord_scale *
+                      (make_vector<float2>(pixel_coords) - params.eye_coords.coord_dims + offset);
+  float3 ray_dir = normalize(transpose(params.eye_coords.eye_coord_frame) *
+                             make_vector<float3>(alpha_beta.x, -alpha_beta.y, -1.0f));
+  float3 ray_pos = params.eye_coords.eye_pos;
+
+  return Ray(ray_pos, ray_dir, RAY_EPSILON);
+}
+
+DEVICE Intersection intersect_ray(const Ray& ray,
+                                  Path& path,
+                                  TriangleData* triangles,
+                                  FlatBVHNode* bvh,
+                                  image2d_read_t sky,
+                                  uint denoise_available) {
+  Intersection intrs;
+
+  if (!find_intersection(triangles, bvh, ray, intrs, false)) {
+    // TODO: IBL instead of just skymap
+    if (path.direct) {
+      path.color = read_sky(sky, ray.direction);
+      if (denoise_available) {
+        path.albedo = path.color / (path.color + 1.0f);
+        path.normal = make_vector<float3>(0.0f);
+      }
+    }
+  }
+
+  return intrs;
+}
+
+DEVICE bool shade_and_generate_extension_ray(uint& rng_state,
+                                             const Intersection& intrs,
+                                             Path& path,
+                                             const Ray& ray,
+                                             const SceneParams& params,
+                                             TriangleData* triangles,
+                                             TriangleMetaData* tri_meta,
+                                             FlatBVHNode* bvh,
+                                             AreaLightData* lights,
+                                             uint num_lights,
+                                             image2d_array_read_t materials,
+                                             uint denoise_available,
+                                             Ray& extension_ray) {
+  auto& throughput = path.throughput;
+  auto& color = path.color;
+  auto& albedo_feature = path.albedo;
+  auto& normal_feature = path.normal;
+  auto& direct = path.direct;
+
+  const TriangleMetaData& meta = tri_meta[intrs.tri_index];
+
+  float3 intrs_point = ray.origin + ray.direction * intrs.length;
+
+  // Interpolate texture coords from vertex data
+  float2 texture_coord = triangle_interpolate(intrs.barycentric, meta.texture_coord1,
+                                              meta.texture_coord2, meta.texture_coord3);
+
+  // Look up materials
+  // clang-format off
+  float3 diffuse = read_material(materials, meta, texture_coord, meta.diffuse_index,
+                                  params.shading_diffuse) * meta.kD;
+  float metallic = read_material(materials, meta, texture_coord, meta.metallic_index,
+                                  make_vector<float3>(meta.metallic == -1.0f ?
+                                  params.shading_metallic : meta.metallic)).x;
+  float roughness = read_material(materials, meta, texture_coord, meta.roughness_index,
+                                  make_vector<float3>(meta.roughness == -1.0f ?
+                                  params.shading_roughness : meta.roughness)).x;
+  // clang-format on
+
+  if (!params.path_tracing) {
+    if (meta.light_index != -1) {
+      color += lights[meta.light_index].intensity;
+    } else {
+      color += diffuse;
+    }
+    return false;
+  }
+
+  float3 normal = compute_normal(materials, meta, texture_coord, intrs.barycentric);
+  float3 out_dir = -ray.direction;
+
+  // Only add light on first bounce to prevent double counting
+  if (direct && meta.light_index != -1) {
+    color += throughput * lights[meta.light_index].intensity;
+  }
+
+  if (direct && denoise_available) {
+    albedo_feature = diffuse;
+    normal_feature = normal;
+  }
+
+  // Estimate direct lighting
+  float3 direct_color = make_vector<float3>(0.0f);
+
+  // Only sample direct lighting if more than 1 light or if only one light and we didn't hit any
+  if (num_lights > 1 || (num_lights == 1 && meta.light_index == -1)) {
+    {
+      // Randomly sample a single light
+      uint random_light_index;
+      do {
+        random_light_index = min(static_cast<uint>(rand(rng_state) * num_lights), num_lights - 1);
+      } while (meta.light_index == random_light_index);
+
+      const AreaLightData& light = lights[random_light_index];
+      float3 light_normal = compute_normal(light);
+      float light_area = compute_area(light);
+
+      // Sample area light source
+      float3 light_position = sample(light, rng_state);
+
+      // Calculate lighting params
+      float3 light_dir = normalize(light_position - intrs_point);
+      float light_distance = distance(light_position, intrs_point);
+
+      // Ensuring objects blocking light are not behind the light
+      Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs(light_distance - RAY_EPSILON);
+
+      // Multiple importance sample lights: Add light contribution if ray is not blocked
+      if (!find_intersection(triangles, bvh, light_ray, light_intrs, true)) {
+        CookTorranceLightBRDF ct_light_brdf(light_dir, out_dir, normal, diffuse, metallic,
+                                            roughness);
+        float3 light_brdf = ct_light_brdf.eval();
+        float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
+        float3 light_brdf_pdf = ct_light_brdf.pdf();
+        float3 weight = power_heuristic(make_vector<float3>(light_pdf), light_brdf_pdf);
+
+        // Divide by (1 / num lights) to account for sampling a single light
+        direct_color += num_lights * weight * light.intensity * light_brdf / light_pdf *
+                        max(dot(normal, light_dir), 0.0f);
+      }
+    }
+
+    {
+      // Multiple importance sample brdf for lighting
+      CookTorranceLightBRDF ct_light_brdf({}, out_dir, normal, diffuse, metallic, roughness);
+      float3 light_dir = ct_light_brdf.sample(rng_state);
+
+      Ray light_ray(intrs_point, light_dir, RAY_EPSILON);
+      Intersection light_intrs;
+
+      // Add light contribution if intersected light
+      if (find_intersection(triangles, bvh, light_ray, light_intrs, false)) {
+        const TriangleMetaData& light_meta = tri_meta[light_intrs.tri_index];
+
+        // Make sure we actually hit the light
+        if (light_meta.light_index != -1 && light_meta.light_index != meta.light_index) {
+          float3 light_position = light_ray.origin + light_ray.direction * light_intrs.length;
+          float light_distance = light_intrs.length;
+
+          const AreaLightData& light = lights[light_meta.light_index];
+          float3 light_normal = compute_normal(light);
+          float light_area = compute_area(light);
+
+          float3 light_brdf = ct_light_brdf.eval();
+          float light_pdf = ct_light_brdf.light_pdf(light_normal, light_distance, light_area);
+          float3 light_brdf_pdf = ct_light_brdf.pdf();
+          float3 weight = power_heuristic(light_brdf_pdf, make_vector<float3>(light_pdf));
+
+          direct_color += weight * light.intensity * light_brdf / light_brdf_pdf *
+                          max(dot(normal, light_dir), 0.0f);
+        }
+      }
+    }
+  }
+
+  color += throughput * direct_color;
+
+  // Sample material brdf for next direction
+  CookTorranceBRDF ct_brdf(out_dir, normal, diffuse, metallic, roughness);
+
+  float3 in_dir = ct_brdf.sample(rng_state);
+  float3 brdf = ct_brdf.eval();
+  float3 pdf = ct_brdf.pdf();
+
+  throughput *= brdf / pdf * max(dot(normal, in_dir), 0.0f);
+
+  assert(all(isfinite(in_dir)));
+  assert(all(isfinite(color)));
+  assert(all(isfinite(throughput)));
+
+  // Russian roulette
+  if (!direct) {
+    float p = min(max(throughput.x, max(throughput.y, throughput.z)), 1.0f);
+    if (rand(rng_state) > p) {
+      return false;
+    }
+    throughput *= 1.0f / p;
+  }
+
+  extension_ray = Ray(intrs_point, in_dir, RAY_EPSILON);
+  direct = false;
+
+  return true;
+}
+
 DEVICE float3 trace_ray(uint& rng_state,
                         const SceneParams& params,
                         const int2& pixel_coords,

@@ -2,7 +2,7 @@
 dimensions = [1280, 720]
 file_path = "nova.jpg"
 path_tracing = true
-num_samples = 64
+num_samples = 20
 
 [post_processing]
 last_frame_denoise = true

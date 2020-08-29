@@ -7,6 +7,7 @@
 #include "intersectables/intersectable_manager.hpp"
 #include "kernel_types/area_light.hpp"
 #include "kernel_types/scene_params.hpp"
+#include "kernel_types/wavefront.hpp"
 #include "material/material_loader.hpp"
 #include "material/sky_loader.hpp"
 #include "scene/area_light.hpp"
@@ -63,6 +64,12 @@ private:
   Wrapper<uint32_t> num_lights_wrapper;
   Image2DArray<float4> material_imgs;
   Image2DRead<float4> sky_img;
+  Buffer<PackedRay> ray_buf;
+  Buffer<PackedRay> extended_ray_buf;
+  Buffer<Path> path_buf;
+  Buffer<IntersectionData> intersection_buf;
+  Buffer<uint32_t> ray_count_buf;
+  Buffer<uint32_t> intersection_count_buf;
   int num_samples = 0;
 
   // Local state

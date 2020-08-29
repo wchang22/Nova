@@ -1,10 +1,134 @@
 #include "kernels/anti_aliasing.hpp"
 #include "kernels/backend/atomic.hpp"
+#include "kernels/constants.hpp"
+#include "kernels/material.hpp"
 #include "kernels/random.hpp"
 #include "kernels/raytrace.hpp"
 #include "kernels/transforms.hpp"
+#include "kernels/types.hpp"
 
 namespace nova {
+
+KERNEL void kernel_generate(
+  // Stage outputs
+  GLOBAL PackedRay* rays,
+  GLOBAL Path* paths,
+  // Stage params
+  SceneParams params,
+  int sample_index,
+  uint time,
+  uint2 pixel_dims) {
+  int2 pixel_coords = { static_cast<int>(get_global_id(0)), static_cast<int>(get_global_id(1)) };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y) {
+    return;
+  }
+
+  uint path_index = pixel_coords.y * pixel_dims.x + pixel_coords.x;
+
+  uint rng_state = hash(path_index + hash(time));
+
+  rays[path_index] =
+    generate_primary_ray(rng_state, params, pixel_coords).to_packed_ray(path_index);
+  paths[path_index] = { make_vector<float3>(1.0f), make_vector<float3>(0.0f),
+                        make_vector<float3>(0.0f), make_vector<float3>(0.0f), true };
+}
+
+KERNEL void kernel_intersect(
+  // Stage inputs
+  GLOBAL PackedRay* rays,
+  GLOBAL Path* paths,
+  // Stage outputs
+  GLOBAL IntersectionData* intersections,
+  GLOBAL uint* intersection_count,
+  // Stage params
+  uint num_rays,
+  uint denoise_available,
+  GLOBAL TriangleData* triangles,
+  GLOBAL FlatBVHNode* bvh,
+  image2d_read_t sky) {
+  uint id = get_global_id(0);
+  if (id >= num_rays) {
+    return;
+  }
+
+  PackedRay p_ray = rays[id];
+  Ray ray(p_ray);
+  Path& path = paths[get_path_index(p_ray)];
+
+  Intersection intersection = intersect_ray(ray, path, triangles, bvh, sky, denoise_available);
+
+  if (intersection.tri_index != -1) {
+    intersection.ray_index = id;
+    intersections[atomic_inc(intersection_count)] = intersection.to_intersection_data();
+  }
+}
+
+KERNEL void kernel_extend(
+  // Stage inputs
+  GLOBAL PackedRay* rays,
+  GLOBAL IntersectionData* intersections,
+  GLOBAL Path* paths,
+  // Stage outputs
+  GLOBAL PackedRay* extended_rays,
+  GLOBAL uint* ray_count,
+  // Stage params
+  uint num_intersections,
+  SceneParams params,
+  uint time,
+  uint denoise_available,
+  GLOBAL TriangleData* triangles,
+  GLOBAL TriangleMetaData* tri_meta,
+  GLOBAL FlatBVHNode* bvh,
+  GLOBAL AreaLightData* lights,
+  uint num_lights,
+  image2d_array_read_t materials) {
+  uint id = get_global_id(0);
+  if (id >= num_intersections) {
+    return;
+  }
+
+  Intersection intersection(intersections[id]);
+  uint rng_state = hash(id + hash(time));
+
+  PackedRay p_ray = rays[intersection.ray_index];
+  Ray ray(p_ray);
+  uint path_index = get_path_index(p_ray);
+  Path& path = paths[path_index];
+
+  Ray extension_ray;
+  if (shade_and_generate_extension_ray(rng_state, intersection, path, ray, params, triangles,
+                                       tri_meta, bvh, lights, num_lights, materials,
+                                       denoise_available, extension_ray)) {
+    extended_rays[atomic_inc(ray_count)] = extension_ray.to_packed_ray(path_index);
+  }
+}
+
+KERNEL void kernel_write(
+  // Stage inputs
+  GLOBAL Path* paths,
+  // Stage outputs
+  image2d_write_t temp_color1,
+  image2d_write_t albedo_feature1,
+  image2d_write_t normal_feature1,
+  // Stage params
+  int sample_index,
+  uint denoise_available,
+  uint2 pixel_dims) {
+  int2 pixel_coords = { static_cast<int>(get_global_id(0)), static_cast<int>(get_global_id(1)) };
+  if (pixel_coords.x >= pixel_dims.x && pixel_coords.y >= pixel_dims.y) {
+    return;
+  }
+
+  uint path_index = pixel_coords.y * pixel_dims.x + pixel_coords.x;
+  const Path& path = paths[path_index];
+
+  write_image(temp_color1, pixel_coords, make_vector<float4>(path.color, 1.0f));
+
+  if (denoise_available) {
+    write_image(albedo_feature1, pixel_coords, make_vector<float4>(path.albedo, 1.0f));
+    write_image(normal_feature1, pixel_coords, make_vector<float4>(path.normal, 1.0f));
+  }
+}
 
 KERNEL void kernel_raytrace(SceneParams params,
                             uint time,

@@ -14,6 +14,11 @@
 namespace nova {
 
 Raytracer::Raytracer() {
+  accelerator.add_kernel("kernel_generate");
+  accelerator.add_kernel("kernel_intersect");
+  accelerator.add_kernel("kernel_extend");
+  accelerator.add_kernel("kernel_write");
+
   accelerator.add_kernel("kernel_raytrace");
   accelerator.add_kernel("kernel_accumulate");
   accelerator.add_kernel("kernel_post_process");
@@ -49,6 +54,7 @@ void Raytracer::set_scene(const Scene& scene) {
 
   const uint32_t width = static_cast<uint32_t>(scene.get_output_dimensions()[0]);
   const uint32_t height = static_cast<uint32_t>(scene.get_output_dimensions()[1]);
+  size_t ray_count = width * height;
 
   // Update Scene Params
   const EyeCoords& eye_coords = scene.get_camera_eye_coords();
@@ -161,6 +167,13 @@ void Raytracer::set_scene(const Scene& scene) {
     loaded_sky = sky_path;
   }
 
+  ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, ray_count);
+  extended_ray_buf = accelerator.create_buffer<PackedRay>(MemFlags::READ_WRITE, ray_count);
+  path_buf = accelerator.create_buffer<Path>(MemFlags::READ_WRITE, ray_count);
+  intersection_buf = accelerator.create_buffer<IntersectionData>(MemFlags::READ_WRITE, ray_count);
+  ray_count_buf = accelerator.create_buffer<uint32_t>(MemFlags::READ_WRITE, 0U);
+  intersection_count_buf = accelerator.create_buffer<uint32_t>(MemFlags::READ_WRITE, 0U);
+
   this->width = width;
   this->height = height;
   this->num_samples = num_samples;
@@ -176,17 +189,90 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
     duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
   auto denoise_available_wrapper = accelerator.create_wrapper<uint32_t>(denoise_available);
 
+  uint32_t ray_count = width * height;
+  uint32_t intersection_count = 0;
+
   {
-    PROFILE_SECTION_START("Raytrace kernel");
+    PROFILE_SECTION_START("Generate kernel");
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
-    accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                            scene_params_wrapper, time_wrapper, temp_color_img1.write_access(),
-                            pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, light_buf,
-                            num_lights_wrapper, material_imgs, sky_img, denoise_available_wrapper,
-                            albedo_img1.write_access(), normal_img1.write_access());
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_generate), global_dims, local_dims, ray_buf,
+                            path_buf, scene_params_wrapper, sample_index_wrapper, time_wrapper,
+                            pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }
+
+  PROFILE_SECTION_START("Wavefront");
+  while (ray_count > 0) {
+    PROFILE_SCOPE("Wavefront loop");
+    printf("%d ", ray_count);
+    auto t0 = steady_clock::now();
+
+    {
+      PROFILE_SECTION_START("Intersect kernel");
+      uint2 global_dims { ray_count, 1 };
+      uint2 local_dims { 32, 1 };
+
+      auto ray_count_wrapper = accelerator.create_wrapper<uint32_t>(ray_count);
+      accelerator.write_buffer(intersection_count_buf, 0U);
+
+      accelerator.call_kernel(RESOLVE_KERNEL(kernel_intersect), global_dims, local_dims, ray_buf,
+                              path_buf, intersection_buf, intersection_count_buf, ray_count_wrapper,
+                              denoise_available_wrapper, triangle_buf, bvh_buf, sky_img);
+      PROFILE_SECTION_END();
+    }
+    printf("%ld ", duration_cast<milliseconds>(steady_clock::now() - t0).count());
+
+    auto t1 = steady_clock::now();
+    {
+      PROFILE_SECTION_START("Extend kernel");
+      intersection_count = accelerator.read_buffer(intersection_count_buf);
+      uint2 global_dims { intersection_count, 1 };
+      uint2 local_dims { 32, 1 };
+
+      auto intersection_count_wrapper = accelerator.create_wrapper<uint32_t>(intersection_count);
+      accelerator.write_buffer(ray_count_buf, 0U);
+
+      accelerator.call_kernel(RESOLVE_KERNEL(kernel_extend), global_dims, local_dims, ray_buf,
+                              intersection_buf, path_buf, extended_ray_buf, ray_count_buf,
+                              intersection_count_wrapper, scene_params_wrapper, time_wrapper,
+                              denoise_available_wrapper, triangle_buf, tri_meta_buf, bvh_buf,
+                              light_buf, num_lights_wrapper, material_imgs);
+      PROFILE_SECTION_END();
+    }
+    printf("%ld ", duration_cast<milliseconds>(steady_clock::now() - t1).count());
+
+    ray_count = accelerator.read_buffer(ray_count_buf);
+    std::swap(ray_buf, extended_ray_buf);
+
+    printf("%ld\n", duration_cast<milliseconds>(steady_clock::now() - t0).count());
+  }
+  PROFILE_SECTION_END();
+
+  {
+    PROFILE_SECTION_START("Write kernel");
+    uint2 global_dims { width, height };
+    uint2 local_dims { 8, 4 };
+    accelerator.call_kernel(RESOLVE_KERNEL(kernel_write), global_dims, local_dims, path_buf,
+                            temp_color_img1.write_access(), albedo_img1.write_access(),
+                            normal_img1.write_access(), sample_index_wrapper,
+                            denoise_available_wrapper, pixel_dims_wrapper);
+    PROFILE_SECTION_END();
+  }
+
+  // {
+  //   PROFILE_SECTION_START("Raytrace kernel");
+  //   uint2 global_dims { width, height };
+  //   uint2 local_dims { 8, 4 };
+  //   accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
+  //                           scene_params_wrapper, time_wrapper, temp_color_img1.write_access(),
+  //                           pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, light_buf,
+  //                           num_lights_wrapper, material_imgs, sky_img,
+  //                           denoise_available_wrapper, albedo_img1.write_access(),
+  //                           normal_img1.write_access());
+  //   PROFILE_SECTION_END();
+  // }
+
   {
     PROFILE_SECTION_START("Accumulate kernel");
     uint2 global_dims { width, height };
