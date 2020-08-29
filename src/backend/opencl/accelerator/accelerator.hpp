@@ -165,6 +165,28 @@ public:
                            array_size, width, height, 0, 0, data.data());
   }
 
+    template <typename T>
+  Image2DArray<T> create_image2D_array(ImageChannelOrder channel_order,
+                                       ImageChannelType channel_type,
+                                       AddressMode address_mode,
+                                       FilterMode filter_mode,
+                                       bool normalized_coords,
+                                       size_t array_size,
+                                       size_t width,
+                                       size_t height) const {
+    (void) address_mode;
+    (void) filter_mode;
+    (void) normalized_coords;
+    if (array_size == 0 || width == 0 || height == 0) {
+      throw AcceleratorException("Cannot build an empty Image2DArray");
+    }
+
+    return Image2DArray<T>(context, CL_MEM_READ_WRITE,
+                           cl::ImageFormat(static_cast<cl_channel_order>(channel_order),
+                                           static_cast<cl_channel_type>(channel_type)),
+                           array_size, width, height, 0, 0);
+  }
+
   template <typename T>
   std::vector<T> read_image2D(const Image2DWrite<T>& image, size_t width, size_t height) const {
     std::vector<T> image_buf(width * height);
@@ -183,6 +205,15 @@ public:
     return image_buf;
   }
 
+   template <typename T>
+  std::vector<T> read_image2D_array(const Image2DArray<T>& image, size_t width, size_t height, size_t index) const {
+    std::vector<T> image_buf(width * height);
+    queue.enqueueReadImage(
+      image.data(), true, compat_utils::create_size_t<3>({ 0, 0, index }),
+      compat_utils::create_size_t<3>({ width, height, 1 }), 0, 0, image_buf.data());
+    return image_buf;
+  }
+
   template <typename T>
   void write_image2D(Image2DReadWrite<T>& image,
                      size_t width,
@@ -190,6 +221,17 @@ public:
                      const std::vector<T>& data) const {
     queue.enqueueWriteImage(
       image.read_access().data(), true, compat_utils::create_size_t<3>({ 0, 0, 0 }),
+      compat_utils::create_size_t<3>({ width, height, 1 }), 0, 0, data.data());
+  }
+
+  template <typename T>
+  void write_image2D_array(Image2DArray<T>& image,
+                     size_t width,
+                     size_t height,
+                     size_t index,
+                     const std::vector<T>& data) const {
+    queue.enqueueWriteImage(
+      image.data(), true, compat_utils::create_size_t<3>({ 0, 0, index }),
       compat_utils::create_size_t<3>({ width, height, 1 }), 0, 0, data.data());
   }
 
@@ -215,8 +257,24 @@ public:
   }
 
   template <typename T>
+  void
+  copy_image2D_array(Image2DArray<T>& dst, const Image2DArray<T>& src, size_t array_size, size_t width, size_t height) const {
+    queue.enqueueCopyImage(src.data(), dst.data(), compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, array_size }));
+    queue.finish();
+  }
+
+  template <typename T>
   void fill_image2D(Image2DRead<T>& image, size_t width, size_t height, const T& t) const {
     queue.enqueueFillImage(image.data(), t, compat_utils::create_size_t<3>({ 0, 0, 0 }),
+                           compat_utils::create_size_t<3>({ width, height, 1 }));
+    queue.finish();
+  }
+
+  template <typename T>
+  void fill_image2D_array(Image2DArray<T>& image, size_t width, size_t height, size_t index, const T& t) const {
+    queue.enqueueFillImage(image.data(), t, compat_utils::create_size_t<3>({ 0, 0, index }),
                            compat_utils::create_size_t<3>({ width, height, 1 }));
     queue.finish();
   }

@@ -45,15 +45,9 @@ private:
   uint32_t width;
   uint32_t height;
   Image2DWrite<uchar4> color_img;
-  Image2DRead<float4> prev_color_img;
-  Image2DReadWrite<float4> temp_color_img1;
-  Image2DReadWrite<float4> temp_color_img2;
-  Image2DReadWrite<float4> albedo_img1;
-  Image2DReadWrite<float4> normal_img1;
-  Image2DReadWrite<float4> albedo_img2;
-  Image2DReadWrite<float4> normal_img2;
-  Image2DRead<float4> prev_albedo_img;
-  Image2DRead<float4> prev_normal_img;
+  Image2DArray<float4> temp_img1;
+  Image2DArray<float4> temp_img2;
+  Image2DArray<float4> prev_img;
   Wrapper<uint2> pixel_dims_wrapper;
   Wrapper<SceneParams> scene_params_wrapper;
   Buffer<TriangleData> triangle_buf;

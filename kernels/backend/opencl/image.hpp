@@ -10,6 +10,7 @@ namespace nova {
 #define image2d_read_t read_only image2d_t
 #define image2d_write_t write_only image2d_t
 #define image2d_array_read_t read_only image2d_array_t
+#define image2d_array_write_t write_only image2d_array_t
 
 constant sampler_t sampler_int_clamp =
   CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST | CLK_NORMALIZED_COORDS_FALSE;
@@ -95,6 +96,20 @@ inline W read_image(image2d_array_read_t image, const float2& coords, int index)
   return w;
 }
 
+
+template <typename W, AddressMode A = AddressMode::CLAMP>
+inline W read_image(image2d_array_read_t image, const float2& coords, int index, const float2& offset) {
+  W w {};
+  if constexpr (A == AddressMode::WRAP) {
+    w = make_vector<W>(
+      read_imagef(image, sampler_float_wrap, float4 { coords + offset, static_cast<float>(index), 0.0f }));
+  } else {
+    w = make_vector<W>(
+      read_imagef(image, sampler_float_clamp, float4 { coords + offset, static_cast<float>(index), 0.0f }));
+  }
+  return w;
+}
+
 template <typename U>
 inline void write_image(image2d_write_t image, const int2& coords, const U& value) {
   using T = remove_reference_t<decltype(value.x)>;
@@ -104,6 +119,18 @@ inline void write_image(image2d_write_t image, const int2& coords, const U& valu
     write_imagei(image, coords, make_vector<int4>(value));
   } else {
     write_imageui(image, coords, make_vector<uint4>(value));
+  }
+}
+
+template <typename U>
+inline void write_image(image2d_array_write_t image, const int2& coords, int index, const U& value) {
+  using T = remove_reference_t<decltype(value.x)>;
+  if constexpr (is_floating_point_v<T>) {
+    write_imagef(image, int4 { coords, index, 0 }, value);
+  } else if constexpr (is_signed_v<T>) {
+    write_imagei(image, int4 { coords, index, 0 }, make_vector<int4>(value));
+  } else {
+    write_imageui(image, int4 { coords, index, 0 }, make_vector<uint4>(value));
   }
 }
 

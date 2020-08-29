@@ -11,8 +11,8 @@ namespace nova {
 
 // Fast approximate anti-aliasing:
 // http://blog.simonrodriguez.fr/articles/30-07-2016_implementing_fxaa.html
-DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const float2& pixel_uv) {
-  float3 center_color = xyz<float3>(read_image<float4>(pixels, pixel_uv));
+DEVICE float3 fxaa(image2d_array_read_t pixels, const float2& inv_pixel_dims, const float2& pixel_uv) {
+  float3 center_color = xyz<float3>(read_image<float4>(pixels, pixel_uv, 0));
   float center = rgb_to_luma(center_color);
 
   const float2 offsets[] = {
@@ -27,10 +27,10 @@ DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const fl
   };
 
   // Sample 4 neighbours
-  float down = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[0])));
-  float left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[1])));
-  float right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[2])));
-  float up = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[3])));
+  float down = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[0])));
+  float left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[1])));
+  float right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[2])));
+  float up = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[3])));
 
   float luma_max = max(center, max(up, max(left, max(right, down))));
   float luma_min = min(center, min(up, min(left, min(right, down))));
@@ -42,10 +42,10 @@ DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const fl
   }
 
   // Sample other 4 neighbours
-  float down_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[4])));
-  float down_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[5])));
-  float up_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[6])));
-  float up_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, offsets[7])));
+  float down_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[4])));
+  float down_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[5])));
+  float up_left = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[6])));
+  float up_right = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, pixel_uv, 0, offsets[7])));
 
   float down_up = down + up;
   float left_right = left + right;
@@ -101,12 +101,12 @@ DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const fl
 
   for (uint i = 0; i < EDGE_SEARCH_ITERATIONS; i++) {
     if (!reached_end1) {
-      luma_end1 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv1))) - luma_local_avg;
+      luma_end1 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv1, 0))) - luma_local_avg;
       reached_end1 = fabs(luma_end1) >= gradient_scaled;
       uv1 -= step_mod[i] * offset;
     }
     if (!reached_end2) {
-      luma_end2 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv2))) - luma_local_avg;
+      luma_end2 = rgb_to_luma(xyz<float3>(read_image<float4>(pixels, uv2, 0))) - luma_local_avg;
       reached_end2 = fabs(luma_end2) >= gradient_scaled;
       uv2 += step_mod[i] * offset;
     }
@@ -146,7 +146,7 @@ DEVICE float3 fxaa(image2d_read_t pixels, const float2& inv_pixel_dims, const fl
     final_pixel_uv.x += final_offset * step_length;
   }
 
-  return xyz<float3>(read_image<float4>(pixels, final_pixel_uv));
+  return xyz<float3>(read_image<float4>(pixels, final_pixel_uv, 0));
 }
 
 }

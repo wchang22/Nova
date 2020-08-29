@@ -41,7 +41,7 @@ Raytracer::Raytracer() {
 
 void Raytracer::start() {
   sample_index = 0;
-  accelerator.fill_image2D(prev_color_img, width, height, float4 {});
+  accelerator.fill_image2D_array(prev_img, width, height, 0, float4 {});
 }
 
 void Raytracer::set_scene(const Scene& scene) {
@@ -68,36 +68,14 @@ void Raytracer::set_scene(const Scene& scene) {
   if (this->width != width || this->height != height) {
     color_img = accelerator.create_image2D_write<uchar4>(ImageChannelOrder::RGBA,
                                                          ImageChannelType::UINT8, width, height);
-    prev_color_img = accelerator.create_image2D_read<float4>(
-      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-      true, width, height);
-    temp_color_img1 = accelerator.create_image2D_readwrite<float4>(
-      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-      true, width, height);
-    temp_color_img2 = accelerator.create_image2D_readwrite<float4>(
-      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-      true, width, height);
+    prev_img = accelerator.create_image2D_array<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR, true, denoise_available ? 3 : 1, width, height);
 
-    if (denoise_available) {
-      albedo_img1 = accelerator.create_image2D_readwrite<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-      normal_img1 = accelerator.create_image2D_readwrite<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-      albedo_img2 = accelerator.create_image2D_readwrite<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-      normal_img2 = accelerator.create_image2D_readwrite<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-      prev_albedo_img = accelerator.create_image2D_read<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-      prev_normal_img = accelerator.create_image2D_read<float4>(
-        ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR,
-        true, width, height);
-    }
+    temp_img1 = accelerator.create_image2D_array<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR, true, denoise_available ? 3 : 1, width, height);
+
+    temp_img2 = accelerator.create_image2D_array<float4>(
+      ImageChannelOrder::RGBA, ImageChannelType::FLOAT, AddressMode::CLAMP, FilterMode::LINEAR, true, denoise_available ? 3 : 1, width, height);
 
     pixel_dims_wrapper = accelerator.create_wrapper<uint2>(uint2 { width, height });
   }
@@ -181,10 +159,9 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_raytrace), global_dims, local_dims,
-                            scene_params_wrapper, time_wrapper, temp_color_img1.write_access(),
+                            scene_params_wrapper, time_wrapper, temp_img1,
                             pixel_dims_wrapper, triangle_buf, tri_meta_buf, bvh_buf, light_buf,
-                            num_lights_wrapper, material_imgs, sky_img, denoise_available_wrapper,
-                            albedo_img1.write_access(), normal_img1.write_access());
+                            num_lights_wrapper, material_imgs, sky_img, denoise_available_wrapper);
     PROFILE_SECTION_END();
   }
   {
@@ -193,28 +170,23 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(
       RESOLVE_KERNEL(kernel_accumulate), global_dims, local_dims, sample_index_wrapper,
-      denoise_available_wrapper, temp_color_img1.read_access(), albedo_img1.read_access(),
-      normal_img1.read_access(), prev_color_img, prev_albedo_img, prev_normal_img,
-      temp_color_img2.write_access(), albedo_img2.write_access(), normal_img2.write_access(),
+      denoise_available_wrapper, temp_img1, prev_img,
+      temp_img2,
       pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }
   {
     PROFILE_SECTION_START("Copy previous image");
-    accelerator.copy_image2D(prev_color_img, temp_color_img2, width, height);
-    if (denoise_available) {
-      accelerator.copy_image2D(prev_albedo_img, albedo_img2, width, height);
-      accelerator.copy_image2D(prev_normal_img, normal_img2, width, height);
-    }
+    accelerator.copy_image2D_array(prev_img, temp_img2, denoise_available ? 3 : 1, width, height);
     PROFILE_SECTION_END();
   }
   if (denoise_available && denoise && scene_params_wrapper.data().path_tracing) {
     PROFILE_SECTION_START("Denoise: read");
     std::vector<float> output_buffer(width * height * 3);
 
-    std::vector<float4> color_image = accelerator.read_image2D(temp_color_img2, width, height);
-    std::vector<float4> albedo_feature_image = accelerator.read_image2D(albedo_img2, width, height);
-    std::vector<float4> normal_feature_image = accelerator.read_image2D(normal_img2, width, height);
+    std::vector<float4> color_image = accelerator.read_image2D_array(temp_img2, width, height, 0);
+    std::vector<float4> albedo_feature_image = accelerator.read_image2D_array(temp_img2, width, height, 1);
+    std::vector<float4> normal_feature_image = accelerator.read_image2D_array(temp_img2, width, height, 2);
 
     std::vector<float> color_buffer = flatten<float4, float, 3>(color_image);
     std::vector<float> albedo_buffer = flatten<float4, float, 3>(albedo_feature_image);
@@ -237,7 +209,7 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
 
     PROFILE_SECTION_START("Denoise: write");
     color_image = pack<float4, float, 3>(output_buffer);
-    accelerator.write_image2D(temp_color_img2, width, height, color_image);
+    accelerator.write_image2D_array(temp_img2, width, height, 0, color_image);
     PROFILE_SECTION_END();
   }
   {
@@ -245,7 +217,7 @@ image_utils::image<uchar4> Raytracer::raytrace(bool denoise) {
     uint2 global_dims { width, height };
     uint2 local_dims { 8, 4 };
     accelerator.call_kernel(RESOLVE_KERNEL(kernel_post_process), global_dims, local_dims,
-                            scene_params_wrapper, temp_color_img2.read_access(), color_img,
+                            scene_params_wrapper, temp_img2, color_img,
                             pixel_dims_wrapper);
     PROFILE_SECTION_END();
   }
