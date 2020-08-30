@@ -21,24 +21,28 @@
 
 namespace nova {
 
+struct Leaf {
+  uint offset;
+  uint num;
+
+  DEVICE bool is_empty() const {
+    return num == 0;
+  }
+};
+
 DEVICE bool find_intersection(
   TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool fast) {
-  /*
-   * We maintain a double ended stack for space efficiency.
-   * BVHNodes are pushed from the front to the back of the stack and
-   * triangle offsets and nums are pushed from the back to the front of the stack.
-   * This allows work items to find more than one leaf node before searching for
-   * triangles and reduces branch divergence.
-   */
   uint stack[STACK_SIZE];
   int node_ptr = -1;
-  int tri_ptr = STACK_SIZE;
 
   // Set first value of stack to 0. We stop traversing when we pop this value.
   stack[++node_ptr] = 0;
 
   int node_index = 0;
   do {
+    Leaf leaf {};
+    Leaf postponed_leaf {};
+
     do {
       FlatBVHNode node = bvh[node_index];
 
@@ -58,27 +62,32 @@ DEVICE bool find_intersection(
       else {
         uint offset = node.top_offset_left.w;
         uint num = -node.bottom_num_right.w;
-
-        // Pack offset and num into a single uint to save memory and push to stack back
-        stack[--tri_ptr] = (offset & TRIANGLE_OFFSET_MASK) | (num << TRIANGLE_NUM_SHIFT);
+        assert(num != 0);
 
         node_index = stack[node_ptr--];
+
+        if (postponed_leaf.is_empty()) {
+          postponed_leaf.offset = offset;
+          postponed_leaf.num = num;
+        } else {
+          leaf.offset = offset;
+          leaf.num = num;
+          break;
+        }
       }
 
       assert(node_ptr < STACK_SIZE);
+    } while (node_index);
 
-      // Make sure tri_ptr and node_ptr do not collide
-    } while (node_index && tri_ptr > node_ptr + 2);
+    Leaf leaves[2] = { postponed_leaf, leaf };
 
-    while (tri_ptr < STACK_SIZE) {
-      // Pop list of triangles from stack back
-      uint packed_triangle_data = stack[tri_ptr++];
-
-      uint offset = packed_triangle_data & TRIANGLE_OFFSET_MASK;
-      uint num = packed_triangle_data >> TRIANGLE_NUM_SHIFT;
+    for (const auto& l : leaves) {
+      if (l.is_empty()) {
+        continue;
+      }
 
       // If intersected, compute intersection for all triangles in the node
-      for (uint i = offset; i < offset + num; i++) {
+      for (uint i = l.offset; i < l.offset + l.num; i++) {
         if (intersects_triangle(ray, min_intrs, i, triangles[i]) && fast) {
           return true;
         }

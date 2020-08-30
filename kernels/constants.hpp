@@ -2,11 +2,10 @@
 #define KERNEL_CONSTANTS_HPP
 
 #include "kernels/backend/math_constants.hpp"
-#include "shared_constants.hpp"
 
 namespace nova {
 
-constexpr int STACK_SIZE = 96;
+constexpr int STACK_SIZE = 64;
 
 constexpr float RAY_EPSILON = 1e-2f; // Prevent self-shadowing
 

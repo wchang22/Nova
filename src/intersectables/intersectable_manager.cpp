@@ -1,6 +1,5 @@
 #include "intersectable_manager.hpp"
 #include "bvh/bvh.hpp"
-#include "constants.hpp"
 #include "util/exception/exception.hpp"
 #include "vector/vector_conversions.hpp"
 
@@ -43,10 +42,6 @@ std::vector<Triangle> create_plane(const glm::vec3& position,
 }
 
 void IntersectableManager::add_triangle(const Triangle& tri, const TriangleMeta& meta) {
-  if (triangles.size() >= MAX_TRIANGLES) {
-    throw TriangleException("Max number of triangles exceeded");
-  }
-
   triangles.push_back(tri);
   triangle_map[tri] = meta;
 }
