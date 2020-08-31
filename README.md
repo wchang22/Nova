@@ -26,7 +26,7 @@ Either:
 
 ## Dependencies For Building
 Common:
-* CMake 3.12+
+* CMake 3.5+
 * C++17
 * OpenMP
 * OpenGL 3.3+
