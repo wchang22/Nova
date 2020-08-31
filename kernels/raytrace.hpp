@@ -31,7 +31,7 @@ struct Leaf {
 };
 
 DEVICE bool find_intersection(
-  TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool fast) {
+  TriangleData* triangles, FlatBVHNode* bvh, const Ray& ray, Intersection& min_intrs, bool anyhit) {
   uint stack[STACK_SIZE];
   int node_ptr = -1;
 
@@ -55,7 +55,10 @@ DEVICE bool find_intersection(
       // Inner node, no triangles
       if (node.bottom_num_right.w >= 0) {
         // Traverse left and right children
-        node_index = node.top_offset_left.w;
+
+        // Left child is adjacent to parent
+        node_index++;
+        // Put right child on the stack
         stack[++node_ptr] = node.bottom_num_right.w;
       }
       // Leaf node, no children
@@ -88,7 +91,7 @@ DEVICE bool find_intersection(
 
       // If intersected, compute intersection for all triangles in the node
       for (uint i = l.offset; i < l.offset + l.num; i++) {
-        if (intersects_triangle(ray, min_intrs, i, triangles[i]) && fast) {
+        if (intersects_triangle(ray, min_intrs, i, triangles[i]) && anyhit) {
           return true;
         }
       }

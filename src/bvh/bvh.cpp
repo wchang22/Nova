@@ -234,8 +234,14 @@ size_t BVH::build_flat_bvh_vec(std::vector<FlatBVHNode>& flat_nodes,
   } else { // Inner node
     assert(node->left && node->right);
 
+    // Visit the child with larger SA first
+    if (node->right->aabb.get_surface_area() > node->left->aabb.get_surface_area()) {
+      std::swap(node->left, node->right);
+    }
+
     // Recursively build left and right nodes and attach to parent
-    w(flat_nodes[flat_node_index].top_offset_left) = build_flat_bvh_vec(flat_nodes, node->left);
+    // Left child is adjacent to parent node
+    build_flat_bvh_vec(flat_nodes, node->left);
     w(flat_nodes[flat_node_index].bottom_num_right) = build_flat_bvh_vec(flat_nodes, node->right);
   }
 
