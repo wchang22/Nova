@@ -25,8 +25,13 @@ struct Leaf {
   uint offset;
   uint num;
 
-  DEVICE bool is_empty() const {
+  DEVICE inline bool is_empty() const {
     return num == 0;
+  }
+
+  DEVICE inline void set_data(uint offset, uint num) {
+    this->offset = offset;
+    this->num = num;
   }
 };
 
@@ -70,11 +75,9 @@ DEVICE bool find_intersection(
         node_index = stack[node_ptr--];
 
         if (postponed_leaf.is_empty()) {
-          postponed_leaf.offset = offset;
-          postponed_leaf.num = num;
+          postponed_leaf.set_data(offset, num);
         } else {
-          leaf.offset = offset;
-          leaf.num = num;
+          leaf.set_data(offset, num);
           break;
         }
       }
@@ -85,10 +88,6 @@ DEVICE bool find_intersection(
     Leaf leaves[2] = { postponed_leaf, leaf };
 
     for (const auto& l : leaves) {
-      if (l.is_empty()) {
-        continue;
-      }
-
       // If intersected, compute intersection for all triangles in the node
       for (uint i = l.offset; i < l.offset + l.num; i++) {
         if (intersects_triangle(ray, min_intrs, i, triangles[i]) && anyhit) {
