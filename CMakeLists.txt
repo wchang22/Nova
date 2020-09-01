@@ -89,6 +89,8 @@ else()
         --use_fast_math 
         --gpu-architecture=sm_50
         -maxrregcount=64
+        -std=c++14
+        --expt-relaxed-constexpr
         >
     )
     target_compile_definitions(${CUDA_LIB_NAME} PRIVATE KERNEL_BACKEND_CUDA)

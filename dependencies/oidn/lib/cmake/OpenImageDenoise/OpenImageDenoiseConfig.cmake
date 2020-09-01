@@ -51,7 +51,7 @@ if(_IMPORT_PREFIX STREQUAL "/")
 endif()
 
 # Create imported target OpenImageDenoise
-add_library(OpenImageDenoise SHARED IMPORTED)
+add_library(OpenImageDenoise SHARED IMPORTED GLOBAL)
 
 set_target_properties(OpenImageDenoise PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"

@@ -12,7 +12,7 @@
 
 namespace nova {
 
-__device__ constexpr int get_global_id(int i) {
+__device__ inline int get_global_id(int i) {
   switch (i) {
     case 0:
       return blockDim.x * blockIdx.x + threadIdx.x;
