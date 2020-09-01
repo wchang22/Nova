@@ -324,7 +324,7 @@ template <typename U, std::enable_if_t<is_float_vector_v<U>, int> = 0>
 __device__ constexpr decltype(U::x) dot(const U& u, const U& v) {
   constexpr size_t comp = num_comp_v<U>;
 
-  decltype(U::x) t;
+  decltype(U::x) t = 0;
   static_if<comp == 2>([&](auto f) {
     f(t) = f(u).x * f(v).x + f(u).y * f(v).y;
   });

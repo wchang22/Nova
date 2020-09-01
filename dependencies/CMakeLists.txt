@@ -17,5 +17,4 @@ add_subdirectory(glfw)
 
 # OIDN
 include(${CMAKE_CURRENT_SOURCE_DIR}/oidn/lib/cmake/OpenImageDenoise/OpenImageDenoiseConfig.cmake)
-set_target_properties(OpenImageDenoise PROPERTIES IMPORTED_GLOBAL TRUE)
-set(OIDN_INCLUDE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/oidn/include/OpenImageDenoise PARENT_SCOPE)
+set(OIDN_INCLUDE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/oidn/include/OpenImageDenoise CACHE INTERNAL "")

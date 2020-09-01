@@ -89,6 +89,8 @@ else()
         --use_fast_math 
         --gpu-architecture=sm_50
         -maxrregcount=64
+        -std=c++14
+        --expt-relaxed-constexpr
         >
     )
     target_compile_definitions(${CUDA_LIB_NAME} PRIVATE KERNEL_BACKEND_CUDA)
@@ -107,7 +109,6 @@ set(PROJECT_LIBS
     ${OpenCL_LIBRARIES}
     ${CUDA_LIB_NAME}
     OpenMP::OpenMP_CXX
-    stdc++fs
     glfw
     OpenImageDenoise
 )
@@ -140,6 +141,7 @@ endif()
 
 if (LOG)
     target_compile_definitions(${PROJECT_NAME} PRIVATE LOG)
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
 endif()
 if (PROFILE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE PROFILE)

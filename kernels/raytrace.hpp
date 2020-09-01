@@ -87,7 +87,8 @@ DEVICE bool find_intersection(
 
     Leaf leaves[2] = { postponed_leaf, leaf };
 
-    for (const auto& l : leaves) {
+    for (uint j = 0; j < 2; j++) {
+      const Leaf& l = leaves[j];
       // If intersected, compute intersection for all triangles in the node
       for (uint i = l.offset; i < l.offset + l.num; i++) {
         if (intersects_triangle(ray, min_intrs, i, triangles[i]) && anyhit) {
